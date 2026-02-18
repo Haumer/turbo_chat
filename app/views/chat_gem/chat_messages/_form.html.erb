@@ -10,8 +10,8 @@
      data-chat-mention-options="<%= json_escape(mention_options.to_json) %>">
   <%= form_with model: [chat, chat_message], data: { chat_message_form: true }, class: "chat-form" do |f| %>
     <%= f.hidden_field :kind, value: :message %>
-    <%= f.text_area :body, rows: 2, required: true, placeholder: "Write a message...", data: { chat_message_input: true } %>
-    <%= f.submit "Send", class: "chat-btn" %>
+    <%= f.text_area :body, rows: 3, required: true, placeholder: "Write a message...", data: { chat_message_input: true } %>
+    <%= f.submit "Send", class: "chat-btn chat-btn--send" %>
   <% end %>
 
   <%= form_with url: chat_chat_messages_path(chat), method: :post, scope: :chat_message, data: { chat_signal_form: true }, class: "chat-form chat-form--hidden" do |f| %>

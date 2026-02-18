@@ -32,8 +32,9 @@ module ChatGem
 
     def chat_participant_name(participant)
       return "Unknown" if participant.nil?
-      return participant.name if participant.respond_to?(:name)
-      return participant.email if participant.respond_to?(:email)
+      return participant.username if participant.respond_to?(:username) && participant.username.present?
+      return participant.name if participant.respond_to?(:name) && participant.name.present?
+      return participant.email if participant.respond_to?(:email) && participant.email.present?
 
       participant.to_s
     end
@@ -111,6 +112,31 @@ module ChatGem
 
       chat_message.participant_type.to_s == participant_type &&
         chat_message.participant_id.to_s == participant_id.to_s
+    end
+
+    def can_edit_chat_message?(chat_message, participant: nil)
+      return false if chat_message.nil?
+
+      participant ||= current_chat_participant_for_view
+      if participant.nil?
+        return true unless respond_to?(:current_chat_participant, true)
+
+        return false
+      end
+
+      adapter = ChatGem.configuration.permission_adapter
+      return false unless adapter.respond_to?(:new)
+
+      permission = adapter.new(participant, chat_message.chat)
+      if permission.respond_to?(:can_edit_message?)
+        return permission.can_edit_message?(chat_message)
+      end
+
+      return false if permission.respond_to?(:can_post_message?) && !permission.can_post_message?
+
+      own_chat_message?(chat_message, participant: participant)
+    rescue StandardError
+      false
     end
 
     private

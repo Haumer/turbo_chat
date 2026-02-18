@@ -1,0 +1,61 @@
+module ChatGem
+  class ChatMembershipsController < ApplicationController
+    before_action :set_chat
+    before_action -> { authorize_view_chat!(@chat) }
+    before_action :authorize_invite_member!
+
+    def create
+      participant = invite_participant
+      membership = @chat.chat_memberships.find_or_initialize_by(participant: participant)
+
+      if membership.persisted?
+        membership.assign_attributes(
+          removed_at: nil,
+          muted: false,
+          timed_out_until: nil
+        )
+      else
+        membership.role = :member
+      end
+
+      membership.save!
+      redirect_to chat_path(@chat), notice: "Participant invited"
+    rescue ActiveRecord::RecordNotFound
+      redirect_to chat_path(@chat), alert: "Participant not found"
+    rescue NameError, ArgumentError
+      redirect_to chat_path(@chat), alert: "Invalid participant type"
+    rescue ActiveRecord::RecordInvalid => error
+      redirect_to chat_path(@chat), alert: error.record.errors.full_messages.to_sentence
+    end
+
+    private
+
+    def set_chat
+      @chat = ChatGem::Chat.find(params[:chat_id])
+    end
+
+    def authorize_invite_member!
+      permission = permission_for(@chat)
+      return if permission.respond_to?(:can_invite_member?) && permission.can_invite_member?
+
+      head :forbidden
+    end
+
+    def invite_params
+      params.require(:chat_membership).permit(:participant_type, :participant_id)
+    end
+
+    def invite_participant
+      participant_type = invite_params.fetch(:participant_type).to_s
+      participant_id = invite_params.fetch(:participant_id).to_s
+      raise ArgumentError if participant_type.blank? || participant_id.blank?
+
+      participant_class = participant_type.safe_constantize
+      raise NameError if participant_class.nil?
+      raise ArgumentError unless participant_class < ActiveRecord::Base
+      raise ArgumentError unless participant_class.method_defined?(:active_chat_memberships)
+
+      participant_class.find(participant_id)
+    end
+  end
+end

@@ -6,6 +6,10 @@ module ChatGem
       ActiveSupport.on_load(:action_controller_base) do
         helper ChatGem::ApplicationHelper
       end
+
+      ActiveSupport.on_load(:action_view) do
+        include ChatGem::ApplicationHelper
+      end
     end
 
     initializer "chat_gem.assets.precompile" do |app|

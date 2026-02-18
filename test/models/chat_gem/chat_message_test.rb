@@ -36,6 +36,14 @@ module ChatGem
       assert_equal [visible.id], chat.chat_messages.messages_only.ordered.pluck(:id)
     end
 
+    test "participant_display_name prefers username when present" do
+      participant = User.new(email: "alex@example.com")
+      participant.define_singleton_method(:username) { "agent_alex" }
+      message = ChatGem::ChatMessage.new(participant: participant)
+
+      assert_equal "agent_alex", message.participant_display_name
+    end
+
     test "validates default max message length" do
       user = User.create!(email: "max-length-default@example.com")
       chat = ChatGem::Chat.create!(title: "Max Length Default")
@@ -220,6 +228,47 @@ module ChatGem
       ) do
         assert_equal "TS-#{message.id}-#{message.created_at.to_i}", message.formatted_timestamp
       end
+    end
+
+    test "formats updated timestamp with default formatter" do
+      user = User.create!(email: "updated-time@example.com")
+      chat = ChatGem::Chat.create!(title: "Updated Time")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user)
+      message = ChatGem::ChatMessage.create!(chat: chat, participant: user, body: "clock", kind: :message)
+      timestamp = Time.zone.local(2026, 2, 1, 14, 30, 0)
+      message.update_column(:updated_at, timestamp)
+      message.reload
+
+      with_chat_configuration do
+        assert_equal I18n.l(timestamp.in_time_zone, format: :long), message.formatted_updated_timestamp
+      end
+    end
+
+    test "supports custom timestamp formatter for updated timestamp" do
+      user = User.create!(email: "custom-updated-time@example.com")
+      chat = ChatGem::Chat.create!(title: "Custom Updated Time")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user)
+      message = ChatGem::ChatMessage.create!(chat: chat, participant: user, body: "clock", kind: :message)
+
+      with_chat_configuration(
+        timestamp_formatter: ->(timestamp, chat_message) { "TS-#{chat_message.id}-#{timestamp.to_i}" }
+      ) do
+        assert_equal "TS-#{message.id}-#{message.updated_at.to_i}", message.formatted_updated_timestamp
+      end
+    end
+
+    test "edited? tracks whether updated timestamp is newer than created timestamp" do
+      user = User.create!(email: "edited-flag@example.com")
+      chat = ChatGem::Chat.create!(title: "Edited Flag")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user)
+      message = ChatGem::ChatMessage.create!(chat: chat, participant: user, body: "original", kind: :message)
+
+      message.update_column(:updated_at, message.created_at)
+      message.reload
+      assert_not message.edited?
+
+      message.update!(body: "updated")
+      assert message.reload.edited?
     end
 
     test "formats participant membership role and supports role formatter" do

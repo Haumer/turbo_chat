@@ -3,6 +3,8 @@ module ChatGem
     before_action :set_chat
     before_action -> { authorize_view_chat!(@chat) }, only: :index
     before_action -> { authorize_post_message!(@chat) }, only: :create
+    before_action :set_chat_message, only: :update
+    before_action :authorize_edit_chat_message!, only: :update
 
     def index
       @chat_messages = @chat.visible_messages
@@ -43,6 +45,30 @@ module ChatGem
       end
     end
 
+    def update
+      if @chat_message.update(edit_chat_message_params)
+        if turbo_stream_request?
+          render turbo_stream: turbo_stream.replace(
+            view_context.dom_id(@chat_message),
+            partial: "chat_gem/chat_messages/message",
+            locals: { chat_message: @chat_message }
+          )
+        else
+          redirect_to chat_path(@chat), notice: "Message updated"
+        end
+      else
+        if turbo_stream_request?
+          render turbo_stream: turbo_stream.replace(
+            view_context.dom_id(@chat_message),
+            partial: "chat_gem/chat_messages/message",
+            locals: { chat_message: @chat_message, force_edit_open: true }
+          ), status: :unprocessable_entity
+        else
+          redirect_to chat_path(@chat), alert: @chat_message.errors.full_messages.to_sentence
+        end
+      end
+    end
+
     private
 
     def set_chat
@@ -51,6 +77,10 @@ module ChatGem
 
     def chat_message_params
       params.require(:chat_message).permit(:body, :kind, :signal_type)
+    end
+
+    def edit_chat_message_params
+      params.require(:chat_message).permit(:body)
     end
 
     def signal_request?
@@ -69,6 +99,39 @@ module ChatGem
         partial: "chat_gem/chat_messages/signals",
         locals: { chat: @chat }
       )
+    end
+
+    def set_chat_message
+      @chat_message = @chat.chat_messages.messages_only.find(params[:id])
+    end
+
+    def authorize_edit_chat_message!
+      chat_permission = permission_for(@chat)
+      can_edit = if chat_permission.respond_to?(:can_edit_message?)
+                   chat_permission.can_edit_message?(@chat_message)
+                 else
+                   can_post = if chat_permission.respond_to?(:can_post_message?)
+                                chat_permission.can_post_message?
+                              elsif chat_permission.respond_to?(:can_view_chat?)
+                                chat_permission.can_view_chat?
+                              else
+                                false
+                              end
+
+                   can_post &&
+                     @chat_message.participant_type.to_s == current_chat_participant.class.base_class.name &&
+                     @chat_message.participant_id.to_s == current_chat_participant.id.to_s
+                 end
+      return if can_edit
+
+      respond_to do |format|
+        format.html { redirect_to chat_path(@chat), alert: "Not allowed to edit this message" }
+        format.any { head :forbidden }
+      end
+    end
+
+    def turbo_stream_request?
+      request.headers["Accept"].to_s.include?("turbo-stream")
     end
   end
 end

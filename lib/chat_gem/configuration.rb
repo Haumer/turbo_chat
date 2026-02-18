@@ -9,12 +9,12 @@ module ChatGem
       "moderator" => {
         name: "Moderator",
         rank: 1,
-        permissions: %i[view_chat post_message mention_member mention_all mention_role mute_member timeout_member ban_member delete_message]
+        permissions: %i[view_chat post_message mention_member mention_all mention_role invite_member mute_member timeout_member ban_member delete_message]
       },
       "admin" => {
         name: "Admin",
         rank: 2,
-        permissions: %i[view_chat post_message mention_member mention_all mention_role mute_member timeout_member ban_member delete_message close_chat reopen_chat]
+        permissions: %i[view_chat post_message mention_member mention_all mention_role invite_member mute_member timeout_member ban_member delete_message close_chat reopen_chat]
       }
     }.freeze
     DEFAULT_MESSAGE_HTML_TAGS = %w[a b br code em i li ol p pre strong ul].freeze

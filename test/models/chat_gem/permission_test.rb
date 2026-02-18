@@ -19,6 +19,7 @@ module ChatGem
       assert_not moderator_permission.can_mute_member?(moderator_membership)
       assert_not moderator_permission.can_ban_member?(admin_membership)
       assert_not moderator_permission.can_close_chat?
+      assert moderator_permission.can_invite_member?
 
       admin_permission = ChatGem::Permission.new(admin, chat)
       assert admin_permission.can_mute_member?(moderator_membership)
@@ -26,12 +27,14 @@ module ChatGem
       assert_not admin_permission.can_ban_member?(admin_membership)
       assert admin_permission.can_close_chat?
       assert admin_permission.can_reopen_chat?
+      assert admin_permission.can_invite_member?
 
       member_permission = ChatGem::Permission.new(member, chat)
       assert_not member_permission.can_mute_member?(moderator_membership)
       assert_not member_permission.can_timeout_member?(moderator_membership)
       assert_not member_permission.can_ban_member?(moderator_membership)
       assert_not member_permission.can_close_chat?
+      assert_not member_permission.can_invite_member?
     end
 
     test "delete message permission follows role hierarchy in the chat" do
@@ -142,6 +145,25 @@ module ChatGem
       assert member_permission.can_mention_members?
       assert_not member_permission.can_mention_all?
       assert_not member_permission.can_mention_roles?
+    end
+
+    test "message editing is allowed only for own messages while posting is allowed" do
+      chat = ChatGem::Chat.create!(title: "Edit Permission")
+      owner = User.create!(email: "edit-owner-permission@example.com")
+      other = User.create!(email: "edit-other-permission@example.com")
+
+      ChatGem::ChatMembership.create!(chat: chat, participant: owner, role: :member)
+      ChatGem::ChatMembership.create!(chat: chat, participant: other, role: :member)
+
+      own_message = ChatGem::ChatMessage.new(chat: chat, participant: owner, kind: :message, body: "own")
+      other_message = ChatGem::ChatMessage.new(chat: chat, participant: other, kind: :message, body: "other")
+
+      permission = ChatGem::Permission.new(owner, chat)
+      assert permission.can_edit_message?(own_message)
+      assert_not permission.can_edit_message?(other_message)
+
+      chat.close!
+      assert_not permission.can_edit_message?(own_message)
     end
 
     private

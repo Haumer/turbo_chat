@@ -71,7 +71,7 @@ module ChatGem
                            relation.where(id: recent_ids)
                          end
 
-      limited_relation.ordered.includes(:participant)
+      limited_relation.ordered.preload(:participant)
     end
 
     def last_message_at

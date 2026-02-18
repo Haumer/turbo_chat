@@ -1,4 +1,5 @@
 require "chat_gem/version"
+require "turbo-rails"
 require "chat_gem/configuration"
 require "chat_gem/model_extensions/chat_participant"
 require "chat_gem/permission"

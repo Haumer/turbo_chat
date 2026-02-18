@@ -81,6 +81,234 @@
     return options;
   }
 
+  function emptyMentionAutocomplete() {
+    return {
+      hideMenu: function () {},
+      updateMenu: function () {},
+      handleKeydown: function () {
+        return false;
+      }
+    };
+  }
+
+  function setupMentionAutocomplete(input, options) {
+    if (!input) {
+      return emptyMentionAutocomplete();
+    }
+
+    var mentionOptions = Array.isArray(options && options.mentionOptions) ? options.mentionOptions : [];
+    var menuHost = options && options.menuHost ? options.menuHost : input.parentNode;
+    var menuClassName = options && options.menuClassName ? options.menuClassName : "chat-mentions-menu";
+    if (!mentionOptions.length || !menuHost) {
+      return emptyMentionAutocomplete();
+    }
+
+    var mentionMenu = null;
+    var mentionMatches = [];
+    var mentionActiveIndex = 0;
+
+    function ensureMentionMenu() {
+      if (mentionMenu) {
+        return mentionMenu;
+      }
+
+      mentionMenu = document.createElement("div");
+      mentionMenu.className = menuClassName;
+      mentionMenu.hidden = true;
+      menuHost.appendChild(mentionMenu);
+      return mentionMenu;
+    }
+
+    function hideMentionMenu() {
+      if (!mentionMenu) {
+        return;
+      }
+
+      mentionMenu.hidden = true;
+      mentionMenu.classList.remove("chat-mentions-menu--open");
+      mentionMenu.innerHTML = "";
+      mentionMatches = [];
+      mentionActiveIndex = 0;
+    }
+
+    function setMentionActiveIndex(index) {
+      if (!mentionMatches.length) {
+        return;
+      }
+
+      mentionActiveIndex = ((index % mentionMatches.length) + mentionMatches.length) % mentionMatches.length;
+      if (!mentionMenu) {
+        return;
+      }
+
+      mentionMenu.querySelectorAll(".chat-mentions-item").forEach(function (item, itemIndex) {
+        item.classList.toggle("chat-mentions-item--active", itemIndex === mentionActiveIndex);
+      });
+    }
+
+    function mentionContext() {
+      var caret = input.selectionStart;
+      if (typeof caret !== "number") {
+        return null;
+      }
+
+      var beforeCaret = input.value.slice(0, caret);
+      var atIndex = beforeCaret.lastIndexOf("@");
+      if (atIndex < 0) {
+        return null;
+      }
+
+      var previousCharacter = atIndex > 0 ? beforeCaret.charAt(atIndex - 1) : "";
+      if (/[a-zA-Z0-9_]/.test(previousCharacter)) {
+        return null;
+      }
+
+      var query = beforeCaret.slice(atIndex + 1);
+      if (!/^[a-zA-Z0-9_]*$/.test(query)) {
+        return null;
+      }
+
+      return {
+        start: atIndex,
+        end: caret,
+        query: query
+      };
+    }
+
+    function matchingMentionOptions(query) {
+      var normalizedQuery = String(query || "").toLowerCase();
+      return mentionOptions
+        .filter(function (option) {
+          return option.token.slice(1).toLowerCase().indexOf(normalizedQuery) === 0;
+        })
+        .slice(0, MENTION_MAX_RESULTS);
+    }
+
+    function insertMentionOption(option) {
+      var context = mentionContext();
+      if (!context) {
+        hideMentionMenu();
+        return;
+      }
+
+      var before = input.value.slice(0, context.start);
+      var after = input.value.slice(context.end);
+      var needsTrailingSpace = !after.match(/^[\s,.!?;:)]/);
+      var insertion = option.token + (needsTrailingSpace ? " " : "");
+      input.value = before + insertion + after;
+
+      var caretPosition = before.length + insertion.length;
+      input.setSelectionRange(caretPosition, caretPosition);
+      input.focus();
+
+      hideMentionMenu();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function renderMentionMenu() {
+      if (!mentionMatches.length) {
+        hideMentionMenu();
+        return;
+      }
+
+      var menu = ensureMentionMenu();
+      menu.innerHTML = "";
+      mentionMatches.forEach(function (option, index) {
+        var item = document.createElement("button");
+        item.type = "button";
+        item.className = "chat-mentions-item";
+        item.setAttribute("data-chat-mention-index", String(index));
+        if (index === mentionActiveIndex) {
+          item.classList.add("chat-mentions-item--active");
+        }
+
+        var token = document.createElement("span");
+        token.className = "chat-mentions-item__token";
+        token.textContent = option.token;
+
+        var label = document.createElement("span");
+        label.className = "chat-mentions-item__label";
+        label.textContent = option.label;
+
+        item.appendChild(token);
+        item.appendChild(label);
+        item.addEventListener("mousedown", function (event) {
+          event.preventDefault();
+        });
+        item.addEventListener("click", function () {
+          insertMentionOption(option);
+        });
+        menu.appendChild(item);
+      });
+
+      menu.hidden = false;
+      menu.classList.add("chat-mentions-menu--open");
+    }
+
+    function selectActiveMention() {
+      if (!mentionMatches.length) {
+        return false;
+      }
+
+      insertMentionOption(mentionMatches[mentionActiveIndex]);
+      return true;
+    }
+
+    function updateMentionMenu() {
+      var context = mentionContext();
+      if (!context) {
+        hideMentionMenu();
+        return;
+      }
+
+      mentionMatches = matchingMentionOptions(context.query);
+      if (!mentionMatches.length) {
+        hideMentionMenu();
+        return;
+      }
+
+      mentionActiveIndex = 0;
+      renderMentionMenu();
+    }
+
+    function handleMentionKeydown(event) {
+      if (!mentionMenu || mentionMenu.hidden || !mentionMatches.length) {
+        return false;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setMentionActiveIndex(mentionActiveIndex + 1);
+        return true;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setMentionActiveIndex(mentionActiveIndex - 1);
+        return true;
+      }
+
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        return selectActiveMention();
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        hideMentionMenu();
+        return true;
+      }
+
+      return false;
+    }
+
+    return {
+      hideMenu: hideMentionMenu,
+      updateMenu: updateMentionMenu,
+      handleKeydown: handleMentionKeydown
+    };
+  }
+
   function scrollLastMessageIntoView(container) {
     if (!container) {
       return;
@@ -93,8 +321,66 @@
 
     // Keep the last message fully visible with a tiny breathing space.
     var lastBottom = lastMessage.offsetTop + lastMessage.offsetHeight;
-    var targetScrollTop = Math.max(0, lastBottom - container.clientHeight + 2);
+    var targetScrollTop = Math.max(0, lastBottom - container.clientHeight + signalOverlayOffset(container) + 2);
     container.scrollTop = targetScrollTop;
+  }
+
+  function signalOverlayOffset(container) {
+    if (!container || typeof window === "undefined") {
+      return 0;
+    }
+
+    var chatWindow = container.closest(".chat-window");
+    if (!chatWindow) {
+      return 0;
+    }
+
+    var cssOffset = window.getComputedStyle(chatWindow).getPropertyValue("--chat-signal-offset");
+    var parsedOffset = parseFloat(cssOffset);
+    if (isNaN(parsedOffset) || parsedOffset <= 0) {
+      return 0;
+    }
+
+    return parsedOffset;
+  }
+
+  function prefersReducedMotion() {
+    return (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  function scrollMessageIntoView(container, messageNode) {
+    if (!container || !messageNode) {
+      return;
+    }
+
+    var containerRect = container.getBoundingClientRect();
+    var messageRect = messageNode.getBoundingClientRect();
+    var topPadding = 12;
+    var bottomPadding = 14 + signalOverlayOffset(container);
+    var aboveVisibleArea = messageRect.top < containerRect.top + topPadding;
+    var belowVisibleArea = messageRect.bottom > containerRect.bottom - bottomPadding;
+    if (!aboveVisibleArea && !belowVisibleArea) {
+      return;
+    }
+
+    var delta = aboveVisibleArea
+      ? messageRect.top - (containerRect.top + topPadding)
+      : messageRect.bottom - (containerRect.bottom - bottomPadding);
+    var nextTop = Math.max(0, container.scrollTop + delta);
+
+    if (typeof container.scrollTo === "function") {
+      container.scrollTo({
+        top: nextTop,
+        behavior: prefersReducedMotion() ? "auto" : "smooth"
+      });
+      return;
+    }
+
+    container.scrollTop = nextTop;
   }
 
   function syncOwnMessageClasses(container) {
@@ -104,6 +390,7 @@
 
     var selfType = container.dataset.chatSelfParticipantType;
     var selfId = container.dataset.chatSelfParticipantId;
+    var canEditOwnMessages = container.dataset.chatCanEditOwnMessages === "true";
     if (!selfType || !selfId) {
       return;
     }
@@ -114,8 +401,224 @@
         var isOwnMessage =
           messageNode.dataset.chatMessageParticipantType === selfType &&
           messageNode.dataset.chatMessageParticipantId === selfId;
+        var canEditMessage = isOwnMessage && canEditOwnMessages;
+        messageNode.dataset.chatEditAllowed = canEditMessage ? "true" : "false";
+
+        setupMessageInlineEditing(messageNode);
         messageNode.classList.toggle("chat-bubble--own", isOwnMessage);
+
+        messageNode.querySelectorAll("[data-chat-message-edit-control]").forEach(function (editControl) {
+          editControl.hidden = !canEditMessage || messageNode.dataset.chatInlineEditing === "true";
+        });
+
+        if (!canEditMessage) {
+          messageNode.dispatchEvent(new CustomEvent("chat-gem:inline-edit-close"));
+          messageNode.querySelectorAll("[data-chat-message-view]").forEach(function (viewContainer) {
+            viewContainer.hidden = false;
+          });
+          messageNode.querySelectorAll("[data-chat-message-edit]").forEach(function (editContainer) {
+            editContainer.hidden = true;
+          });
+          messageNode.classList.remove("chat-bubble--editing");
+          messageNode.dataset.chatInlineEditing = "false";
+        }
       });
+  }
+
+  function setupMessageInlineEditing(messageNode) {
+    if (!messageNode || messageNode.dataset.chatInlineEditBound === "true") {
+      return;
+    }
+
+    var editContainer = messageNode.querySelector("[data-chat-message-edit]");
+    if (!editContainer) {
+      return;
+    }
+
+    var viewContainer = messageNode.querySelector("[data-chat-message-view]");
+    var textarea = editContainer.querySelector("[data-chat-inline-edit-input]") || editContainer.querySelector("textarea");
+    var editButtons = messageNode.querySelectorAll("[data-chat-edit-start]");
+    var cancelButtons = messageNode.querySelectorAll("[data-chat-edit-cancel]");
+    var forms = messageNode.querySelectorAll("[data-chat-inline-edit-form]");
+    var saveButtons = messageNode.querySelectorAll("[data-chat-edit-save]");
+    var form = forms[0] || null;
+    var originalBody = textarea ? textarea.value : "";
+    var mentionContainer = editContainer.querySelector(".chat-inline-edit-field") || form || editContainer;
+    var mentionAutocomplete = emptyMentionAutocomplete();
+
+    if (form && textarea && datasetFlagEnabled(form, "chatEnableMentions")) {
+      mentionAutocomplete = setupMentionAutocomplete(textarea, {
+        mentionOptions: parseMentionOptions(form.dataset.chatMentionOptions),
+        menuHost: mentionContainer,
+        menuClassName: "chat-mentions-menu chat-mentions-menu--inline-edit"
+      });
+    }
+
+    function canEditMessage() {
+      return messageNode.dataset.chatEditAllowed === "true";
+    }
+
+    function canSubmitEdit() {
+      if (!textarea) {
+        return false;
+      }
+
+      return textarea.value.trim().length > 0 && textarea.value !== originalBody;
+    }
+
+    function updateSaveState() {
+      var submitEnabled = canSubmitEdit();
+      saveButtons.forEach(function (saveButton) {
+        saveButton.disabled = !submitEnabled;
+      });
+    }
+
+    function closeOtherEditors() {
+      var messagesContainer = messageNode.closest(".chat-messages");
+      if (!messagesContainer) {
+        return;
+      }
+
+      messagesContainer
+        .querySelectorAll("[data-chat-message-participant-type][data-chat-message-participant-id]")
+        .forEach(function (otherMessageNode) {
+          if (otherMessageNode === messageNode) {
+            return;
+          }
+
+          otherMessageNode.dispatchEvent(new CustomEvent("chat-gem:inline-edit-close"));
+        });
+    }
+
+    function setEditing(editing, options) {
+      options = options || {};
+      if (editing && !canEditMessage()) {
+        return;
+      }
+
+      if (!editing && options.restoreOriginal && textarea) {
+        textarea.value = originalBody;
+      }
+
+      if (editing) {
+        closeOtherEditors();
+      }
+
+      if (viewContainer) {
+        viewContainer.hidden = editing;
+      }
+      editContainer.hidden = !editing;
+      messageNode.dataset.chatInlineEditing = editing ? "true" : "false";
+      messageNode.classList.toggle("chat-bubble--editing", editing);
+      editButtons.forEach(function (button) {
+        button.hidden = !canEditMessage() || editing;
+      });
+      updateSaveState();
+
+      if (editing && textarea) {
+        textarea.focus();
+        if (typeof textarea.setSelectionRange === "function") {
+          var length = textarea.value.length;
+          textarea.setSelectionRange(length, length);
+        }
+
+        requestAnimationFrame(function () {
+          scrollMessageIntoView(messageNode.closest(".chat-messages"), messageNode);
+        });
+      }
+
+      if (!editing) {
+        mentionAutocomplete.hideMenu();
+      }
+    }
+
+    messageNode.dataset.chatInlineEditBound = "true";
+    messageNode.addEventListener("chat-gem:inline-edit-close", function () {
+      setEditing(false, { restoreOriginal: true });
+    });
+
+    editButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        setEditing(true);
+      });
+    });
+
+    cancelButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        setEditing(false, { restoreOriginal: true });
+      });
+    });
+
+    if (textarea) {
+      textarea.addEventListener("keydown", function (event) {
+        if (mentionAutocomplete.handleKeydown(event)) {
+          return;
+        }
+
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setEditing(false, { restoreOriginal: true });
+          return;
+        }
+
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey) {
+          event.preventDefault();
+          if (!form || !canSubmitEdit()) {
+            return;
+          }
+
+          if (typeof form.requestSubmit === "function") {
+            form.requestSubmit();
+          } else {
+            form.submit();
+          }
+        }
+      });
+
+      textarea.addEventListener("input", function () {
+        mentionAutocomplete.updateMenu();
+        updateSaveState();
+      });
+
+      textarea.addEventListener("blur", function () {
+        setTimeout(function () {
+          mentionAutocomplete.hideMenu();
+        }, MENTION_BLUR_HIDE_DELAY_MS);
+      });
+    }
+
+    forms.forEach(function (form) {
+      form.addEventListener("submit", function () {
+        mentionAutocomplete.hideMenu();
+      });
+
+      form.addEventListener("turbo:submit-end", function (event) {
+        if (event.detail && event.detail.success) {
+          if (textarea) {
+            originalBody = textarea.value;
+          }
+          setEditing(false);
+          return;
+        }
+
+        updateSaveState();
+      });
+    });
+
+    var initiallyEditing = !editContainer.hidden;
+    if (viewContainer) {
+      viewContainer.hidden = initiallyEditing;
+    }
+    messageNode.dataset.chatInlineEditing = initiallyEditing ? "true" : "false";
+    messageNode.classList.toggle("chat-bubble--editing", initiallyEditing);
+    editButtons.forEach(function (button) {
+      button.hidden = !canEditMessage() || initiallyEditing;
+    });
+    updateSaveState();
+
+    if (initiallyEditing) {
+      closeOtherEditors();
+    }
   }
 
   function setupMessageAutoScroll(container) {
@@ -179,6 +682,26 @@
       ".chat-typing-indicator:not(.chat-typing-indicator--leaving)"
     );
     container.classList.toggle("chat-signals--active", Boolean(hasVisibleSignals));
+
+    var chatWindow = container.closest(".chat-window");
+    if (chatWindow) {
+      var messagesContainer = chatWindow.querySelector(".chat-messages");
+      var shouldStickToBottom = false;
+      if (messagesContainer) {
+        var distanceFromBottom = messagesContainer.scrollHeight - (messagesContainer.scrollTop + messagesContainer.clientHeight);
+        shouldStickToBottom = distanceFromBottom <= 24;
+      }
+
+      var signalOffset = hasVisibleSignals ? Math.ceil(container.scrollHeight) + 8 : 0;
+      chatWindow.style.setProperty("--chat-signal-offset", signalOffset + "px");
+      chatWindow.classList.toggle("chat-window--signals-active", signalOffset > 0);
+
+      if (messagesContainer && shouldStickToBottom) {
+        requestAnimationFrame(function () {
+          scrollLastMessageIntoView(messagesContainer);
+        });
+      }
+    }
   }
 
   function setupSignalContainer(container) {
@@ -264,9 +787,10 @@
     var emitMessageEvents = datasetFlagEnabled(element, "chatEmitMessageEvents");
     var mentionsEnabled = datasetFlagEnabled(element, "chatEnableMentions");
     var mentionOptions = mentionsEnabled ? parseMentionOptions(element.dataset.chatMentionOptions) : [];
-    var mentionMenu = null;
-    var mentionMatches = [];
-    var mentionActiveIndex = 0;
+    var mentionAutocomplete = setupMentionAutocomplete(messageInput, {
+      mentionOptions: mentionOptions,
+      menuHost: element
+    });
     var typingEventEmitted = false;
 
     function emitTypingEvent(eventName) {
@@ -295,205 +819,6 @@
         }
       });
       element.dispatchEvent(event);
-    }
-
-    function ensureMentionMenu() {
-      if (mentionMenu) {
-        return mentionMenu;
-      }
-
-      mentionMenu = document.createElement("div");
-      mentionMenu.className = "chat-mentions-menu";
-      mentionMenu.hidden = true;
-      element.appendChild(mentionMenu);
-      return mentionMenu;
-    }
-
-    function hideMentionMenu() {
-      if (!mentionMenu) {
-        return;
-      }
-
-      mentionMenu.hidden = true;
-      mentionMenu.classList.remove("chat-mentions-menu--open");
-      mentionMenu.innerHTML = "";
-      mentionMatches = [];
-      mentionActiveIndex = 0;
-    }
-
-    function setMentionActiveIndex(index) {
-      if (!mentionMatches.length) {
-        return;
-      }
-
-      mentionActiveIndex = ((index % mentionMatches.length) + mentionMatches.length) % mentionMatches.length;
-      if (!mentionMenu) {
-        return;
-      }
-
-      mentionMenu.querySelectorAll(".chat-mentions-item").forEach(function (item, itemIndex) {
-        item.classList.toggle("chat-mentions-item--active", itemIndex === mentionActiveIndex);
-      });
-    }
-
-    function mentionContext() {
-      if (!mentionsEnabled || !mentionOptions.length) {
-        return null;
-      }
-
-      var caret = messageInput.selectionStart;
-      if (typeof caret !== "number") {
-        return null;
-      }
-
-      var beforeCaret = messageInput.value.slice(0, caret);
-      var atIndex = beforeCaret.lastIndexOf("@");
-      if (atIndex < 0) {
-        return null;
-      }
-
-      var previousCharacter = atIndex > 0 ? beforeCaret.charAt(atIndex - 1) : "";
-      if (/[a-zA-Z0-9_]/.test(previousCharacter)) {
-        return null;
-      }
-
-      var query = beforeCaret.slice(atIndex + 1);
-      if (!/^[a-zA-Z0-9_]*$/.test(query)) {
-        return null;
-      }
-
-      return {
-        start: atIndex,
-        end: caret,
-        query: query
-      };
-    }
-
-    function matchingMentionOptions(query) {
-      var normalizedQuery = String(query || "").toLowerCase();
-      return mentionOptions
-        .filter(function (option) {
-          return option.token.slice(1).toLowerCase().indexOf(normalizedQuery) === 0;
-        })
-        .slice(0, MENTION_MAX_RESULTS);
-    }
-
-    function renderMentionMenu() {
-      if (!mentionMatches.length) {
-        hideMentionMenu();
-        return;
-      }
-
-      var menu = ensureMentionMenu();
-      menu.innerHTML = "";
-      mentionMatches.forEach(function (option, index) {
-        var item = document.createElement("button");
-        item.type = "button";
-        item.className = "chat-mentions-item";
-        item.setAttribute("data-chat-mention-index", String(index));
-        if (index === mentionActiveIndex) {
-          item.classList.add("chat-mentions-item--active");
-        }
-
-        var token = document.createElement("span");
-        token.className = "chat-mentions-item__token";
-        token.textContent = option.token;
-
-        var label = document.createElement("span");
-        label.className = "chat-mentions-item__label";
-        label.textContent = option.label;
-
-        item.appendChild(token);
-        item.appendChild(label);
-        item.addEventListener("mousedown", function (event) {
-          event.preventDefault();
-        });
-        item.addEventListener("click", function () {
-          insertMentionOption(option);
-        });
-        menu.appendChild(item);
-      });
-
-      menu.hidden = false;
-      menu.classList.add("chat-mentions-menu--open");
-    }
-
-    function insertMentionOption(option) {
-      var context = mentionContext();
-      if (!context) {
-        hideMentionMenu();
-        return;
-      }
-
-      var before = messageInput.value.slice(0, context.start);
-      var after = messageInput.value.slice(context.end);
-      var needsTrailingSpace = !after.match(/^[\s,.!?;:)]/);
-      var insertion = option.token + (needsTrailingSpace ? " " : "");
-      messageInput.value = before + insertion + after;
-
-      var caretPosition = before.length + insertion.length;
-      messageInput.setSelectionRange(caretPosition, caretPosition);
-      messageInput.focus();
-
-      hideMentionMenu();
-      messageInput.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
-    function selectActiveMention() {
-      if (!mentionMatches.length) {
-        return false;
-      }
-
-      insertMentionOption(mentionMatches[mentionActiveIndex]);
-      return true;
-    }
-
-    function updateMentionMenu() {
-      var context = mentionContext();
-      if (!context) {
-        hideMentionMenu();
-        return;
-      }
-
-      mentionMatches = matchingMentionOptions(context.query);
-      if (!mentionMatches.length) {
-        hideMentionMenu();
-        return;
-      }
-
-      mentionActiveIndex = 0;
-      renderMentionMenu();
-    }
-
-    function handleMentionKeydown(event) {
-      if (!mentionMenu || mentionMenu.hidden || !mentionMatches.length) {
-        return false;
-      }
-
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        setMentionActiveIndex(mentionActiveIndex + 1);
-        return true;
-      }
-
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setMentionActiveIndex(mentionActiveIndex - 1);
-        return true;
-      }
-
-      if (event.key === "Enter" || event.key === "Tab") {
-        event.preventDefault();
-        return selectActiveMention();
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        hideMentionMenu();
-        return true;
-      }
-
-      return false;
     }
 
     function postSignal(options) {
@@ -634,7 +959,7 @@
     }
 
     messageInput.addEventListener("keydown", function (event) {
-      if (handleMentionKeydown(event)) {
+      if (mentionAutocomplete.handleKeydown(event)) {
         return;
       }
 
@@ -662,7 +987,7 @@
     messageForm.addEventListener("turbo:submit-end", function (event) {
       if (event.detail && event.detail.success) {
         messageInput.value = "";
-        hideMentionMenu();
+        mentionAutocomplete.hideMenu();
         emitMessageSentEvent();
       }
 
@@ -676,11 +1001,11 @@
     messageInput.addEventListener("input", function () {
       if (!messageInput.value.trim()) {
         stopSignalLoop();
-        hideMentionMenu();
+        mentionAutocomplete.hideMenu();
         return;
       }
 
-      updateMentionMenu();
+      mentionAutocomplete.updateMenu();
       queueSignalStart();
       if (signalActive) {
         resetSignalIdleTimer();
@@ -689,7 +1014,7 @@
 
     messageInput.addEventListener("blur", function () {
       setTimeout(function () {
-        hideMentionMenu();
+        mentionAutocomplete.hideMenu();
       }, MENTION_BLUR_HIDE_DELAY_MS);
       stopSignalLoop();
     });

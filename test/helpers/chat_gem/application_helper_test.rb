@@ -95,6 +95,12 @@ module ChatGem
       assert_not own_chat_message?(other_type_message, participant: participant)
     end
 
+    test "chat_participant_name prefers username when present" do
+      participant = Struct.new(:username, :name, :email).new("agent_alex", "Alex", "alex@example.com")
+
+      assert_equal "agent_alex", chat_participant_name(participant)
+    end
+
     test "plain message rendering supports custom configured emoji aliases" do
       config = ChatGem.configuration
       config.enable_mentions = true
@@ -105,6 +111,26 @@ module ChatGem
       rendered = render_chat_message_body(BodyMessageStub.new("ready :shipit:", nil)).to_s
 
       assert_includes rendered, "🚢"
+    end
+
+    test "can_edit_chat_message? delegates to configured permission adapter" do
+      chat = ChatGem::Chat.create!(title: "Helper Edit Permission")
+      owner = User.create!(email: "helper-edit-owner@example.com")
+      other = User.create!(email: "helper-edit-other@example.com")
+      ChatGem::ChatMembership.create!(chat: chat, participant: owner, role: :member)
+      ChatGem::ChatMembership.create!(chat: chat, participant: other, role: :member)
+
+      message = ChatGem::ChatMessage.new(chat: chat, participant: owner, kind: :message, body: "hello")
+
+      assert can_edit_chat_message?(message, participant: owner)
+      assert_not can_edit_chat_message?(message, participant: other)
+    end
+
+    test "can_edit_chat_message? returns true when rendered without participant context" do
+      chat = ChatGem::Chat.new(id: 10)
+      message = ChatGem::ChatMessage.new(id: 20, chat: chat, participant_type: "User", participant_id: 3, kind: :message, body: "hi")
+
+      assert can_edit_chat_message?(message)
     end
 
     test "chat mention options include chat members, @all, and role mentions" do

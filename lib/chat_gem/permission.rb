@@ -44,6 +44,10 @@ module ChatGem
       can_moderate_member?(:ban_member, target_membership)
     end
 
+    def can_invite_member?
+      can_view_chat? && role_permission?(:invite_member)
+    end
+
     def can_delete_message?(message = nil)
       return false unless can_view_chat?
       return false unless role_permission?(:delete_message)
@@ -52,6 +56,19 @@ module ChatGem
 
       target_membership = membership_for(message.participant)
       can_act_on_target_membership?(target_membership)
+    end
+
+    def can_edit_message?(message = nil)
+      return false unless can_post_message?
+      return true if message.nil?
+      return false if message.chat_id != chat&.id
+
+      participant_type = participant.class.base_class.name
+      participant_id = participant.id
+      return false if participant_type.blank? || participant_id.blank?
+
+      message.participant_type.to_s == participant_type &&
+        message.participant_id.to_s == participant_id.to_s
     end
 
     def can_close_chat?
@@ -131,7 +148,7 @@ module ChatGem
     def membership
       return nil if chat.nil? || participant.nil?
 
-      @membership ||= chat.chat_memberships.find_by(participant: participant)
+      chat.chat_memberships.find_by(participant: participant)
     end
   end
 end

@@ -5,7 +5,9 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= action_cable_meta_tag %>
-    <%= turbo_include_tags %>
+    <% if respond_to?(:turbo_include_tags) %>
+      <%= turbo_include_tags %>
+    <% end %>
     <%= stylesheet_link_tag "chat_gem/application", "data-turbo-track": "reload" %>
     <%= javascript_include_tag "chat_gem/application", "data-turbo-track": "reload", defer: true %>
   </head>

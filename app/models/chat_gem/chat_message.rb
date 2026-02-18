@@ -22,6 +22,7 @@ module ChatGem
     before_create :replace_participant_signals_on_submit, if: :message?
 
     after_create_commit :broadcast_create
+    after_update_commit :broadcast_update
     after_destroy_commit :broadcast_destroy
 
     class << self
@@ -61,8 +62,9 @@ module ChatGem
 
     def participant_display_name
       return "Unknown" if participant.nil?
-      return participant.name if participant.respond_to?(:name)
-      return participant.email if participant.respond_to?(:email)
+      return participant.username if participant.respond_to?(:username) && participant.username.present?
+      return participant.name if participant.respond_to?(:name) && participant.name.present?
+      return participant.email if participant.respond_to?(:email) && participant.email.present?
 
       participant.to_s
     end
@@ -73,6 +75,20 @@ module ChatGem
       return formatted if formatted.present?
 
       I18n.l(created_at.in_time_zone, format: :long)
+    end
+
+    def formatted_updated_timestamp
+      formatter = ChatGem.configuration.timestamp_formatter
+      formatted = apply_formatter(formatter, updated_at, self)
+      return formatted if formatted.present?
+
+      I18n.l(updated_at.in_time_zone, format: :long)
+    end
+
+    def edited?
+      return false if created_at.blank? || updated_at.blank?
+
+      updated_at > created_at
     end
 
     def participant_membership_role
@@ -147,9 +163,11 @@ module ChatGem
     end
 
     def broadcast_create
+      return unless respond_to?(:broadcast_update_to)
+
       stream = [chat, :messages]
 
-      if message?
+      if message? && respond_to?(:broadcast_append_to)
         broadcast_append_to(
           stream,
           target: ActionView::RecordIdentifier.dom_id(chat, :messages),
@@ -166,10 +184,23 @@ module ChatGem
       )
     end
 
+    def broadcast_update
+      return unless message?
+      return unless saved_change_to_body?
+      return unless respond_to?(:broadcast_replace_to)
+
+      broadcast_replace_to(
+        [chat, :messages],
+        target: ActionView::RecordIdentifier.dom_id(self),
+        partial: "chat_gem/chat_messages/message",
+        locals: { chat_message: self }
+      )
+    end
+
     def broadcast_destroy
       stream = [chat, :messages]
 
-      if message?
+      if message? && respond_to?(:broadcast_remove_to)
         broadcast_remove_to(
           stream,
           target: ActionView::RecordIdentifier.dom_id(self)

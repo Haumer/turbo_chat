@@ -32,7 +32,9 @@ module ChatGem
       assert_includes config.role_definitions.keys, "admin"
       assert_includes config.role_definition(:member)[:permissions], :mention_member
       assert_includes config.role_definition(:moderator)[:permissions], :mention_all
+      assert_includes config.role_definition(:moderator)[:permissions], :invite_member
       assert_includes config.role_definition(:admin)[:permissions], :mention_role
+      assert_includes config.role_definition(:admin)[:permissions], :invite_member
     end
 
     test "can register custom role with name permissions and rank" do
