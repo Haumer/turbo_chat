@@ -1,0 +1,64 @@
+require_relative "../../test_helper"
+
+module ChatGem
+  class ApplicationHelperTest < ActionView::TestCase
+    MessageStub = Struct.new(:participant_membership_role)
+
+    setup do
+      config = ChatGem.configuration
+      @original_own_message_hex_color = config.own_message_hex_color
+      @original_other_message_hex_color = config.other_message_hex_color
+      @original_role_message_hex_colors = config.role_message_hex_colors
+    end
+
+    teardown do
+      config = ChatGem.configuration
+      config.own_message_hex_color = @original_own_message_hex_color
+      config.other_message_hex_color = @original_other_message_hex_color
+      config.role_message_hex_colors = @original_role_message_hex_colors
+    end
+
+    test "supports custom own and other message hex colors" do
+      config = ChatGem.configuration
+      config.own_message_hex_color = "#123abc"
+      config.other_message_hex_color = "fedcba"
+      config.role_message_hex_colors = {}
+
+      message = MessageStub.new(nil)
+
+      assert_equal "--chat-bubble-bg: #123abc; --chat-bubble-border: #123abc;", chat_message_inline_style(chat_message: message, own_message: true)
+      assert_equal "--chat-bubble-bg: #fedcba; --chat-bubble-border: #fedcba;", chat_message_inline_style(chat_message: message, own_message: false)
+    end
+
+    test "role-specific colors override own and other defaults" do
+      config = ChatGem.configuration
+      config.own_message_hex_color = "#111111"
+      config.other_message_hex_color = "#222222"
+      config.role_message_hex_colors = {
+        "admin" => "#ab12cd",
+        "moderator" => { own: "#334455", other: "#667788" }
+      }
+
+      admin_message = MessageStub.new("admin")
+      moderator_message = MessageStub.new("moderator")
+
+      assert_equal "--chat-bubble-bg: #ab12cd; --chat-bubble-border: #ab12cd;", chat_message_inline_style(chat_message: admin_message, own_message: false)
+      assert_equal "--chat-bubble-bg: #334455; --chat-bubble-border: #334455;", chat_message_inline_style(chat_message: moderator_message, own_message: true)
+      assert_equal "--chat-bubble-bg: #667788; --chat-bubble-border: #667788;", chat_message_inline_style(chat_message: moderator_message, own_message: false)
+    end
+
+    test "invalid role color falls back to own or other default color" do
+      config = ChatGem.configuration
+      config.own_message_hex_color = "#00aa00"
+      config.other_message_hex_color = "#aa0000"
+      config.role_message_hex_colors = {
+        "admin" => { own: "invalid", other: "#12x456" }
+      }
+
+      admin_message = MessageStub.new("admin")
+
+      assert_equal "--chat-bubble-bg: #00aa00; --chat-bubble-border: #00aa00;", chat_message_inline_style(chat_message: admin_message, own_message: true)
+      assert_equal "--chat-bubble-bg: #aa0000; --chat-bubble-border: #aa0000;", chat_message_inline_style(chat_message: admin_message, own_message: false)
+    end
+  end
+end

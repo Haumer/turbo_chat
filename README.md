@@ -31,6 +31,9 @@ ChatGem.configure do |config|
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
+  config.own_message_hex_color = nil
+  config.other_message_hex_color = nil
+  config.role_message_hex_colors = {}
   config.show_timestamp = true
   config.show_role = false
   config.active_chat_window = 5.minutes
@@ -83,6 +86,22 @@ By default, regular messages are limited to `1000` characters (`config.max_messa
 By default, chat views load the latest `200` regular messages (`config.message_history_limit`). Set it to `nil` or `0` to disable the limit.
 
 Use `config.message_css_class_resolver` to apply custom classes to the entire message card (`<article class="chat-bubble ...">`).
+
+Use message color options when you want inline bubble color control with validated hex values:
+
+```ruby
+ChatGem.configure do |config|
+  config.own_message_hex_color = "#c9f2ff"
+  config.other_message_hex_color = "#f6f8fb"
+  config.role_message_hex_colors = {
+    admin: "#ffe6e6",
+    moderator: { own: "#fff0c2", other: "#fff7de" },
+    support_agent: { default: "#e9f8ff" }
+  }
+end
+```
+
+Role-specific colors override own/other defaults. Invalid hex values are ignored.
 
 Simple example:
 

@@ -24,6 +24,9 @@ module ChatGem
                   :max_chat_participants,
                   :max_message_length,
                   :message_history_limit,
+                  :own_message_hex_color,
+                  :other_message_hex_color,
+                  :role_message_hex_colors,
                   :show_timestamp,
                   :show_role,
                   :active_chat_window,
@@ -43,6 +46,9 @@ module ChatGem
       @max_chat_participants = 10
       @max_message_length = 1000
       @message_history_limit = 200
+      @own_message_hex_color = nil
+      @other_message_hex_color = nil
+      @role_message_hex_colors = {}
       @show_timestamp = true
       @show_role = false
       @active_chat_window = 5.minutes

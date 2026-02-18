@@ -46,16 +46,16 @@
 
 .chat-bubble {
   max-width: 75%;
-  background: #ffffff;
+  background: var(--chat-bubble-bg, #ffffff);
   border-radius: 12px;
   padding: 10px 12px;
-  border: 1px solid #d8dee4;
+  border: 1px solid var(--chat-bubble-border, #d8dee4);
 }
 
 .chat-bubble--own {
   margin-left: auto;
-  background: #dff4ff;
-  border-color: #8ec5ff;
+  background: var(--chat-bubble-bg, #dff4ff);
+  border-color: var(--chat-bubble-border, #8ec5ff);
 }
 
 .chat-body {

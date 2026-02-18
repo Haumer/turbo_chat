@@ -3,6 +3,9 @@ ChatGem.configure do |config|
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
+  config.own_message_hex_color = nil
+  config.other_message_hex_color = nil
+  config.role_message_hex_colors = {}
   config.show_timestamp = true
   config.show_role = false
   config.active_chat_window = 5.minutes
