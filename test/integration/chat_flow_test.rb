@@ -103,6 +103,26 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     ChatGem.configuration.message_css_class_resolver = previous_resolver
   end
 
+  test "chat show exposes and applies ownership metadata for current participant" do
+    current_user = User.create!(email: "owner-view@example.com")
+    other_user = User.create!(email: "other-view@example.com")
+    chat = ChatGem::Chat.create!(title: "Ownership Chat")
+
+    ChatGem::ChatMembership.create!(chat: chat, participant: current_user)
+    ChatGem::ChatMembership.create!(chat: chat, participant: other_user)
+    ChatGem::ChatMessage.create!(chat: chat, participant: current_user, body: "my message", kind: :message)
+    ChatGem::ChatMessage.create!(chat: chat, participant: other_user, body: "their message", kind: :message)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-messages[data-chat-self-participant-type='User'][data-chat-self-participant-id='#{current_user.id}']", 1
+    assert_select ".chat-bubble[data-chat-message-participant-type='User'][data-chat-message-participant-id='#{current_user.id}']", 1
+    assert_select ".chat-bubble[data-chat-message-participant-type='User'][data-chat-message-participant-id='#{other_user.id}']", 1
+    assert_select ".chat-bubble--own[data-chat-message-participant-type='User'][data-chat-message-participant-id='#{current_user.id}']", 1
+    assert_select ".chat-bubble--own[data-chat-message-participant-type='User'][data-chat-message-participant-id='#{other_user.id}']", 0
+  end
+
   test "chat show escapes html in message body by default" do
     user = User.create!(email: "html-default@example.com")
     chat = ChatGem::Chat.create!(title: "HTML Default")
@@ -180,6 +200,8 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
 
     assert_includes rendered, "chat-bubble"
     assert_includes rendered, "renderer message"
+    assert_includes rendered, %(data-chat-message-participant-type="User")
+    assert_includes rendered, %(data-chat-message-participant-id="11")
   end
 
 end

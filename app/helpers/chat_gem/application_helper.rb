@@ -99,7 +99,29 @@ module ChatGem
         mention_permission_allows?(mention_permission, :can_mention_roles?)
     end
 
+    def own_chat_message?(chat_message, participant: nil)
+      return false if chat_message.nil?
+
+      participant ||= current_chat_participant_for_view
+      return false if participant.nil?
+
+      participant_type = participant.class.base_class.name
+      participant_id = participant.id
+      return false if participant_type.blank? || participant_id.blank?
+
+      chat_message.participant_type.to_s == participant_type &&
+        chat_message.participant_id.to_s == participant_id.to_s
+    end
+
     private
+
+    def current_chat_participant_for_view
+      return nil unless respond_to?(:current_chat_participant, true)
+
+      current_chat_participant
+    rescue StandardError
+      nil
+    end
 
     def resolve_custom_message_css_classes(chat_message:, own_message:)
       resolver = ChatGem.configuration.message_css_class_resolver

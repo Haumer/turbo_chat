@@ -97,6 +97,27 @@
     container.scrollTop = targetScrollTop;
   }
 
+  function syncOwnMessageClasses(container) {
+    if (!container || !container.dataset) {
+      return;
+    }
+
+    var selfType = container.dataset.chatSelfParticipantType;
+    var selfId = container.dataset.chatSelfParticipantId;
+    if (!selfType || !selfId) {
+      return;
+    }
+
+    container
+      .querySelectorAll("[data-chat-message-participant-type][data-chat-message-participant-id]")
+      .forEach(function (messageNode) {
+        var isOwnMessage =
+          messageNode.dataset.chatMessageParticipantType === selfType &&
+          messageNode.dataset.chatMessageParticipantId === selfId;
+        messageNode.classList.toggle("chat-bubble--own", isOwnMessage);
+      });
+  }
+
   function setupMessageAutoScroll(container) {
     if (!container || container.dataset.chatAutoscrollBound === "true") {
       return;
@@ -104,11 +125,13 @@
 
     container.dataset.chatAutoscrollBound = "true";
     requestAnimationFrame(function () {
+      syncOwnMessageClasses(container);
       scrollLastMessageIntoView(container);
     });
 
     var observer = new MutationObserver(function () {
       requestAnimationFrame(function () {
+        syncOwnMessageClasses(container);
         scrollLastMessageIntoView(container);
       });
     });

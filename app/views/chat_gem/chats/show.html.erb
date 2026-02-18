@@ -10,7 +10,10 @@
   <%= turbo_stream_from @chat, :messages %>
 
   <section class="chat-window">
-    <div id="<%= dom_id(@chat, :messages) %>" class="chat-messages">
+    <div id="<%= dom_id(@chat, :messages) %>"
+         class="chat-messages"
+         data-chat-self-participant-type="<%= current_participant_type %>"
+         data-chat-self-participant-id="<%= current_participant_id %>">
       <%= render @chat_messages %>
     </div>
 

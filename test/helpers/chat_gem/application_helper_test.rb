@@ -4,6 +4,7 @@ module ChatGem
   class ApplicationHelperTest < ActionView::TestCase
     MessageStub = Struct.new(:participant_membership_role)
     BodyMessageStub = Struct.new(:body, :participant_membership_role)
+    OwnedMessageStub = Struct.new(:participant_type, :participant_id)
     MentionPermissionStub = Struct.new(:can_mention_members?, :can_mention_all?, :can_mention_roles?)
 
     setup do
@@ -81,6 +82,17 @@ module ChatGem
 
       assert_includes rendered, %(<span class="chat-mention">@alex</span>)
       assert_includes rendered, "😄"
+    end
+
+    test "own_chat_message? matches participant type and id" do
+      participant = User.create!(email: "owner-check@example.com")
+      own_message = OwnedMessageStub.new("User", participant.id)
+      other_message = OwnedMessageStub.new("User", participant.id + 1)
+      other_type_message = OwnedMessageStub.new("Admin", participant.id)
+
+      assert own_chat_message?(own_message, participant: participant)
+      assert_not own_chat_message?(other_message, participant: participant)
+      assert_not own_chat_message?(other_type_message, participant: participant)
     end
 
     test "plain message rendering supports custom configured emoji aliases" do
