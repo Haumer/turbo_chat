@@ -126,7 +126,7 @@ module ChatGem
       return nil unless chat_present?
       return nil if target_participant.nil?
 
-      chat.chat_memberships.find_by(participant: target_participant)
+      chat.chat_memberships.active.find_by(participant: target_participant)
     end
 
     def role_permission?(permission)
@@ -149,7 +149,7 @@ module ChatGem
       return nil unless chat_present?
       return nil unless participant_present?
 
-      chat.chat_memberships.find_by(participant: participant)
+      chat.chat_memberships.active.find_by(participant: participant)
     end
 
     def participant_present?

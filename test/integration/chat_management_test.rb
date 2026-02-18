@@ -46,6 +46,40 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_not ChatGem::ChatMembership.active.exists?(chat: chat, participant: invitee)
   end
 
+  test "admin cannot invite participant with mismatched participant type" do
+    admin = User.create!(email: "invite-admin-type-check@example.com")
+    chat = ChatGem::Chat.create!(title: "Invite Type Check")
+    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    klass_name = "ChatGemInviteExternalUser"
+    Object.send(:remove_const, klass_name) if Object.const_defined?(klass_name)
+
+    external_participant_class = Class.new(ApplicationRecord) do
+      self.table_name = "users"
+      acts_as_chat_participant
+    end
+    Object.const_set(klass_name, external_participant_class)
+    external_participant = external_participant_class.create!(email: "invite-external@example.com")
+
+    with_chat_current_participant(admin) do
+      post "/chat/chats/#{chat.id}/chat_memberships", params: {
+        chat_membership: {
+          participant_type: klass_name,
+          participant_id: external_participant.id
+        }
+      }
+    end
+
+    assert_redirected_to "/chat/chats/#{chat.id}"
+    assert_not ChatGem::ChatMembership.active.exists?(
+      chat: chat,
+      participant_type: klass_name,
+      participant_id: external_participant.id
+    )
+  ensure
+    Object.send(:remove_const, klass_name) if defined?(klass_name) && Object.const_defined?(klass_name)
+  end
+
   test "participant can leave chat" do
     participant = User.create!(email: "leave-user@example.com")
     chat = ChatGem::Chat.create!(title: "Leave Chat")

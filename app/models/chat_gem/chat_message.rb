@@ -139,7 +139,10 @@ module ChatGem
       return if mentions.empty?
 
       permission = mention_permission
-      return if permission.nil?
+      if permission.nil?
+        errors.add(:body, "mentions cannot be validated at this time")
+        return
+      end
 
       invalid_mention = first_invalid_mention(permission, mentions)
       return if invalid_mention.nil?

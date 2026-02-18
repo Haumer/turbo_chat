@@ -61,6 +61,26 @@ module ChatGem
       assert admin_permission.can_delete_message?(member_message)
     end
 
+    test "delete message permission ignores removed historical memberships" do
+      chat = ChatGem::Chat.create!(title: "Delete Permission Historical Membership")
+      moderator = User.create!(email: "delete-history-moderator@example.com")
+      target = User.create!(email: "delete-history-target@example.com")
+
+      ChatGem::ChatMembership.create!(chat: chat, participant: moderator, role: :moderator)
+      ChatGem::ChatMembership.create!(
+        chat: chat,
+        participant: target,
+        role: :member,
+        removed_at: 1.day.ago
+      )
+      ChatGem::ChatMembership.create!(chat: chat, participant: target, role: :admin)
+
+      target_message = ChatGem::ChatMessage.create!(chat: chat, participant: target, body: "admin message", kind: :message)
+
+      moderator_permission = ChatGem::Permission.new(moderator, chat)
+      assert_not moderator_permission.can_delete_message?(target_message)
+    end
+
     test "posting is blocked by mute, timeout, or closed chat while viewing remains allowed for active members" do
       chat = ChatGem::Chat.create!(title: "Posting Guards")
       user = User.create!(email: "posting-guards@example.com")

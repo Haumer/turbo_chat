@@ -131,6 +131,30 @@ module ChatGem
       end
     end
 
+    test "mention validation fails closed when permission adapter errors" do
+      member = User.create!(email: "member-mention-adapter-error@example.com")
+      chat = ChatGem::Chat.create!(title: "Mention Adapter Error")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      broken_adapter = Class.new do
+        def initialize(*)
+          raise ArgumentError, "broken adapter"
+        end
+      end
+
+      with_chat_configuration(permission_adapter: broken_adapter) do
+        message = ChatGem::ChatMessage.new(
+          chat: chat,
+          participant: member,
+          body: "hey @all",
+          kind: :message
+        )
+
+        assert_not message.valid?
+        assert_includes message.errors[:body], "mentions cannot be validated at this time"
+      end
+    end
+
     test "blocked words reject message when moderation action is reject" do
       member = User.create!(email: "member-blocked-reject@example.com")
       chat = ChatGem::Chat.create!(title: "Blocked Reject")
@@ -378,6 +402,7 @@ module ChatGem
         show_role: config.show_role,
         max_message_length: config.max_message_length,
         enable_mentions: config.enable_mentions,
+        permission_adapter: config.permission_adapter,
         blocked_words: config.blocked_words,
         blocked_words_action: config.blocked_words_action,
         replace_signals_on_message_submit: config.replace_signals_on_message_submit,

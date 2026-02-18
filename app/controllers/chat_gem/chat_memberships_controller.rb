@@ -54,8 +54,16 @@ module ChatGem
       raise NameError if participant_class.nil?
       raise ArgumentError unless participant_class < ActiveRecord::Base
       raise ArgumentError unless participant_class.method_defined?(:active_chat_memberships)
+      raise ArgumentError unless invite_type_allowed?(participant_class)
 
       participant_class.find(participant_id)
+    end
+
+    def invite_type_allowed?(participant_class)
+      inviter = current_chat_participant
+      return false if inviter.nil?
+
+      participant_class.base_class.name == inviter.class.base_class.name
     end
   end
 end
