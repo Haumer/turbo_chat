@@ -31,6 +31,8 @@ ChatGem.configure do |config|
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
+  config.enable_mentions = true
+  config.enable_emoji_aliases = true
   config.own_message_hex_color = nil
   config.other_message_hex_color = nil
   config.role_message_hex_colors = {}
@@ -84,6 +86,7 @@ Set `config.show_self_signals = true` to show your own typing/thinking/planning 
 Set `config.replace_signals_on_message_submit = true` to automatically clear/replace a participant's signal rows when that participant posts a regular message.
 By default, regular messages are limited to `1000` characters (`config.max_message_length`).
 By default, chat views load the latest `200` regular messages (`config.message_history_limit`). Set it to `nil` or `0` to disable the limit.
+Mentions and emoji aliases are enabled by default (`config.enable_mentions`, `config.enable_emoji_aliases`).
 
 Use `config.message_css_class_resolver` to apply custom classes to the entire message card (`<article class="chat-bubble ...">`).
 
@@ -102,6 +105,13 @@ end
 ```
 
 Role-specific colors override own/other defaults. Invalid hex values are ignored.
+
+Mention suggestions in the composer are scoped to active chat members and include:
+- member handles such as `@alex`
+- `@all`
+- role targets such as `@ADMIN` and `@MODERATOR`
+
+Emoji aliases support common tokens such as `:smile:`, `:thumbsup:`, `:rocket:`, and `:thinking:`.
 
 Simple example:
 

@@ -8,6 +8,8 @@ module ChatGem
       assert_equal 10, config.max_chat_participants
       assert_equal 1000, config.max_message_length
       assert_equal 200, config.message_history_limit
+      assert_equal true, config.enable_mentions
+      assert_equal true, config.enable_emoji_aliases
       assert_nil config.own_message_hex_color
       assert_nil config.other_message_hex_color
       assert_equal({}, config.role_message_hex_colors)

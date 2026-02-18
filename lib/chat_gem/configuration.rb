@@ -24,6 +24,8 @@ module ChatGem
                   :max_chat_participants,
                   :max_message_length,
                   :message_history_limit,
+                  :enable_mentions,
+                  :enable_emoji_aliases,
                   :own_message_hex_color,
                   :other_message_hex_color,
                   :role_message_hex_colors,
@@ -46,6 +48,8 @@ module ChatGem
       @max_chat_participants = 10
       @max_message_length = 1000
       @message_history_limit = 200
+      @enable_mentions = true
+      @enable_emoji_aliases = true
       @own_message_hex_color = nil
       @other_message_hex_color = nil
       @role_message_hex_colors = {}

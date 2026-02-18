@@ -4,6 +4,8 @@
   var SIGNAL_IDLE_GRACE_MS = 2500;
   var SIGNAL_HEARTBEAT_MS = 4000;
   var SIGNAL_RETREAT_MS = 180;
+  var MENTION_MAX_RESULTS = 8;
+  var MENTION_BLUR_HIDE_DELAY_MS = 120;
 
   function csrfToken() {
     var tag = document.querySelector("meta[name='csrf-token']");
@@ -32,6 +34,51 @@
     }
 
     return node.dataset[key] === "true";
+  }
+
+  function parseMentionOptions(raw) {
+    if (!raw) {
+      return [];
+    }
+
+    var parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_error) {
+      return [];
+    }
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    var seen = {};
+    var options = [];
+
+    parsed.forEach(function (entry) {
+      if (!entry || typeof entry !== "object") {
+        return;
+      }
+
+      var token = String(entry.token || "").trim();
+      if (!token || token.charAt(0) !== "@" || /\s/.test(token)) {
+        return;
+      }
+
+      var dedupeKey = token.toLowerCase();
+      if (seen[dedupeKey]) {
+        return;
+      }
+
+      seen[dedupeKey] = true;
+      options.push({
+        token: token,
+        label: String(entry.label || token),
+        kind: String(entry.kind || "member")
+      });
+    });
+
+    return options;
   }
 
   function scrollLastMessageIntoView(container) {
@@ -192,6 +239,11 @@
     var pendingSignalClear = false;
     var emitTypingEvents = datasetFlagEnabled(element, "chatEmitTypingEvents");
     var emitMessageEvents = datasetFlagEnabled(element, "chatEmitMessageEvents");
+    var mentionsEnabled = datasetFlagEnabled(element, "chatEnableMentions");
+    var mentionOptions = mentionsEnabled ? parseMentionOptions(element.dataset.chatMentionOptions) : [];
+    var mentionMenu = null;
+    var mentionMatches = [];
+    var mentionActiveIndex = 0;
     var typingEventEmitted = false;
 
     function emitTypingEvent(eventName) {
@@ -220,6 +272,205 @@
         }
       });
       element.dispatchEvent(event);
+    }
+
+    function ensureMentionMenu() {
+      if (mentionMenu) {
+        return mentionMenu;
+      }
+
+      mentionMenu = document.createElement("div");
+      mentionMenu.className = "chat-mentions-menu";
+      mentionMenu.hidden = true;
+      element.appendChild(mentionMenu);
+      return mentionMenu;
+    }
+
+    function hideMentionMenu() {
+      if (!mentionMenu) {
+        return;
+      }
+
+      mentionMenu.hidden = true;
+      mentionMenu.classList.remove("chat-mentions-menu--open");
+      mentionMenu.innerHTML = "";
+      mentionMatches = [];
+      mentionActiveIndex = 0;
+    }
+
+    function setMentionActiveIndex(index) {
+      if (!mentionMatches.length) {
+        return;
+      }
+
+      mentionActiveIndex = ((index % mentionMatches.length) + mentionMatches.length) % mentionMatches.length;
+      if (!mentionMenu) {
+        return;
+      }
+
+      mentionMenu.querySelectorAll(".chat-mentions-item").forEach(function (item, itemIndex) {
+        item.classList.toggle("chat-mentions-item--active", itemIndex === mentionActiveIndex);
+      });
+    }
+
+    function mentionContext() {
+      if (!mentionsEnabled || !mentionOptions.length) {
+        return null;
+      }
+
+      var caret = messageInput.selectionStart;
+      if (typeof caret !== "number") {
+        return null;
+      }
+
+      var beforeCaret = messageInput.value.slice(0, caret);
+      var atIndex = beforeCaret.lastIndexOf("@");
+      if (atIndex < 0) {
+        return null;
+      }
+
+      var previousCharacter = atIndex > 0 ? beforeCaret.charAt(atIndex - 1) : "";
+      if (/[a-zA-Z0-9_]/.test(previousCharacter)) {
+        return null;
+      }
+
+      var query = beforeCaret.slice(atIndex + 1);
+      if (!/^[a-zA-Z0-9_]*$/.test(query)) {
+        return null;
+      }
+
+      return {
+        start: atIndex,
+        end: caret,
+        query: query
+      };
+    }
+
+    function matchingMentionOptions(query) {
+      var normalizedQuery = String(query || "").toLowerCase();
+      return mentionOptions
+        .filter(function (option) {
+          return option.token.slice(1).toLowerCase().indexOf(normalizedQuery) === 0;
+        })
+        .slice(0, MENTION_MAX_RESULTS);
+    }
+
+    function renderMentionMenu() {
+      if (!mentionMatches.length) {
+        hideMentionMenu();
+        return;
+      }
+
+      var menu = ensureMentionMenu();
+      menu.innerHTML = "";
+      mentionMatches.forEach(function (option, index) {
+        var item = document.createElement("button");
+        item.type = "button";
+        item.className = "chat-mentions-item";
+        item.setAttribute("data-chat-mention-index", String(index));
+        if (index === mentionActiveIndex) {
+          item.classList.add("chat-mentions-item--active");
+        }
+
+        var token = document.createElement("span");
+        token.className = "chat-mentions-item__token";
+        token.textContent = option.token;
+
+        var label = document.createElement("span");
+        label.className = "chat-mentions-item__label";
+        label.textContent = option.label;
+
+        item.appendChild(token);
+        item.appendChild(label);
+        item.addEventListener("mousedown", function (event) {
+          event.preventDefault();
+        });
+        item.addEventListener("click", function () {
+          insertMentionOption(option);
+        });
+        menu.appendChild(item);
+      });
+
+      menu.hidden = false;
+      menu.classList.add("chat-mentions-menu--open");
+    }
+
+    function insertMentionOption(option) {
+      var context = mentionContext();
+      if (!context) {
+        hideMentionMenu();
+        return;
+      }
+
+      var before = messageInput.value.slice(0, context.start);
+      var after = messageInput.value.slice(context.end);
+      var needsTrailingSpace = !after.match(/^[\s,.!?;:)]/);
+      var insertion = option.token + (needsTrailingSpace ? " " : "");
+      messageInput.value = before + insertion + after;
+
+      var caretPosition = before.length + insertion.length;
+      messageInput.setSelectionRange(caretPosition, caretPosition);
+      messageInput.focus();
+
+      hideMentionMenu();
+      messageInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function selectActiveMention() {
+      if (!mentionMatches.length) {
+        return false;
+      }
+
+      insertMentionOption(mentionMatches[mentionActiveIndex]);
+      return true;
+    }
+
+    function updateMentionMenu() {
+      var context = mentionContext();
+      if (!context) {
+        hideMentionMenu();
+        return;
+      }
+
+      mentionMatches = matchingMentionOptions(context.query);
+      if (!mentionMatches.length) {
+        hideMentionMenu();
+        return;
+      }
+
+      mentionActiveIndex = 0;
+      renderMentionMenu();
+    }
+
+    function handleMentionKeydown(event) {
+      if (!mentionMenu || mentionMenu.hidden || !mentionMatches.length) {
+        return false;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setMentionActiveIndex(mentionActiveIndex + 1);
+        return true;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setMentionActiveIndex(mentionActiveIndex - 1);
+        return true;
+      }
+
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        return selectActiveMention();
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        hideMentionMenu();
+        return true;
+      }
+
+      return false;
     }
 
     function postSignal(options) {
@@ -360,6 +611,10 @@
     }
 
     messageInput.addEventListener("keydown", function (event) {
+      if (handleMentionKeydown(event)) {
+        return;
+      }
+
       if (event.key !== "Enter") {
         return;
       }
@@ -384,6 +639,7 @@
     messageForm.addEventListener("turbo:submit-end", function (event) {
       if (event.detail && event.detail.success) {
         messageInput.value = "";
+        hideMentionMenu();
         emitMessageSentEvent();
       }
 
@@ -397,9 +653,11 @@
     messageInput.addEventListener("input", function () {
       if (!messageInput.value.trim()) {
         stopSignalLoop();
+        hideMentionMenu();
         return;
       }
 
+      updateMentionMenu();
       queueSignalStart();
       if (signalActive) {
         resetSignalIdleTimer();
@@ -407,6 +665,9 @@
     });
 
     messageInput.addEventListener("blur", function () {
+      setTimeout(function () {
+        hideMentionMenu();
+      }, MENTION_BLUR_HIDE_DELAY_MS);
       stopSignalLoop();
     });
   }

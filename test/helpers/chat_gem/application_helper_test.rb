@@ -3,9 +3,13 @@ require_relative "../../test_helper"
 module ChatGem
   class ApplicationHelperTest < ActionView::TestCase
     MessageStub = Struct.new(:participant_membership_role)
+    BodyMessageStub = Struct.new(:body, :participant_membership_role)
 
     setup do
       config = ChatGem.configuration
+      @original_enable_mentions = config.enable_mentions
+      @original_enable_emoji_aliases = config.enable_emoji_aliases
+      @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
       @original_role_message_hex_colors = config.role_message_hex_colors
@@ -13,6 +17,9 @@ module ChatGem
 
     teardown do
       config = ChatGem.configuration
+      config.enable_mentions = @original_enable_mentions
+      config.enable_emoji_aliases = @original_enable_emoji_aliases
+      config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
       config.role_message_hex_colors = @original_role_message_hex_colors
@@ -59,6 +66,34 @@ module ChatGem
 
       assert_equal "--chat-bubble-bg: #00aa00; --chat-bubble-border: #00aa00;", chat_message_inline_style(chat_message: admin_message, own_message: true)
       assert_equal "--chat-bubble-bg: #aa0000; --chat-bubble-border: #aa0000;", chat_message_inline_style(chat_message: admin_message, own_message: false)
+    end
+
+    test "plain message rendering supports mentions and emoji aliases" do
+      config = ChatGem.configuration
+      config.enable_mentions = true
+      config.enable_emoji_aliases = true
+      config.render_message_html = false
+
+      rendered = render_chat_message_body(BodyMessageStub.new("hello @alex :smile:", nil)).to_s
+
+      assert_includes rendered, %(<span class="chat-mention">@alex</span>)
+      assert_includes rendered, "😄"
+    end
+
+    test "chat mention options include chat members, @all, and role mentions" do
+      chat = ChatGem::Chat.create!(title: "Mention Targets")
+      first_user = User.create!(email: "alex@example.com")
+      second_user = User.create!(email: "alex@other.test")
+      ChatGem::ChatMembership.create!(chat: chat, participant: first_user, role: :admin)
+      ChatGem::ChatMembership.create!(chat: chat, participant: second_user, role: :member)
+
+      tokens = chat_mention_options(chat: chat).map { |entry| entry[:token] }
+
+      assert_includes tokens, "@all"
+      assert_includes tokens, "@alex"
+      assert_includes tokens, "@alex_2"
+      assert_includes tokens, "@ADMIN"
+      assert_includes tokens, "@MEMBER"
     end
   end
 end

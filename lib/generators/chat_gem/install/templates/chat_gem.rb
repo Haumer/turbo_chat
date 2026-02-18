@@ -3,6 +3,8 @@ ChatGem.configure do |config|
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
+  config.enable_mentions = true
+  config.enable_emoji_aliases = true
   config.own_message_hex_color = nil
   config.other_message_hex_color = nil
   config.role_message_hex_colors = {}

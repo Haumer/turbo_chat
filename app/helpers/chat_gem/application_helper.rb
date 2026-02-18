@@ -1,6 +1,26 @@
 module ChatGem
   module ApplicationHelper
     HEX_COLOR_PATTERN = /\A#(?:\h{3}|\h{6}|\h{8})\z/.freeze
+    EMOJI_ALIAS_PATTERN = /:([a-z0-9_+\-]{2,32}):/i.freeze
+    MENTION_PATTERN = /(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/.freeze
+    EMOJI_ALIASES = {
+      "smile" => "😄",
+      "grin" => "😁",
+      "laughing" => "😆",
+      "blush" => "😊",
+      "wink" => "😉",
+      "heart" => "❤️",
+      "thumbsup" => "👍",
+      "+1" => "👍",
+      "thumbsdown" => "👎",
+      "-1" => "👎",
+      "fire" => "🔥",
+      "rocket" => "🚀",
+      "thinking" => "🤔",
+      "tada" => "🎉",
+      "wave" => "👋",
+      "eyes" => "👀"
+    }.freeze
 
     def chat_message_css_classes(chat_message:, own_message:)
       classes = ["chat-bubble"]
@@ -18,7 +38,7 @@ module ChatGem
 
     def render_chat_message_body(chat_message)
       body = chat_message.body.to_s
-      return content_tag(:p, body, class: "chat-body") unless ChatGem.configuration.render_message_html
+      return content_tag(:p, decorate_plain_message_text(body).html_safe, class: "chat-body") unless ChatGem.configuration.render_message_html
 
       sanitized_html = sanitize(
         body,
@@ -34,6 +54,46 @@ module ChatGem
       return participant.email if participant.respond_to?(:email)
 
       participant.to_s
+    end
+
+    def chat_mention_options(chat:)
+      options = [{ token: "@all", label: "All members", kind: "group" }]
+      return options unless chat.respond_to?(:chat_memberships)
+
+      memberships = chat.chat_memberships.active.includes(:participant)
+      taken_tokens = {}
+      role_tokens = {}
+
+      memberships.each do |membership|
+        participant = membership.participant
+        next if participant.nil?
+
+        identifier = normalized_mention_identifier(participant_mention_base_identifier(participant))
+        identifier = fallback_mention_identifier(participant) if identifier.blank?
+        token = unique_mention_token(identifier, taken_tokens)
+        options << {
+          token: token,
+          label: chat_participant_name(participant),
+          kind: "member"
+        }
+      end
+
+      memberships.each do |membership|
+        role_key = membership.effective_role_key.to_s.strip
+        next if role_key.blank?
+
+        role_token = "@#{role_key.upcase}"
+        next if role_tokens[role_token]
+
+        role_tokens[role_token] = true
+        options << {
+          token: role_token,
+          label: "#{membership.effective_role_name} role",
+          kind: "role"
+        }
+      end
+
+      options
     end
 
     private
@@ -100,6 +160,65 @@ module ChatGem
       return nil unless HEX_COLOR_PATTERN.match?(candidate)
 
       candidate.downcase
+    end
+
+    def decorate_plain_message_text(body)
+      formatted = ERB::Util.html_escape(body.to_s)
+      formatted = apply_emoji_aliases(formatted) if ChatGem.configuration.enable_emoji_aliases
+      formatted = apply_mention_highlights(formatted) if ChatGem.configuration.enable_mentions
+      formatted.gsub(/\r\n?|\n/, "<br>")
+    end
+
+    def apply_emoji_aliases(text)
+      text.gsub(EMOJI_ALIAS_PATTERN) do |match|
+        alias_key = Regexp.last_match(1).to_s.downcase
+        EMOJI_ALIASES.fetch(alias_key, match)
+      end
+    end
+
+    def apply_mention_highlights(text)
+      text.gsub(MENTION_PATTERN) do |mention|
+        %(<span class="chat-mention">#{mention}</span>)
+      end
+    end
+
+    def participant_mention_base_identifier(participant)
+      return participant.username if participant.respond_to?(:username) && participant.username.present?
+      if participant.respond_to?(:email) && participant.email.present?
+        return participant.email.to_s.split("@").first
+      end
+      return participant.name if participant.respond_to?(:name) && participant.name.present?
+
+      participant.to_s
+    end
+
+    def fallback_mention_identifier(participant)
+      participant_id = participant.respond_to?(:id) ? participant.id : nil
+      return "member_#{participant_id}" if participant_id.present?
+
+      "member"
+    end
+
+    def normalized_mention_identifier(value)
+      slug = I18n.transliterate(value.to_s)
+      slug = slug.downcase.gsub(/[^a-z0-9_]+/, "_").gsub(/\A_+|_+\z/, "").squeeze("_")
+      slug.presence
+    end
+
+    def unique_mention_token(identifier, taken_tokens)
+      base = normalized_mention_identifier(identifier) || "member"
+      token = "@#{base}"
+      return taken_tokens[token] = token unless taken_tokens.key?(token)
+
+      suffix = 2
+      loop do
+        candidate = "@#{base}_#{suffix}"
+        unless taken_tokens.key?(candidate)
+          taken_tokens[candidate] = candidate
+          return candidate
+        end
+        suffix += 1
+      end
     end
   end
 end
