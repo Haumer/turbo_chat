@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+ENV["RAILS_ENV"] ||= "test"
+require "bundler/setup"
+load Gem.bin_path("rake", "rake")

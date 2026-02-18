@@ -1,0 +1,24 @@
+<section class="chat-shell">
+  <header class="chat-header">
+    <h1><%= @chat.title %></h1>
+    <%= link_to "Back", chats_path, class: "chat-btn chat-btn--ghost" %>
+  </header>
+
+  <%= turbo_stream_from @chat, :messages %>
+
+  <section class="chat-window">
+    <div id="<%= dom_id(@chat, :messages) %>" class="chat-messages">
+      <%= render @chat_messages %>
+    </div>
+
+    <div id="<%= dom_id(@chat, :signals) %>" class="chat-signals">
+      <%= render "chat_gem/chat_messages/signals", chat: @chat %>
+    </div>
+  </section>
+
+  <% if @can_post_message %>
+    <%= render "chat_gem/chat_messages/form", chat: @chat, chat_message: @chat_message %>
+  <% elsif @chat.closed? %>
+    <p>This chat is closed.</p>
+  <% end %>
+</section>

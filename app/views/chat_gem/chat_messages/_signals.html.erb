@@ -1,0 +1,10 @@
+<% chat.active_signals.each do |signal_message| %>
+  <div class="chat-typing-indicator"
+       id="typing-<%= signal_message.participant_type.underscore %>-<%= signal_message.participant_id %>"
+       data-chat-signal-at="<%= signal_message.created_at.to_i %>">
+    <strong><%= signal_message.participant_display_name %></strong>
+    <span class="chat-dots">
+      <i></i><i></i><i></i>
+    </span>
+  </div>
+<% end %>

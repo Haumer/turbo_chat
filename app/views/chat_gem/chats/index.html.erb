@@ -1,0 +1,14 @@
+<section class="chat-shell">
+  <header class="chat-header">
+    <h1>Chats</h1>
+    <%= link_to "New Chat", new_chat_path, class: "chat-btn" %>
+  </header>
+
+  <ul class="chat-list">
+    <% @chats.each do |chat| %>
+      <li>
+        <%= link_to chat.title, chat_path(chat), class: "chat-list-link" %>
+      </li>
+    <% end %>
+  </ul>
+</section>
