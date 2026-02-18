@@ -115,30 +115,26 @@ ChatGem.configure do |config|
 end
 ```
 
+Listen in your app JavaScript:
+
+```js
+document.addEventListener("chat-gem:typing-started", function (event) {
+  // event.detail.chatId
+});
+
+document.addEventListener("chat-gem:typing-ended", function (event) {
+  // event.detail.chatId
+});
+```
+
 Typing indicators from your own participant are hidden by default.
 Set `config.show_self_signals = true` to show your own typing/thinking/planning indicators.
 Set `config.replace_signals_on_message_submit = true` to automatically clear/replace a participant's signal rows when that participant posts a regular message.
 By default, regular messages are limited to `1000` characters (`config.max_message_length`).
 By default, chat views load the latest `200` regular messages (`config.message_history_limit`). Set it to `nil` or `0` to disable the limit.
-Mentions and emoji aliases are enabled by default (`config.enable_mentions`, `config.enable_emoji_aliases`).
+Mentions and emoji aliases are enabled by default (`config.enable_mentions`, `config.enable_emoji_aliases`) for plain-text message rendering.
 
-Use `config.message_css_class_resolver` to apply custom classes to the entire message card (`<article class="chat-bubble ...">`).
-
-Use message color options when you want inline bubble color control with validated hex values:
-
-```ruby
-ChatGem.configure do |config|
-  config.own_message_hex_color = "#c9f2ff"
-  config.other_message_hex_color = "#f6f8fb"
-  config.role_message_hex_colors = {
-    admin: "#ffe6e6",
-    moderator: { own: "#fff0c2", other: "#fff7de" },
-    support_agent: { default: "#e9f8ff" }
-  }
-end
-```
-
-Role-specific colors override own/other defaults. Invalid hex values are ignored.
+### Mentions & Emoji
 
 Mention suggestions in the composer are scoped to active chat members and include:
 - member handles such as `@alex`
@@ -173,7 +169,27 @@ ChatGem.configure do |config|
 end
 ```
 
-Simple example:
+### Message Card Styling (HTML/CSS) 🎨
+
+Use `config.message_css_class_resolver` to apply custom classes to the entire message card (`<article class="chat-bubble ...">`).
+
+Use message color options when you want inline bubble color control with validated hex values:
+
+```ruby
+ChatGem.configure do |config|
+  config.own_message_hex_color = "#c9f2ff"
+  config.other_message_hex_color = "#f6f8fb"
+  config.role_message_hex_colors = {
+    admin: "#ffe6e6",
+    moderator: { own: "#fff0c2", other: "#fff7de" },
+    support_agent: { default: "#e9f8ff" }
+  }
+end
+```
+
+Role-specific colors override own/other defaults. Invalid hex values are ignored.
+
+#### CSS Class Resolver (Basic)
 
 ```ruby
 ChatGem.configure do |config|
@@ -195,7 +211,7 @@ Resulting rendered HTML (example):
 </article>
 ```
 
-Complex example:
+#### CSS Class Resolver (Role-Aware)
 
 ```ruby
 ChatGem.configure do |config|
@@ -220,6 +236,8 @@ Resulting rendered HTML (example):
   <p class="chat-body">Here is a longer automated response...</p>
 </article>
 ```
+
+#### Full Markup Override
 
 Need to change the card structure (for example, add a second `div`, actions row, or footer)?
 `message_css_class_resolver` only controls classes. For full markup changes, override the message partial in your host app.
@@ -251,6 +269,8 @@ Example override (with an extra card section):
 </article>
 ```
 
+### Rich HTML Message Rendering
+
 Set `config.render_message_html = true` to render sanitized HTML in message bodies:
 
 ```ruby
@@ -281,18 +301,6 @@ Rendered/sanitized output:
 
 ```html
 <h4 title="notice">Update</h4><blockquote><mark>Done</mark></blockquote>underline
-```
-
-Listen in your app JavaScript:
-
-```js
-document.addEventListener("chat-gem:typing-started", function (event) {
-  // event.detail.chatId
-});
-
-document.addEventListener("chat-gem:typing-ended", function (event) {
-  // event.detail.chatId
-});
 ```
 
 ### Optional Message Sent Event (Off By Default)
