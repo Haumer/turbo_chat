@@ -117,13 +117,19 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 #### Mentions and emoji
 
 - `config.enable_mentions` (`true` by default).
+- `config.mention_filter_exclude_self` (`true` by default; hides current participant from mention autocomplete options).
+- `config.mention_filter_hide_roles` (`true` by default; hides role mention options like `@ADMIN` from autocomplete).
 - `config.enable_emoji_aliases` (`true` by default).
 - `config.emoji_aliases` (`ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup` by default).
+- `config.blocked_words` (`[]` by default).
+- `config.blocked_words_action` (`:reject` by default; supports `:reject` or `:scramble`).
 
 #### Rendering and styling
 
 - `config.show_timestamp` (`true` by default).
 - `config.show_role` (`false` by default).
+- `config.mention_mark_hex_color` (`nil` by default; sets viewer-targeted mention mark background color).
+- `config.mention_highlight_hex_color` (`nil` by default; backward-compatible alias for mention mark color).
 - `config.own_message_hex_color`, `config.other_message_hex_color` (`nil` by default).
 - `config.role_message_hex_colors` (`{}` by default).
 - `config.message_css_class_resolver` (`nil` by default).
@@ -137,6 +143,7 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 
 - `config.emit_typing_events` (`false` by default).
 - `config.emit_message_events` (`false` by default).
+- `config.emit_mention_events` (`false` by default).
 
 <details>
 <summary>Full default initializer</summary>
@@ -148,8 +155,14 @@ ChatGem.configure do |config|
   config.max_message_length = 1000
   config.message_history_limit = 200
   config.enable_mentions = true
+  config.mention_filter_exclude_self = true
+  config.mention_filter_hide_roles = true
   config.enable_emoji_aliases = true
   config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup
+  config.blocked_words = []
+  config.blocked_words_action = :reject
+  config.mention_mark_hex_color = nil
+  config.mention_highlight_hex_color = nil
   config.own_message_hex_color = nil
   config.other_message_hex_color = nil
   config.role_message_hex_colors = {}
@@ -158,6 +171,7 @@ ChatGem.configure do |config|
   config.active_chat_window = 5.minutes
   config.emit_typing_events = false
   config.emit_message_events = false
+  config.emit_mention_events = false
   config.show_self_signals = false
   config.replace_signals_on_message_submit = false
   config.message_css_class_resolver = nil
@@ -197,7 +211,9 @@ Mention suggestions are built from active chat memberships and can include:
 
 - member handles such as `@username`
 - `@all`
-- role targets such as `@ADMIN` and `@MODERATOR`
+- role targets such as `@ADMIN` and `@MODERATOR` (hidden by default in autocomplete; enable via `config.mention_filter_hide_roles = false`)
+
+By default, autocomplete also excludes the current participant (`config.mention_filter_exclude_self = true`).
 
 Mentions are permission-filtered and server-validated:
 
@@ -227,6 +243,26 @@ ChatGem.configure do |config|
 end
 ```
 
+#### Blocked words moderation
+
+Configure blocked words and choose whether to reject messages or scramble blocked words.
+
+`scramble` now shuffles the blocked word's own characters (for example, `badword` -> `darbwod`).
+
+```ruby
+ChatGem.configure do |config|
+  config.blocked_words = %w[foo bar]
+  config.blocked_words_action = :reject
+end
+```
+
+```ruby
+ChatGem.configure do |config|
+  config.blocked_words = %w[foo bar]
+  config.blocked_words_action = :scramble
+end
+```
+
 ## UI Customization
 
 ### Styling and Custom Markup
@@ -246,6 +282,14 @@ end
 ```
 
 Role-specific colors override own/other defaults. Invalid hex values are ignored.
+
+Viewer-targeted mentions can be color-customized:
+
+```ruby
+ChatGem.configure do |config|
+  config.mention_mark_hex_color = "#cf1322"
+end
+```
 
 #### CSS class resolver (basic)
 
@@ -381,6 +425,24 @@ end
 ```js
 document.addEventListener("chat-gem:message-sent", function (event) {
   // event.detail.chatId
+});
+```
+
+#### Mention event
+
+```ruby
+ChatGem.configure do |config|
+  config.emit_mention_events = true
+end
+```
+
+```js
+document.addEventListener("chat-gem:mention", function (event) {
+  // event.detail.chatId
+  // event.detail.messageId
+  // event.detail.mentions
+  // event.detail.targetsCurrentParticipant
+  // event.detail.targetedMentions
 });
 ```
 

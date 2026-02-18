@@ -37,14 +37,23 @@ module ChatGem
       "wave" => "👋",
       "eyes" => "👀"
     }.freeze
+    DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS = %w[# * / ( = ) ! 8].freeze
+    DEFAULT_BLOCKED_WORDS_ACTION = "reject".freeze
 
     attr_accessor :permission_adapter,
                   :max_chat_participants,
                   :max_message_length,
                   :message_history_limit,
                   :enable_mentions,
+                  :mention_filter_exclude_self,
+                  :mention_filter_hide_roles,
                   :enable_emoji_aliases,
                   :emoji_aliases,
+                  :blocked_words,
+                  :blocked_words_action,
+                  :blocked_words_scramble_chars,
+                  :mention_mark_hex_color,
+                  :mention_highlight_hex_color,
                   :own_message_hex_color,
                   :other_message_hex_color,
                   :role_message_hex_colors,
@@ -53,6 +62,7 @@ module ChatGem
                   :active_chat_window,
                   :emit_typing_events,
                   :emit_message_events,
+                  :emit_mention_events,
                   :show_self_signals,
                   :replace_signals_on_message_submit,
                   :message_css_class_resolver,
@@ -68,8 +78,15 @@ module ChatGem
       @max_message_length = 1000
       @message_history_limit = 200
       @enable_mentions = true
+      @mention_filter_exclude_self = true
+      @mention_filter_hide_roles = true
       @enable_emoji_aliases = true
       @emoji_aliases = DEFAULT_EMOJI_ALIASES.dup
+      @blocked_words = []
+      @blocked_words_action = DEFAULT_BLOCKED_WORDS_ACTION
+      @blocked_words_scramble_chars = DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS.dup
+      @mention_mark_hex_color = nil
+      @mention_highlight_hex_color = nil
       @own_message_hex_color = nil
       @other_message_hex_color = nil
       @role_message_hex_colors = {}
@@ -78,6 +95,7 @@ module ChatGem
       @active_chat_window = 5.minutes
       @emit_typing_events = false
       @emit_message_events = false
+      @emit_mention_events = false
       @show_self_signals = false
       @replace_signals_on_message_submit = false
       @message_css_class_resolver = nil
@@ -165,6 +183,40 @@ module ChatGem
       end
     end
 
+    def effective_blocked_words
+      source = blocked_words
+      return [] unless source.respond_to?(:each)
+
+      source.each_with_object([]) do |value, words|
+        normalized_word = normalize_blocked_word(value)
+        next if normalized_word.blank?
+        next if words.include?(normalized_word)
+
+        words << normalized_word
+      end
+    end
+
+    def effective_blocked_words_action
+      action = blocked_words_action.to_s.strip.downcase
+      return DEFAULT_BLOCKED_WORDS_ACTION if action.blank?
+
+      %w[reject scramble].include?(action) ? action : DEFAULT_BLOCKED_WORDS_ACTION
+    end
+
+    def effective_blocked_words_scramble_chars
+      source = blocked_words_scramble_chars
+      return DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS.dup unless source.respond_to?(:each)
+
+      chars = source.each_with_object([]) do |value, result|
+        normalized_char = value.to_s
+        next if normalized_char.blank?
+
+        result << normalized_char
+      end
+
+      chars.presence || DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS.dup
+    end
+
     private
 
     def normalize_role_key(key)
@@ -173,6 +225,10 @@ module ChatGem
 
     def normalize_emoji_alias_key(key)
       key.to_s.strip.downcase
+    end
+
+    def normalize_blocked_word(word)
+      word.to_s.strip.downcase
     end
   end
 end

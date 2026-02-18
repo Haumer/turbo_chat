@@ -4,6 +4,11 @@
 <% role_label = show_role ? chat_message.formatted_participant_role : nil %>
 <% edited_message = chat_message.respond_to?(:edited?) && chat_message.edited? %>
 <% bubble_style = chat_message_inline_style(chat_message: chat_message, own_message: own_message) %>
+<% mention_tokens = if respond_to?(:chat_message_mention_tokens)
+                      chat_message_mention_tokens(chat_message)
+                    else
+                      chat_message.body.to_s.scan(/(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/).uniq
+                    end %>
 <% edit_message_path = if respond_to?(:chat_chat_message_path)
                          chat_chat_message_path(chat_message.chat, chat_message)
                        end %>
@@ -11,8 +16,10 @@
 <% force_edit_open = local_assigns.fetch(:force_edit_open, false) && can_edit_message %>
 <article id="<%= dom_id(chat_message) %>"
          class="<%= chat_message_css_classes(chat_message: chat_message, own_message: own_message) %>"
+         data-chat-message-id="<%= chat_message.id %>"
          data-chat-message-participant-type="<%= chat_message.participant_type %>"
          data-chat-message-participant-id="<%= chat_message.participant_id %>"
+         data-chat-message-mentions="<%= json_escape(mention_tokens.to_json) %>"
          <%= %(style="#{bubble_style}") if bubble_style.present? %>>
   <header class="chat-meta">
     <span class="chat-meta__author"><%= chat_message.participant_display_name %></span>

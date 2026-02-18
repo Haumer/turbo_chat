@@ -4,8 +4,14 @@ ChatGem.configure do |config|
   config.max_message_length = 1000
   config.message_history_limit = 200
   config.enable_mentions = true
+  config.mention_filter_exclude_self = true
+  config.mention_filter_hide_roles = true
   config.enable_emoji_aliases = true
   config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup
+  config.blocked_words = []
+  config.blocked_words_action = :reject
+  config.mention_mark_hex_color = nil
+  config.mention_highlight_hex_color = nil
   config.own_message_hex_color = nil
   config.other_message_hex_color = nil
   config.role_message_hex_colors = {}
@@ -14,6 +20,7 @@ ChatGem.configure do |config|
   config.active_chat_window = 5.minutes
   config.emit_typing_events = false
   config.emit_message_events = false
+  config.emit_mention_events = false
   config.show_self_signals = false
   config.replace_signals_on_message_submit = false
   config.message_css_class_resolver = nil

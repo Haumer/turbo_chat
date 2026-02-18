@@ -10,8 +10,12 @@ module ChatGem
     setup do
       config = ChatGem.configuration
       @original_enable_mentions = config.enable_mentions
+      @original_mention_filter_exclude_self = config.mention_filter_exclude_self
+      @original_mention_filter_hide_roles = config.mention_filter_hide_roles
       @original_enable_emoji_aliases = config.enable_emoji_aliases
       @original_emoji_aliases = config.emoji_aliases.deep_dup
+      @original_mention_mark_hex_color = config.mention_mark_hex_color
+      @original_mention_highlight_hex_color = config.mention_highlight_hex_color
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -21,8 +25,12 @@ module ChatGem
     teardown do
       config = ChatGem.configuration
       config.enable_mentions = @original_enable_mentions
+      config.mention_filter_exclude_self = @original_mention_filter_exclude_self
+      config.mention_filter_hide_roles = @original_mention_filter_hide_roles
       config.enable_emoji_aliases = @original_enable_emoji_aliases
       config.emoji_aliases = @original_emoji_aliases
+      config.mention_mark_hex_color = @original_mention_mark_hex_color
+      config.mention_highlight_hex_color = @original_mention_highlight_hex_color
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -84,6 +92,40 @@ module ChatGem
       assert_includes rendered, "😄"
     end
 
+    test "mention container style uses configured mention mark color" do
+      config = ChatGem.configuration
+      config.mention_mark_hex_color = "cf1322"
+
+      assert_equal "--chat-mention-highlight-color: #cf1322; --chat-mention-mark-background: #cf132238;", chat_mentions_container_inline_style
+    end
+
+    test "mention container style falls back to mention highlight color for compatibility" do
+      config = ChatGem.configuration
+      config.mention_mark_hex_color = nil
+      config.mention_highlight_hex_color = "cf1322"
+
+      assert_equal "--chat-mention-highlight-color: #cf1322; --chat-mention-mark-background: #cf132238;", chat_mentions_container_inline_style
+    end
+
+    test "mention helper configuration fallbacks support legacy configuration objects" do
+      legacy_config = Struct.new(:enable_mentions).new(true)
+
+      ChatGem.stub(:configuration, legacy_config) do
+        assert_nil chat_mentions_container_inline_style
+        assert_equal true, chat_mention_filter_exclude_self?
+        assert_equal true, chat_mention_filter_hide_roles?
+        assert_equal false, chat_emit_mention_events?
+      end
+    end
+
+    test "chat_message_mention_tokens extracts unique mention tokens" do
+      config = ChatGem.configuration
+      config.enable_mentions = true
+
+      message = BodyMessageStub.new("hey @alex @all @alex", nil)
+      assert_equal ["@alex", "@all"], chat_message_mention_tokens(message)
+    end
+
     test "own_chat_message? matches participant type and id" do
       participant = User.create!(email: "owner-check@example.com")
       own_message = OwnedMessageStub.new("User", participant.id)
@@ -134,6 +176,9 @@ module ChatGem
     end
 
     test "chat mention options include chat members, @all, and role mentions" do
+      config = ChatGem.configuration
+      config.mention_filter_hide_roles = false
+
       chat = ChatGem::Chat.create!(title: "Mention Targets")
       first_user = User.create!(email: "alex@example.com")
       second_user = User.create!(email: "alex@other.test")
@@ -148,6 +193,41 @@ module ChatGem
       assert_includes tokens, "@alex_2"
       assert_includes tokens, "@ADMIN"
       assert_includes tokens, "@MEMBER"
+    end
+
+    test "chat mention options hide role mentions by default" do
+      config = ChatGem.configuration
+      config.mention_filter_hide_roles = true
+
+      chat = ChatGem::Chat.create!(title: "Role Mention Hidden")
+      user = User.create!(email: "role-hidden@example.com")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user, role: :moderator)
+
+      permission = MentionPermissionStub.new(true, true, true)
+      tokens = chat_mention_options(chat: chat, permission: permission).map { |entry| entry[:token] }
+
+      assert_not_includes tokens, "@MODERATOR"
+    end
+
+    test "chat mention options exclude current participant by default" do
+      config = ChatGem.configuration
+      config.mention_filter_exclude_self = true
+
+      chat = ChatGem::Chat.create!(title: "Self Mention Filter")
+      current_user = User.create!(email: "current-self-filter@example.com")
+      other_user = User.create!(email: "other-self-filter@example.com")
+      ChatGem::ChatMembership.create!(chat: chat, participant: current_user, role: :member)
+      ChatGem::ChatMembership.create!(chat: chat, participant: other_user, role: :member)
+
+      define_singleton_method(:current_chat_participant) { current_user }
+      permission = MentionPermissionStub.new(true, false, false)
+      options = chat_mention_options(chat: chat, permission: permission)
+      tokens = options.map { |entry| entry[:token] }
+      labels = options.map { |entry| entry[:label] }
+
+      assert_not_includes labels, current_user.email
+      assert_includes labels, other_user.email
+      assert_not_includes tokens, "@current_self_filter"
     end
 
     test "chat mention options are filtered by mention permissions" do

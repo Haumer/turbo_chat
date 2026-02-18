@@ -8,6 +8,8 @@
   --chat-primary: #1f6edc;
   --chat-primary-dark: #1452ac;
   --chat-primary-soft: #e7f1ff;
+  --chat-mention-highlight-color: #b42318;
+  --chat-mention-mark-background: #b4231838;
   --chat-danger: #b42318;
   --chat-danger-soft: #fff1f3;
   --chat-success: #1f7a40;
@@ -249,6 +251,14 @@ body {
 .chat-mention {
   color: var(--chat-primary);
   font-weight: 700;
+}
+
+.chat-mention--targeted {
+  background: var(--chat-mention-mark-background);
+  border-radius: 4px;
+  padding: 0 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .chat-message-actions {

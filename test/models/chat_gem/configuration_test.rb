@@ -9,8 +9,15 @@ module ChatGem
       assert_equal 1000, config.max_message_length
       assert_equal 200, config.message_history_limit
       assert_equal true, config.enable_mentions
+      assert_equal true, config.mention_filter_exclude_self
+      assert_equal true, config.mention_filter_hide_roles
       assert_equal true, config.enable_emoji_aliases
       assert_equal ChatGem::Configuration::DEFAULT_EMOJI_ALIASES, config.effective_emoji_aliases
+      assert_equal [], config.effective_blocked_words
+      assert_equal "reject", config.effective_blocked_words_action
+      assert_equal ChatGem::Configuration::DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS, config.effective_blocked_words_scramble_chars
+      assert_nil config.mention_mark_hex_color
+      assert_nil config.mention_highlight_hex_color
       assert_nil config.own_message_hex_color
       assert_nil config.other_message_hex_color
       assert_equal({}, config.role_message_hex_colors)
@@ -19,6 +26,7 @@ module ChatGem
       assert_equal 5.minutes, config.active_chat_window
       assert_equal false, config.emit_typing_events
       assert_equal false, config.emit_message_events
+      assert_equal false, config.emit_mention_events
       assert_equal false, config.show_self_signals
       assert_equal false, config.replace_signals_on_message_submit
       assert_nil config.message_css_class_resolver
@@ -87,6 +95,25 @@ module ChatGem
       assert_equal ChatGem::Configuration::DEFAULT_EMOJI_ALIASES, config.effective_emoji_aliases
     ensure
       config.emoji_aliases = original_aliases
+    end
+
+    test "blocked words normalize values and moderation action" do
+      config = ChatGem.configuration
+      original_words = config.blocked_words
+      original_action = config.blocked_words_action
+      original_chars = config.blocked_words_scramble_chars
+
+      config.blocked_words = [" Bad ", "BAD", "horrible", nil, ""]
+      config.blocked_words_action = "scramble"
+      config.blocked_words_scramble_chars = ["#", "", nil, "!"]
+
+      assert_equal %w[bad horrible], config.effective_blocked_words
+      assert_equal "scramble", config.effective_blocked_words_action
+      assert_equal %w[# !], config.effective_blocked_words_scramble_chars
+    ensure
+      config.blocked_words = original_words
+      config.blocked_words_action = original_action
+      config.blocked_words_scramble_chars = original_chars
     end
   end
 end

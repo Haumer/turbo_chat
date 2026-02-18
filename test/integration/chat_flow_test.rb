@@ -123,6 +123,35 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_select ".chat-bubble--own[data-chat-message-participant-type='User'][data-chat-message-participant-id='#{other_user.id}']", 0
   end
 
+  test "chat show exposes mention metadata for frontend mention highlighting and events" do
+    previous_emit_mentions = ChatGem.configuration.emit_mention_events
+    previous_mention_mark = ChatGem.configuration.mention_mark_hex_color
+    previous_mention_highlight = ChatGem.configuration.mention_highlight_hex_color
+
+    ChatGem.configuration.emit_mention_events = true
+    ChatGem.configuration.mention_mark_hex_color = "#cf1322"
+
+    current_user = User.create!(email: "mention-metadata-current@example.com")
+    other_user = User.create!(email: "mention-metadata-other@example.com")
+    chat = ChatGem::Chat.create!(title: "Mention Metadata")
+
+    ChatGem::ChatMembership.create!(chat: chat, participant: current_user, role: :member)
+    ChatGem::ChatMembership.create!(chat: chat, participant: other_user, role: :member)
+    ChatGem::ChatMessage.create!(chat: chat, participant: other_user, body: "hello @mention_metadata_current", kind: :message)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-messages[data-chat-emit-mention-events='true'][data-chat-mention-filter-exclude-self='true'][data-chat-mention-filter-hide-roles='true']", 1
+    assert_select ".chat-messages[data-chat-self-mention-tokens]", 1
+    assert_includes response.body, "--chat-mention-highlight-color: #cf1322; --chat-mention-mark-background: #cf132238;"
+    assert_select ".chat-bubble[data-chat-message-mentions]", 1
+  ensure
+    ChatGem.configuration.emit_mention_events = previous_emit_mentions
+    ChatGem.configuration.mention_mark_hex_color = previous_mention_mark
+    ChatGem.configuration.mention_highlight_hex_color = previous_mention_highlight
+  end
+
   test "chat show escapes html in message body by default" do
     user = User.create!(email: "html-default@example.com")
     chat = ChatGem::Chat.create!(title: "HTML Default")

@@ -6,6 +6,8 @@
   var SIGNAL_RETREAT_MS = 180;
   var MENTION_MAX_RESULTS = 8;
   var MENTION_BLUR_HIDE_DELAY_MS = 120;
+  var MEMBER_MENTION_TOKEN_PATTERN = /^@[a-z0-9_]{1,32}$/i;
+  var ROLE_MENTION_TOKEN_PATTERN = /^@[A-Z][A-Z0-9_]{0,31}$/;
 
   function csrfToken() {
     var tag = document.querySelector("meta[name='csrf-token']");
@@ -79,6 +81,72 @@
     });
 
     return options;
+  }
+
+  function parseMentionTokens(raw) {
+    if (!raw) {
+      return [];
+    }
+
+    var parsed = raw;
+    if (typeof raw === "string") {
+      var trimmed = raw.trim();
+      if (!trimmed) {
+        return [];
+      }
+
+      if (trimmed.charAt(0) === "[") {
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (_error) {
+          parsed = trimmed.split(",");
+        }
+      } else {
+        parsed = trimmed.split(",");
+      }
+    }
+
+    var source = Array.isArray(parsed) ? parsed : [parsed];
+    var seen = {};
+    var tokens = [];
+
+    source.forEach(function (entry) {
+      var token = String(entry || "").trim();
+      if (!token || token.charAt(0) !== "@" || /\s/.test(token)) {
+        return;
+      }
+
+      var dedupeKey = token.toLowerCase();
+      if (seen[dedupeKey]) {
+        return;
+      }
+
+      seen[dedupeKey] = true;
+      tokens.push(token);
+    });
+
+    return tokens;
+  }
+
+  function mentionKind(token) {
+    var mentionToken = String(token || "").trim();
+    if (!mentionToken) {
+      return null;
+    }
+
+    if (mentionToken.toLowerCase() === "@all") {
+      return "group";
+    }
+
+    if (ROLE_MENTION_TOKEN_PATTERN.test(mentionToken)) {
+      return "role";
+    }
+
+    if (MEMBER_MENTION_TOKEN_PATTERN.test(mentionToken)) {
+      return "member";
+    }
+
+    return null;
   }
 
   function emptyMentionAutocomplete() {
@@ -425,6 +493,168 @@
       });
   }
 
+  function mentionTokensForMessage(messageNode) {
+    if (!messageNode) {
+      return [];
+    }
+
+    var datasetMentions = parseMentionTokens(messageNode.dataset.chatMessageMentions);
+    if (datasetMentions.length) {
+      return datasetMentions;
+    }
+
+    var seen = {};
+    var mentions = [];
+    messageNode.querySelectorAll(".chat-mention").forEach(function (mentionNode) {
+      var token = String(mentionNode.textContent || "").trim();
+      if (!token || token.charAt(0) !== "@" || /\s/.test(token)) {
+        return;
+      }
+
+      var dedupeKey = token.toLowerCase();
+      if (seen[dedupeKey]) {
+        return;
+      }
+
+      seen[dedupeKey] = true;
+      mentions.push(token);
+    });
+
+    return mentions;
+  }
+
+  function ownMessageNode(container, messageNode) {
+    if (!container || !messageNode) {
+      return false;
+    }
+
+    var selfType = container.dataset.chatSelfParticipantType;
+    var selfId = container.dataset.chatSelfParticipantId;
+    if (!selfType || !selfId) {
+      return false;
+    }
+
+    return (
+      messageNode.dataset.chatMessageParticipantType === selfType &&
+      messageNode.dataset.chatMessageParticipantId === selfId
+    );
+  }
+
+  function mentionTargetsCurrentParticipant(token, context) {
+    if (!context) {
+      return false;
+    }
+
+    var normalizedToken = String(token || "").trim().toLowerCase();
+    if (!normalizedToken) {
+      return false;
+    }
+
+    if (context.excludeSelf && context.ownMessage) {
+      return false;
+    }
+
+    if (normalizedToken === "@all") {
+      return true;
+    }
+
+    if (context.selfRoleMentionToken && normalizedToken === context.selfRoleMentionToken) {
+      return true;
+    }
+
+    return Boolean(context.selfMentionTokens[normalizedToken]);
+  }
+
+  function syncMentionHighlights(container, options) {
+    if (!container || !container.dataset) {
+      return;
+    }
+
+    options = options || {};
+    var emitEvents = Boolean(options.emitEvents);
+    var emitMentionEvents = datasetFlagEnabled(container, "chatEmitMentionEvents");
+    var excludeSelf = datasetFlagEnabled(container, "chatMentionFilterExcludeSelf");
+    var selfMentionTokens = {};
+    parseMentionTokens(container.dataset.chatSelfMentionTokens).forEach(function (token) {
+      selfMentionTokens[token.toLowerCase()] = true;
+    });
+
+    var selfRoleMentionToken = parseMentionTokens(container.dataset.chatSelfRoleMentionToken)[0];
+    selfRoleMentionToken = selfRoleMentionToken ? selfRoleMentionToken.toLowerCase() : "";
+
+    container
+      .querySelectorAll("[data-chat-message-participant-type][data-chat-message-participant-id]")
+      .forEach(function (messageNode) {
+        var mentions = mentionTokensForMessage(messageNode);
+        var mentionKinds = mentions
+          .map(function (token) {
+            return {
+              token: token,
+              kind: mentionKind(token)
+            };
+          })
+          .filter(function (entry) {
+            return Boolean(entry.kind);
+          });
+
+        var context = {
+          excludeSelf: excludeSelf,
+          ownMessage: ownMessageNode(container, messageNode),
+          selfRoleMentionToken: selfRoleMentionToken,
+          selfMentionTokens: selfMentionTokens
+        };
+
+        var targetedMentions = mentionKinds
+          .map(function (entry) {
+            return entry.token;
+          })
+          .filter(function (token) {
+            return mentionTargetsCurrentParticipant(token, context);
+          });
+
+        var targetedMentionLookup = {};
+        targetedMentions.forEach(function (token) {
+          targetedMentionLookup[token.toLowerCase()] = true;
+        });
+
+        var targetsCurrentParticipant = targetedMentions.length > 0;
+        messageNode.classList.remove("chat-bubble--mentioned");
+
+        messageNode.querySelectorAll(".chat-mention").forEach(function (mentionNode) {
+          var mentionToken = String(mentionNode.textContent || "").trim().toLowerCase();
+          mentionNode.classList.toggle("chat-mention--targeted", Boolean(targetedMentionLookup[mentionToken]));
+        });
+
+        if (!emitEvents || !emitMentionEvents || messageNode.dataset.chatMentionEventEmitted === "true") {
+          messageNode.dataset.chatMentionEventEmitted = "true";
+          return;
+        }
+
+        messageNode.dataset.chatMentionEventEmitted = "true";
+        if (!mentionKinds.length) {
+          return;
+        }
+
+        var event = new CustomEvent("chat-gem:mention", {
+          bubbles: true,
+          detail: {
+            chatId: container.dataset.chatId || null,
+            messageId: messageNode.dataset.chatMessageId || null,
+            messageElementId: messageNode.id || null,
+            participantType: messageNode.dataset.chatMessageParticipantType || null,
+            participantId: messageNode.dataset.chatMessageParticipantId || null,
+            mentions: mentionKinds.map(function (entry) {
+              return entry.token;
+            }),
+            mentionKinds: mentionKinds,
+            targetedMentions: targetedMentions,
+            targetsCurrentParticipant: targetsCurrentParticipant
+          }
+        });
+        container.dispatchEvent(event);
+      });
+  }
+
   function setupMessageInlineEditing(messageNode) {
     if (!messageNode || messageNode.dataset.chatInlineEditBound === "true") {
       return;
@@ -629,12 +859,14 @@
     container.dataset.chatAutoscrollBound = "true";
     requestAnimationFrame(function () {
       syncOwnMessageClasses(container);
+      syncMentionHighlights(container, { emitEvents: false });
       scrollLastMessageIntoView(container);
     });
 
     var observer = new MutationObserver(function () {
       requestAnimationFrame(function () {
         syncOwnMessageClasses(container);
+        syncMentionHighlights(container, { emitEvents: true });
         scrollLastMessageIntoView(container);
       });
     });

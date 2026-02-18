@@ -2,6 +2,9 @@
   <% current_participant = current_chat_participant %>
   <% current_participant_type = current_participant.class.base_class.name %>
   <% current_participant_id = current_participant.id %>
+  <% self_mention_tokens = chat_self_mention_tokens(chat: @chat, participant: current_participant) %>
+  <% self_role_mention_token = chat_self_role_mention_token(chat: @chat, participant: current_participant) %>
+  <% mention_container_style = chat_mentions_container_inline_style %>
   <header class="chat-header">
     <div class="chat-header-copy">
       <p class="chat-header-kicker"><%= @chat.closed? ? "Conversation closed" : "Conversation active" %></p>
@@ -60,9 +63,16 @@
   <section class="chat-window">
     <div id="<%= dom_id(@chat, :messages) %>"
          class="chat-messages"
+         data-chat-id="<%= @chat.id %>"
          data-chat-self-participant-type="<%= current_participant_type %>"
          data-chat-self-participant-id="<%= current_participant_id %>"
-         data-chat-can-edit-own-messages="<%= @can_edit_own_messages %>">
+         data-chat-self-mention-tokens="<%= json_escape(self_mention_tokens.to_json) %>"
+         data-chat-self-role-mention-token="<%= self_role_mention_token %>"
+         data-chat-mention-filter-exclude-self="<%= chat_mention_filter_exclude_self? %>"
+         data-chat-mention-filter-hide-roles="<%= chat_mention_filter_hide_roles? %>"
+         data-chat-emit-mention-events="<%= chat_emit_mention_events? %>"
+         data-chat-can-edit-own-messages="<%= @can_edit_own_messages %>"
+         <%= %(style="#{mention_container_style}") if mention_container_style.present? %>>
       <%= render @chat_messages %>
     </div>
 

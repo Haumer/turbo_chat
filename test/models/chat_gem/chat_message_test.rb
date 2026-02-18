@@ -131,6 +131,65 @@ module ChatGem
       end
     end
 
+    test "blocked words reject message when moderation action is reject" do
+      member = User.create!(email: "member-blocked-reject@example.com")
+      chat = ChatGem::Chat.create!(title: "Blocked Reject")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      with_chat_configuration(blocked_words: ["badword"], blocked_words_action: :reject) do
+        message = ChatGem::ChatMessage.new(
+          chat: chat,
+          participant: member,
+          body: "this has badword inside",
+          kind: :message
+        )
+
+        assert_not message.valid?
+        assert_includes message.errors[:body], "contains blocked language"
+      end
+    end
+
+    test "blocked words scramble message when moderation action is scramble" do
+      member = User.create!(email: "member-blocked-scramble@example.com")
+      chat = ChatGem::Chat.create!(title: "Blocked Scramble")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      with_chat_configuration(
+        blocked_words: ["badword"],
+        blocked_words_action: :scramble
+      ) do
+        message = ChatGem::ChatMessage.create!(
+          chat: chat,
+          participant: member,
+          body: "this has badword inside",
+          kind: :message
+        )
+
+        scrambled_word = message.body.match(/\Athis has ([^\s]+) inside\z/)&.captures&.first
+
+        assert_not_nil scrambled_word
+        assert_not_equal "badword", scrambled_word.downcase
+        assert_equal "badword".chars.sort, scrambled_word.downcase.chars.sort
+      end
+    end
+
+    test "blocked words do not reject when list is empty" do
+      member = User.create!(email: "member-blocked-empty@example.com")
+      chat = ChatGem::Chat.create!(title: "Blocked Empty")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      with_chat_configuration(blocked_words: [], blocked_words_action: :reject) do
+        message = ChatGem::ChatMessage.new(
+          chat: chat,
+          participant: member,
+          body: "this has badword inside",
+          kind: :message
+        )
+
+        assert message.valid?
+      end
+    end
+
     test "replace_signal keeps only latest participant signal" do
       user = User.create!(email: "replace_signal@example.com")
       chat = ChatGem::Chat.create!(title: "Replace Signal")
@@ -319,6 +378,8 @@ module ChatGem
         show_role: config.show_role,
         max_message_length: config.max_message_length,
         enable_mentions: config.enable_mentions,
+        blocked_words: config.blocked_words,
+        blocked_words_action: config.blocked_words_action,
         replace_signals_on_message_submit: config.replace_signals_on_message_submit,
         timestamp_formatter: config.timestamp_formatter,
         role_formatter: config.role_formatter

@@ -21,6 +21,7 @@ module ChatGem
     validates :signal_type, presence: true, if: :signal?
     validate :body_within_max_length, if: :message?
     validate :mentions_allowed_for_participant, if: :message?
+    validate :apply_blocked_words_moderation, if: :message?
 
     before_validation :normalize_signal_fields
     before_create :replace_participant_signals_on_submit, if: :message?
@@ -144,6 +145,22 @@ module ChatGem
       return if invalid_mention.nil?
 
       errors.add(:body, mention_permission_error(invalid_mention))
+    end
+
+    def apply_blocked_words_moderation
+      blocked_words = blocked_words_from_configuration
+      return if blocked_words.empty?
+
+      matches = blocked_words_in_body(blocked_words)
+      return if matches.empty?
+
+      action = blocked_words_action_from_configuration
+      if action == "scramble"
+        scramble_blocked_words!(blocked_words)
+        return
+      end
+
+      errors.add(:body, "contains blocked language")
     end
 
     def replace_participant_signals_on_submit
@@ -290,5 +307,57 @@ module ChatGem
         "cannot mention other members"
       end
     end
+
+    def blocked_words_in_body(blocked_words)
+      blocked_words.select { |word| blocked_word_pattern(word).match?(body.to_s) }
+    end
+
+    def scramble_blocked_words!(blocked_words)
+      moderated_body = body.to_s.dup
+
+      blocked_words.each do |word|
+        moderated_body.gsub!(blocked_word_pattern(word)) do |match|
+          scramble_word(match)
+        end
+      end
+
+      self.body = moderated_body
+    end
+
+    def scramble_word(word)
+      source = word.to_s
+      characters = source.chars
+      return source if characters.length < 2
+
+      scrambled = characters.shuffle
+      if scrambled == characters && characters.uniq.length > 1
+        scrambled = characters.rotate(1)
+      end
+
+      scrambled.join
+    end
+
+    def blocked_word_pattern(word)
+      /(?<![[:alnum:]_])#{Regexp.escape(word)}(?![[:alnum:]_])/i
+    end
+
+    def blocked_words_from_configuration
+      configuration = ChatGem.configuration
+      return [] unless configuration.respond_to?(:effective_blocked_words)
+
+      Array(configuration.effective_blocked_words)
+    rescue StandardError
+      []
+    end
+
+    def blocked_words_action_from_configuration
+      configuration = ChatGem.configuration
+      return "reject" unless configuration.respond_to?(:effective_blocked_words_action)
+
+      configuration.effective_blocked_words_action.to_s
+    rescue StandardError
+      "reject"
+    end
+
   end
 end
