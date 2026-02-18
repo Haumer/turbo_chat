@@ -93,7 +93,7 @@ module ChatGem
     end
 
     def self.activity_window_seconds(window = nil)
-      value = window.nil? ? ChatGem.configuration_value(:active_chat_window) : window
+      value = window.nil? ? ChatGem.configuration.active_chat_window : window
       seconds = value.to_i
       return seconds if seconds.positive?
 

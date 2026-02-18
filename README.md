@@ -10,21 +10,19 @@ class User < ApplicationRecord
 end
 ```
 
-If your host controller sometimes returns a username (string) instead of a model object, configure a resolver:
+Expose the current chat participant from your host `ApplicationController`:
 
 ```ruby
-ChatGem.configure do |config|
-  config.current_participant_method = :chat_current_participant
-  config.current_participant_resolver = lambda { |value, _controller|
-    case value
-    when User
-      value
-    when String
-      User.find_by(email: value) || User.find_by(username: value)
-    end
-  }
+class ApplicationController < ActionController::Base
+  helper_method :chat_current_participant
+
+  def chat_current_participant
+    Current.user
+  end
 end
 ```
+
+`chat_current_participant` must return a model that uses `acts_as_chat_participant` (or `nil` when unauthenticated).
 
 ## Message Metadata
 

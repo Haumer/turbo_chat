@@ -1,6 +1,6 @@
 <% own_message = respond_to?(:current_chat_participant, true) && (chat_message.participant == current_chat_participant) %>
-<% show_timestamp = ChatGem.configuration_value(:show_timestamp) %>
-<% show_role = ChatGem.configuration_value(:show_role) %>
+<% show_timestamp = ChatGem.configuration.show_timestamp %>
+<% show_role = ChatGem.configuration.show_role %>
 <% role_label = show_role ? chat_message.formatted_participant_role : nil %>
 <article id="<%= dom_id(chat_message) %>" class="chat-bubble <%= "chat-bubble--own" if own_message %>">
   <header class="chat-meta">

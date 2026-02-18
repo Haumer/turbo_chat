@@ -42,7 +42,7 @@ module ChatGem
     end
 
     def effective_role_definition
-      ChatGem.role_definition(effective_role_key)
+      ChatGem.configuration.role_definition(effective_role_key)
     end
 
     def effective_role_name
@@ -73,7 +73,7 @@ module ChatGem
     end
 
     def custom_role_must_exist
-      return if ChatGem.role_definition(custom_role_key).present?
+      return if ChatGem.configuration.role_definition(custom_role_key).present?
 
       errors.add(:custom_role_key, "is not configured")
     end
@@ -85,7 +85,7 @@ module ChatGem
     def enforce_chat_participant_limit
       return if chat.nil?
 
-      limit = ChatGem.configuration_value(:max_chat_participants)
+      limit = ChatGem.configuration.max_chat_participants
       return if limit.nil?
 
       limit = limit.to_i

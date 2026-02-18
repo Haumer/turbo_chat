@@ -1,6 +1,4 @@
 ChatGem.configure do |config|
-  config.current_participant_method = :chat_current_participant
-  config.current_participant_resolver = ->(value, _controller) { value }
   config.permission_adapter = ChatGem::Permission
   config.max_chat_participants = 10
   config.show_timestamp = true

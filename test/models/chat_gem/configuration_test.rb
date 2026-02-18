@@ -13,7 +13,6 @@ module ChatGem
       assert_equal false, config.emit_message_events
       assert_respond_to config.timestamp_formatter, :call
       assert_respond_to config.role_formatter, :call
-      assert_respond_to config.current_participant_resolver, :call
       assert_includes config.role_definitions.keys, "member"
       assert_includes config.role_definitions.keys, "moderator"
       assert_includes config.role_definitions.keys, "admin"

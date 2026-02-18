@@ -72,7 +72,7 @@ module ChatGem
       end
 
       def permission_for(actor, chat)
-        ChatGem.configuration_value(:permission_adapter).new(actor, chat)
+        ChatGem.configuration.permission_adapter.new(actor, chat)
       end
     end
   end

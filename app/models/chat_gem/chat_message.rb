@@ -62,7 +62,7 @@ module ChatGem
     end
 
     def formatted_timestamp
-      formatter = ChatGem.configuration_value(:timestamp_formatter)
+      formatter = ChatGem.configuration.timestamp_formatter
       formatted = apply_formatter(formatter, created_at, self)
       return formatted if formatted.present?
 
@@ -82,7 +82,7 @@ module ChatGem
 
       role = membership.effective_role_key
 
-      formatter = ChatGem.configuration_value(:role_formatter)
+      formatter = ChatGem.configuration.role_formatter
       formatted = apply_formatter(formatter, role, self)
       return formatted if formatted.present?
 
