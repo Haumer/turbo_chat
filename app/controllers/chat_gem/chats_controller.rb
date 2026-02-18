@@ -25,8 +25,9 @@ module ChatGem
     def show
       authorize_view_chat!(@chat)
 
+      @chat_permission = permission_for(@chat)
       @chat_messages = @chat.visible_messages
-      @can_post_message = permission_for(@chat).can_post_message?
+      @can_post_message = @chat_permission.can_post_message?
       @chat_message = @chat.chat_messages.build if @can_post_message
     end
 

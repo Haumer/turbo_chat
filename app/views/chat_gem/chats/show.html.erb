@@ -24,7 +24,7 @@
   </section>
 
   <% if @can_post_message %>
-    <%= render "chat_gem/chat_messages/form", chat: @chat, chat_message: @chat_message %>
+    <%= render "chat_gem/chat_messages/form", chat: @chat, chat_message: @chat_message, chat_permission: @chat_permission %>
   <% elsif @chat.closed? %>
     <p>This chat is closed.</p>
   <% end %>

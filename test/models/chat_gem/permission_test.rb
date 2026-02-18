@@ -117,6 +117,33 @@ module ChatGem
       end
     end
 
+    test "mention permissions are role-specific" do
+      chat = ChatGem::Chat.create!(title: "Mention Permission")
+      admin = User.create!(email: "mention-admin@example.com")
+      moderator = User.create!(email: "mention-moderator@example.com")
+      member = User.create!(email: "mention-member@example.com")
+
+      ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+      ChatGem::ChatMembership.create!(chat: chat, participant: moderator, role: :moderator)
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      admin_permission = ChatGem::Permission.new(admin, chat)
+      moderator_permission = ChatGem::Permission.new(moderator, chat)
+      member_permission = ChatGem::Permission.new(member, chat)
+
+      assert admin_permission.can_mention_members?
+      assert admin_permission.can_mention_all?
+      assert admin_permission.can_mention_roles?
+
+      assert moderator_permission.can_mention_members?
+      assert moderator_permission.can_mention_all?
+      assert moderator_permission.can_mention_roles?
+
+      assert member_permission.can_mention_members?
+      assert_not member_permission.can_mention_all?
+      assert_not member_permission.can_mention_roles?
+    end
+
     private
 
     def with_custom_role(key, name:, rank:, permissions:)

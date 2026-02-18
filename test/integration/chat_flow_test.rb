@@ -161,4 +161,25 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     ChatGem.configuration.message_history_limit = previous_limit
   end
 
+  test "chat message partial renders with application controller renderer" do
+    participant = User.new(id: 11, email: "renderer@example.com")
+    chat = ChatGem::Chat.new(id: 22, title: "Renderer Chat")
+    chat_message = ChatGem::ChatMessage.new(
+      id: 33,
+      chat: chat,
+      participant: participant,
+      kind: :message,
+      body: "renderer message",
+      created_at: Time.current
+    )
+
+    rendered = ApplicationController.render(
+      partial: "chat_gem/chat_messages/message",
+      locals: { chat_message: chat_message }
+    )
+
+    assert_includes rendered, "chat-bubble"
+    assert_includes rendered, "renderer message"
+  end
+
 end

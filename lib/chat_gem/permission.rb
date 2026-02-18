@@ -1,5 +1,8 @@
 module ChatGem
   class Permission
+    ROLE_MENTION_TOKEN_PATTERN = /\A@[A-Z][A-Z0-9_]{0,31}\z/.freeze
+    MEMBER_MENTION_TOKEN_PATTERN = /\A@[a-z0-9_]{1,32}\z/i.freeze
+
     attr_reader :participant, :chat
 
     def initialize(participant, chat = nil)
@@ -57,6 +60,30 @@ module ChatGem
 
     def can_reopen_chat?
       can_view_chat? && role_permission?(:reopen_chat)
+    end
+
+    def can_mention_members?
+      can_view_chat? && role_permission?(:mention_member)
+    end
+
+    def can_mention_all?
+      can_view_chat? && role_permission?(:mention_all)
+    end
+
+    def can_mention_roles?
+      can_view_chat? && role_permission?(:mention_role)
+    end
+
+    def can_mention_token?(token)
+      mention = token.to_s.strip
+      return false if mention.blank?
+      return false unless mention.start_with?("@")
+
+      return can_mention_all? if mention.casecmp("@all").zero?
+      return can_mention_roles? if ROLE_MENTION_TOKEN_PATTERN.match?(mention)
+      return can_mention_members? if MEMBER_MENTION_TOKEN_PATTERN.match?(mention)
+
+      false
     end
 
     private

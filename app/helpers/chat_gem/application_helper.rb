@@ -3,24 +3,6 @@ module ChatGem
     HEX_COLOR_PATTERN = /\A#(?:\h{3}|\h{6}|\h{8})\z/.freeze
     EMOJI_ALIAS_PATTERN = /:([a-z0-9_+\-]{2,32}):/i.freeze
     MENTION_PATTERN = /(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/.freeze
-    EMOJI_ALIASES = {
-      "smile" => "😄",
-      "grin" => "😁",
-      "laughing" => "😆",
-      "blush" => "😊",
-      "wink" => "😉",
-      "heart" => "❤️",
-      "thumbsup" => "👍",
-      "+1" => "👍",
-      "thumbsdown" => "👎",
-      "-1" => "👎",
-      "fire" => "🔥",
-      "rocket" => "🚀",
-      "thinking" => "🤔",
-      "tada" => "🎉",
-      "wave" => "👋",
-      "eyes" => "👀"
-    }.freeze
 
     def chat_message_css_classes(chat_message:, own_message:)
       classes = ["chat-bubble"]
@@ -56,44 +38,65 @@ module ChatGem
       participant.to_s
     end
 
-    def chat_mention_options(chat:)
-      options = [{ token: "@all", label: "All members", kind: "group" }]
+    def chat_mention_options(chat:, permission: nil)
+      mention_permission = permission || mention_permission_for(chat)
+      allow_member_mentions = mention_permission.nil? ? true : mention_permission_allows?(mention_permission, :can_mention_members?)
+      allow_all_mentions = mention_permission.nil? ? true : mention_permission_allows?(mention_permission, :can_mention_all?)
+      allow_role_mentions = mention_permission.nil? ? true : mention_permission_allows?(mention_permission, :can_mention_roles?)
+
+      options = []
+      options << { token: "@all", label: "All members", kind: "group" } if allow_all_mentions
       return options unless chat.respond_to?(:chat_memberships)
 
       memberships = chat.chat_memberships.active.includes(:participant)
       taken_tokens = {}
       role_tokens = {}
 
-      memberships.each do |membership|
-        participant = membership.participant
-        next if participant.nil?
+      if allow_member_mentions
+        memberships.each do |membership|
+          participant = membership.participant
+          next if participant.nil?
 
-        identifier = normalized_mention_identifier(participant_mention_base_identifier(participant))
-        identifier = fallback_mention_identifier(participant) if identifier.blank?
-        token = unique_mention_token(identifier, taken_tokens)
-        options << {
-          token: token,
-          label: chat_participant_name(participant),
-          kind: "member"
-        }
+          identifier = normalized_mention_identifier(participant_mention_base_identifier(participant))
+          identifier = fallback_mention_identifier(participant) if identifier.blank?
+          token = unique_mention_token(identifier, taken_tokens)
+          options << {
+            token: token,
+            label: chat_participant_name(participant),
+            kind: "member"
+          }
+        end
       end
 
-      memberships.each do |membership|
-        role_key = membership.effective_role_key.to_s.strip
-        next if role_key.blank?
+      if allow_role_mentions
+        memberships.each do |membership|
+          role_key = membership.effective_role_key.to_s.strip
+          next if role_key.blank?
 
-        role_token = "@#{role_key.upcase}"
-        next if role_tokens[role_token]
+          role_token = "@#{role_key.upcase}"
+          next if role_tokens[role_token]
 
-        role_tokens[role_token] = true
-        options << {
-          token: role_token,
-          label: "#{membership.effective_role_name} role",
-          kind: "role"
-        }
+          role_tokens[role_token] = true
+          options << {
+            token: role_token,
+            label: "#{membership.effective_role_name} role",
+            kind: "role"
+          }
+        end
       end
 
       options
+    end
+
+    def chat_mentions_enabled_for?(chat:, permission: nil)
+      return false unless ChatGem.configuration.enable_mentions
+
+      mention_permission = permission || mention_permission_for(chat)
+      return true if mention_permission.nil?
+
+      mention_permission_allows?(mention_permission, :can_mention_members?) ||
+        mention_permission_allows?(mention_permission, :can_mention_all?) ||
+        mention_permission_allows?(mention_permission, :can_mention_roles?)
     end
 
     private
@@ -170,9 +173,12 @@ module ChatGem
     end
 
     def apply_emoji_aliases(text)
+      emoji_aliases = ChatGem.configuration.effective_emoji_aliases
+      return text if emoji_aliases.empty?
+
       text.gsub(EMOJI_ALIAS_PATTERN) do |match|
         alias_key = Regexp.last_match(1).to_s.downcase
-        EMOJI_ALIASES.fetch(alias_key, match)
+        emoji_aliases.fetch(alias_key, match)
       end
     end
 
@@ -202,6 +208,7 @@ module ChatGem
     def normalized_mention_identifier(value)
       slug = I18n.transliterate(value.to_s)
       slug = slug.downcase.gsub(/[^a-z0-9_]+/, "_").gsub(/\A_+|_+\z/, "").squeeze("_")
+      slug = "member_#{slug}" if slug.match?(/\A\d/)
       slug.presence
     end
 
@@ -219,6 +226,25 @@ module ChatGem
         end
         suffix += 1
       end
+    end
+
+    def mention_permission_for(chat)
+      return nil unless respond_to?(:current_chat_participant, true)
+
+      participant = current_chat_participant
+      return nil if participant.nil?
+
+      ChatGem.configuration.permission_adapter.new(participant, chat)
+    rescue StandardError
+      nil
+    end
+
+    def mention_permission_allows?(permission, method_name)
+      return true unless permission.respond_to?(method_name)
+
+      permission.public_send(method_name)
+    rescue StandardError
+      false
     end
   end
 end

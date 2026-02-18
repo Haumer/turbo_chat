@@ -10,6 +10,7 @@ module ChatGem
       assert_equal 200, config.message_history_limit
       assert_equal true, config.enable_mentions
       assert_equal true, config.enable_emoji_aliases
+      assert_equal ChatGem::Configuration::DEFAULT_EMOJI_ALIASES, config.effective_emoji_aliases
       assert_nil config.own_message_hex_color
       assert_nil config.other_message_hex_color
       assert_equal({}, config.role_message_hex_colors)
@@ -29,6 +30,9 @@ module ChatGem
       assert_includes config.role_definitions.keys, "member"
       assert_includes config.role_definitions.keys, "moderator"
       assert_includes config.role_definitions.keys, "admin"
+      assert_includes config.role_definition(:member)[:permissions], :mention_member
+      assert_includes config.role_definition(:moderator)[:permissions], :mention_all
+      assert_includes config.role_definition(:admin)[:permissions], :mention_role
     end
 
     test "can register custom role with name permissions and rank" do
@@ -58,6 +62,29 @@ module ChatGem
       end
 
       assert_includes error.message, "reserved"
+    end
+
+    test "can extend and reset emoji aliases" do
+      config = ChatGem.configuration
+      original_aliases = config.emoji_aliases
+
+      config.add_emoji_alias(:shipit, "🚢")
+      config.add_emoji_alias("party_parrot", "🦜")
+
+      aliases = config.effective_emoji_aliases
+      assert_equal "🚢", aliases["shipit"]
+      assert_equal "🦜", aliases["party_parrot"]
+
+      config.remove_emoji_alias("shipit")
+      assert_not_includes config.effective_emoji_aliases.keys, "shipit"
+
+      config.clear_emoji_aliases!
+      assert_equal({}, config.effective_emoji_aliases)
+
+      config.reset_emoji_aliases!
+      assert_equal ChatGem::Configuration::DEFAULT_EMOJI_ALIASES, config.effective_emoji_aliases
+    ensure
+      config.emoji_aliases = original_aliases
     end
   end
 end

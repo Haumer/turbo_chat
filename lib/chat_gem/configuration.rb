@@ -4,21 +4,39 @@ module ChatGem
       "member" => {
         name: "Member",
         rank: 0,
-        permissions: %i[view_chat post_message]
+        permissions: %i[view_chat post_message mention_member]
       },
       "moderator" => {
         name: "Moderator",
         rank: 1,
-        permissions: %i[view_chat post_message mute_member timeout_member ban_member delete_message]
+        permissions: %i[view_chat post_message mention_member mention_all mention_role mute_member timeout_member ban_member delete_message]
       },
       "admin" => {
         name: "Admin",
         rank: 2,
-        permissions: %i[view_chat post_message mute_member timeout_member ban_member delete_message close_chat reopen_chat]
+        permissions: %i[view_chat post_message mention_member mention_all mention_role mute_member timeout_member ban_member delete_message close_chat reopen_chat]
       }
     }.freeze
     DEFAULT_MESSAGE_HTML_TAGS = %w[a b br code em i li ol p pre strong ul].freeze
     DEFAULT_MESSAGE_HTML_ATTRIBUTES = %w[href target rel class].freeze
+    DEFAULT_EMOJI_ALIASES = {
+      "smile" => "😄",
+      "grin" => "😁",
+      "laughing" => "😆",
+      "blush" => "😊",
+      "wink" => "😉",
+      "heart" => "❤️",
+      "thumbsup" => "👍",
+      "+1" => "👍",
+      "thumbsdown" => "👎",
+      "-1" => "👎",
+      "fire" => "🔥",
+      "rocket" => "🚀",
+      "thinking" => "🤔",
+      "tada" => "🎉",
+      "wave" => "👋",
+      "eyes" => "👀"
+    }.freeze
 
     attr_accessor :permission_adapter,
                   :max_chat_participants,
@@ -26,6 +44,7 @@ module ChatGem
                   :message_history_limit,
                   :enable_mentions,
                   :enable_emoji_aliases,
+                  :emoji_aliases,
                   :own_message_hex_color,
                   :other_message_hex_color,
                   :role_message_hex_colors,
@@ -50,6 +69,7 @@ module ChatGem
       @message_history_limit = 200
       @enable_mentions = true
       @enable_emoji_aliases = true
+      @emoji_aliases = DEFAULT_EMOJI_ALIASES.dup
       @own_message_hex_color = nil
       @other_message_hex_color = nil
       @role_message_hex_colors = {}
@@ -108,10 +128,51 @@ module ChatGem
       role_definitions[normalize_role_key(key)]
     end
 
+    def add_emoji_alias(name, value)
+      key = normalize_emoji_alias_key(name)
+      raise ArgumentError, "Emoji alias cannot be blank" if key.blank?
+
+      normalized_value = value.to_s.strip
+      raise ArgumentError, "Emoji alias value cannot be blank" if normalized_value.blank?
+
+      @emoji_aliases = effective_emoji_aliases.merge(key => normalized_value)
+    end
+
+    def remove_emoji_alias(name)
+      key = normalize_emoji_alias_key(name)
+      return if key.blank?
+
+      @emoji_aliases = effective_emoji_aliases.except(key)
+    end
+
+    def clear_emoji_aliases!
+      @emoji_aliases = {}
+    end
+
+    def reset_emoji_aliases!
+      @emoji_aliases = DEFAULT_EMOJI_ALIASES.dup
+    end
+
+    def effective_emoji_aliases
+      source = emoji_aliases.is_a?(Hash) ? emoji_aliases : {}
+
+      source.each_with_object({}) do |(key, value), aliases|
+        normalized_key = normalize_emoji_alias_key(key)
+        normalized_value = value.to_s.strip
+        next if normalized_key.blank? || normalized_value.blank?
+
+        aliases[normalized_key] = normalized_value
+      end
+    end
+
     private
 
     def normalize_role_key(key)
       key.to_s.strip
+    end
+
+    def normalize_emoji_alias_key(key)
+      key.to_s.strip.downcase
     end
   end
 end

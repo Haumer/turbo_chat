@@ -33,6 +33,7 @@ ChatGem.configure do |config|
   config.message_history_limit = 200
   config.enable_mentions = true
   config.enable_emoji_aliases = true
+  config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup
   config.own_message_hex_color = nil
   config.other_message_hex_color = nil
   config.role_message_hex_colors = {}
@@ -111,7 +112,33 @@ Mention suggestions in the composer are scoped to active chat members and includ
 - `@all`
 - role targets such as `@ADMIN` and `@MODERATOR`
 
+Mention options are filtered by role permissions:
+- `:mention_member` for member handles
+- `:mention_all` for `@all`
+- `:mention_role` for role mentions like `@ADMIN`
+
+Role-restricted mentions are enforced server-side. Unauthorized mention tokens fail validation.
+
 Emoji aliases support common tokens such as `:smile:`, `:thumbsup:`, `:rocket:`, and `:thinking:`.
+You can extend aliases at runtime:
+
+```ruby
+ChatGem.configure do |config|
+  config.add_emoji_alias(:shipit, "🚢")
+  config.add_emoji_alias("party_parrot", "🦜")
+end
+```
+
+Or fully replace the alias map:
+
+```ruby
+ChatGem.configure do |config|
+  config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.merge(
+    "shipit" => "🚢",
+    "party_parrot" => "🦜"
+  )
+end
+```
 
 Simple example:
 
@@ -287,8 +314,8 @@ end
 Available roles: `:member`, `:moderator`, `:admin`.
 
 Role capabilities in the default permission adapter:
-- `member`: can view chat and post messages (unless muted/timed out or chat is closed).
-- `moderator`: member capabilities plus mute/timeout/ban members and delete member messages.
+- `member`: can view chat, post messages, and mention members.
+- `moderator`: member capabilities plus `@all`, `@ROLE`, mute/timeout/ban members, and delete member messages.
 - `admin`: moderator capabilities plus moderating moderators and closing/reopening chats.
 
 Register custom roles with a name, rank, and explicit permissions:
@@ -312,7 +339,7 @@ membership.role_key = :support_agent
 membership.save!
 ```
 
-Available permissions: `:view_chat`, `:post_message`, `:mute_member`, `:timeout_member`, `:ban_member`, `:delete_message`, `:close_chat`, `:reopen_chat`.
+Available permissions: `:view_chat`, `:post_message`, `:mention_member`, `:mention_all`, `:mention_role`, `:mute_member`, `:timeout_member`, `:ban_member`, `:delete_message`, `:close_chat`, `:reopen_chat`.
 Higher `rank` can moderate lower `rank` (and cannot moderate self).
 
 Moderation actions only apply to active memberships in the same chat, and you cannot moderate yourself.

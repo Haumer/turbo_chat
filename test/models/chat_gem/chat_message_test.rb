@@ -77,6 +77,52 @@ module ChatGem
       end
     end
 
+    test "member role cannot mention @all or role tokens" do
+      member = User.create!(email: "member-mention-check@example.com")
+      chat = ChatGem::Chat.create!(title: "Mention Guard")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      all_message = ChatGem::ChatMessage.new(chat: chat, participant: member, body: "ping @all", kind: :message)
+      role_message = ChatGem::ChatMessage.new(chat: chat, participant: member, body: "ping @ADMIN", kind: :message)
+
+      assert_not all_message.valid?
+      assert_includes all_message.errors[:body], "cannot mention @all"
+      assert_not role_message.valid?
+      assert_includes role_message.errors[:body], "cannot mention roles"
+    end
+
+    test "moderator role can mention members @all and role tokens" do
+      moderator = User.create!(email: "moderator-mention-check@example.com")
+      chat = ChatGem::Chat.create!(title: "Mention Allow")
+      ChatGem::ChatMembership.create!(chat: chat, participant: moderator, role: :moderator)
+
+      message = ChatGem::ChatMessage.new(
+        chat: chat,
+        participant: moderator,
+        body: "hey @member @all @ADMIN",
+        kind: :message
+      )
+
+      assert message.valid?
+    end
+
+    test "mention validation is skipped when mentions are disabled" do
+      member = User.create!(email: "member-mention-disabled@example.com")
+      chat = ChatGem::Chat.create!(title: "Mention Disabled")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      with_chat_configuration(enable_mentions: false) do
+        message = ChatGem::ChatMessage.new(
+          chat: chat,
+          participant: member,
+          body: "hey @all and @ADMIN",
+          kind: :message
+        )
+
+        assert message.valid?
+      end
+    end
+
     test "replace_signal keeps only latest participant signal" do
       user = User.create!(email: "replace_signal@example.com")
       chat = ChatGem::Chat.create!(title: "Replace Signal")
@@ -223,6 +269,7 @@ module ChatGem
         show_timestamp: config.show_timestamp,
         show_role: config.show_role,
         max_message_length: config.max_message_length,
+        enable_mentions: config.enable_mentions,
         replace_signals_on_message_submit: config.replace_signals_on_message_submit,
         timestamp_formatter: config.timestamp_formatter,
         role_formatter: config.role_formatter

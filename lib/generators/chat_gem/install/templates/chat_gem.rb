@@ -5,6 +5,7 @@ ChatGem.configure do |config|
   config.message_history_limit = 200
   config.enable_mentions = true
   config.enable_emoji_aliases = true
+  config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup
   config.own_message_hex_color = nil
   config.other_message_hex_color = nil
   config.role_message_hex_colors = {}

@@ -34,7 +34,8 @@ module ChatGem
         end
       else
         @chat_messages = @chat.visible_messages
-        @can_post_message = permission_for(@chat).can_post_message?
+        @chat_permission = permission_for(@chat)
+        @can_post_message = @chat_permission.can_post_message?
         respond_to do |format|
           format.turbo_stream { render "chat_gem/chats/show", status: :unprocessable_entity }
           format.html { render "chat_gem/chats/show", status: :unprocessable_entity }

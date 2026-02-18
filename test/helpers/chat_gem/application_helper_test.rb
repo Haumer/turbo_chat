@@ -4,11 +4,13 @@ module ChatGem
   class ApplicationHelperTest < ActionView::TestCase
     MessageStub = Struct.new(:participant_membership_role)
     BodyMessageStub = Struct.new(:body, :participant_membership_role)
+    MentionPermissionStub = Struct.new(:can_mention_members?, :can_mention_all?, :can_mention_roles?)
 
     setup do
       config = ChatGem.configuration
       @original_enable_mentions = config.enable_mentions
       @original_enable_emoji_aliases = config.enable_emoji_aliases
+      @original_emoji_aliases = config.emoji_aliases.deep_dup
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -19,6 +21,7 @@ module ChatGem
       config = ChatGem.configuration
       config.enable_mentions = @original_enable_mentions
       config.enable_emoji_aliases = @original_enable_emoji_aliases
+      config.emoji_aliases = @original_emoji_aliases
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -80,6 +83,18 @@ module ChatGem
       assert_includes rendered, "😄"
     end
 
+    test "plain message rendering supports custom configured emoji aliases" do
+      config = ChatGem.configuration
+      config.enable_mentions = true
+      config.enable_emoji_aliases = true
+      config.render_message_html = false
+      config.add_emoji_alias(:shipit, "🚢")
+
+      rendered = render_chat_message_body(BodyMessageStub.new("ready :shipit:", nil)).to_s
+
+      assert_includes rendered, "🚢"
+    end
+
     test "chat mention options include chat members, @all, and role mentions" do
       chat = ChatGem::Chat.create!(title: "Mention Targets")
       first_user = User.create!(email: "alex@example.com")
@@ -87,13 +102,28 @@ module ChatGem
       ChatGem::ChatMembership.create!(chat: chat, participant: first_user, role: :admin)
       ChatGem::ChatMembership.create!(chat: chat, participant: second_user, role: :member)
 
-      tokens = chat_mention_options(chat: chat).map { |entry| entry[:token] }
+      permission = MentionPermissionStub.new(true, true, true)
+      tokens = chat_mention_options(chat: chat, permission: permission).map { |entry| entry[:token] }
 
       assert_includes tokens, "@all"
       assert_includes tokens, "@alex"
       assert_includes tokens, "@alex_2"
       assert_includes tokens, "@ADMIN"
       assert_includes tokens, "@MEMBER"
+    end
+
+    test "chat mention options are filtered by mention permissions" do
+      chat = ChatGem::Chat.create!(title: "Restricted Mention Targets")
+      first_user = User.create!(email: "jane@example.com")
+      ChatGem::ChatMembership.create!(chat: chat, participant: first_user, role: :moderator)
+
+      member_only = MentionPermissionStub.new(true, false, false)
+      tokens = chat_mention_options(chat: chat, permission: member_only).map { |entry| entry[:token] }
+
+      assert_includes tokens, "@jane"
+      assert_not_includes tokens, "@all"
+      assert_not_includes tokens, "@MODERATOR"
+      assert chat_mentions_enabled_for?(chat: chat, permission: member_only)
     end
   end
 end

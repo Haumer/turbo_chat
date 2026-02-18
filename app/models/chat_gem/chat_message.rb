@@ -1,5 +1,8 @@
 module ChatGem
   class ChatMessage < ApplicationRecord
+    MENTION_PATTERN = /(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/.freeze
+    ROLE_MENTION_PATTERN = /\A@[A-Z][A-Z0-9_]{0,31}\z/.freeze
+
     belongs_to :chat, class_name: "ChatGem::Chat", inverse_of: :chat_messages
     belongs_to :participant, polymorphic: true
 
@@ -13,6 +16,7 @@ module ChatGem
     validates :body, presence: true, if: :message?
     validates :signal_type, presence: true, if: :signal?
     validate :body_within_max_length, if: :message?
+    validate :mentions_allowed_for_participant, if: :message?
 
     before_validation :normalize_signal_fields
     before_create :replace_participant_signals_on_submit, if: :message?
@@ -115,6 +119,21 @@ module ChatGem
       errors.add(:body, "is too long (maximum is #{limit} characters)")
     end
 
+    def mentions_allowed_for_participant
+      return unless ChatGem.configuration.enable_mentions
+
+      mentions = body.to_s.scan(MENTION_PATTERN).uniq
+      return if mentions.empty?
+
+      permission = mention_permission
+      return if permission.nil?
+
+      invalid_mention = mentions.find { |mention| !mention_allowed?(permission, mention) }
+      return if invalid_mention.nil?
+
+      errors.add(:body, mention_permission_error(invalid_mention))
+    end
+
     def replace_participant_signals_on_submit
       return unless ChatGem.configuration.replace_signals_on_message_submit
       return if chat_id.blank? || participant_type.blank? || participant_id.blank?
@@ -173,6 +192,56 @@ module ChatGem
       end
     rescue ArgumentError
       nil
+    end
+
+    def mention_permission
+      adapter = ChatGem.configuration.permission_adapter
+      return nil unless adapter.respond_to?(:new)
+
+      adapter.new(participant, chat)
+    rescue StandardError
+      nil
+    end
+
+    def mention_allowed?(permission, mention)
+      if permission.respond_to?(:can_mention_token?)
+        return permission.can_mention_token?(mention)
+      end
+
+      case mention_kind(mention)
+      when :all
+        permission_gate_allowed?(permission, :can_mention_all?)
+      when :role
+        permission_gate_allowed?(permission, :can_mention_roles?)
+      else
+        permission_gate_allowed?(permission, :can_mention_members?)
+      end
+    rescue StandardError
+      false
+    end
+
+    def permission_gate_allowed?(permission, method_name)
+      return true unless permission.respond_to?(method_name)
+
+      permission.public_send(method_name)
+    end
+
+    def mention_kind(mention)
+      return :all if mention.casecmp("@all").zero?
+      return :role if ROLE_MENTION_PATTERN.match?(mention)
+
+      :member
+    end
+
+    def mention_permission_error(mention)
+      case mention_kind(mention)
+      when :all
+        "cannot mention @all"
+      when :role
+        "cannot mention roles"
+      else
+        "cannot mention other members"
+      end
     end
   end
 end

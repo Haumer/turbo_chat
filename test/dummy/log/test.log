@@ -190,3 +190,215 @@ Migrating to AddCustomRoleKeyToChatMemberships (20260218000012)
   [1m[36mActiveRecord::SchemaMigration Load (0.0ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
   [1m[36mActiveRecord::InternalMetadata Load (0.5ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = ? ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "schema_sha1"]]
   [1m[36mActiveRecord::SchemaMigration Load (0.0ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+  [1m[36mUser Create (0.8ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "r@example.com"], ["created_at", "2026-02-18 16:37:11.231940"], ["updated_at", "2026-02-18 16:37:11.231940"]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[36mcommit transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+  [1m[36mChatGem::Chat Create (0.3ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "t"], ["created_at", "2026-02-18 16:37:11.236122"], ["updated_at", "2026-02-18 16:37:11.236122"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mcommit transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+  [1m[36mChatGem::ChatMembership Count (0.3ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 2]]
+  [1m[36mChatGem::ChatMembership Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 2], ["participant_type", "User"], ["participant_id", 1], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:37:11.250656"], ["updated_at", "2026-02-18 16:37:11.250656"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[36mcommit transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 2], ["participant_type", "User"], ["participant_id", 1], ["body", "hello"], ["kind", 0], ["signal_type", nil], ["created_at", "2026-02-18 16:37:11.257215"], ["updated_at", "2026-02-18 16:37:11.257215"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mcommit transaction[0m
+  Rendered /Users/haumer/code/Haumer/rails-projects/ruby_llm_chat/app/views/chat_gem/chat_messages/_message.html.erb (Duration: 1.2ms | Allocations: 1356)
+  [1m[36mChatGem::ChatMembership Load (0.5ms)[0m  [1m[34mSELECT "chat_gem_chat_memberships".* FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."participant_type" = ? AND "chat_gem_chat_memberships"."participant_id" = ? LIMIT ?[0m  [["chat_id", 1], ["participant_type", "User"], ["participant_id", 1], ["LIMIT", 1]]
+  Rendered /Users/haumer/code/Haumer/rails-projects/ruby_llm_chat/app/views/chat_gem/chat_messages/_message.html.erb (Duration: 12.5ms | Allocations: 7547)
+  [1m[36mActiveRecord::InternalMetadata Load (0.4ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = ? ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "schema_sha1"]]
+  [1m[36mActiveRecord::SchemaMigration Load (0.1ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.7ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = ? ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "schema_sha1"]]
+  [1m[36mActiveRecord::SchemaMigration Load (0.0ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[36mbegin transaction[0m
+----------------------------------------------------------------------------
+ChatFlowTest: test_chat_show_hides_the_current_participant_signal_by_default
+----------------------------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.9ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "self-signal@example.com"], ["created_at", "2026-02-18 16:38:11.384068"], ["updated_at", "2026-02-18 16:38:11.384068"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "other-signal@example.com"], ["created_at", "2026-02-18 16:38:11.385632"], ["updated_at", "2026-02-18 16:38:11.385632"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.2ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "Signals Chat"], ["created_at", "2026-02-18 16:38:11.388400"], ["updated_at", "2026-02-18 16:38:11.388400"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.3ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.406531"], ["updated_at", "2026-02-18 16:38:11.406531"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 3], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.407444"], ["updated_at", "2026-02-18 16:38:11.407444"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", ""], ["kind", 1], ["signal_type", 0], ["created_at", "2026-02-18 16:38:11.410657"], ["updated_at", "2026-02-18 16:38:11.410657"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+-------------------------------------------------------
+ChatFlowTest: test_renders_chats_index_and_shows_a_chat
+-------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "integration@example.com"], ["created_at", "2026-02-18 16:38:11.412168"], ["updated_at", "2026-02-18 16:38:11.412168"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "Integration Chat"], ["created_at", "2026-02-18 16:38:11.412458"], ["updated_at", "2026-02-18 16:38:11.412458"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.0ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.413040"], ["updated_at", "2026-02-18 16:38:11.413040"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", "hello"], ["kind", 0], ["signal_type", nil], ["created_at", "2026-02-18 16:38:11.413372"], ["updated_at", "2026-02-18 16:38:11.413372"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+--------------------------------------------------------------------
+ChatFlowTest: test_chat_show_escapes_html_in_message_body_by_default
+--------------------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "html-default@example.com"], ["created_at", "2026-02-18 16:38:11.414240"], ["updated_at", "2026-02-18 16:38:11.414240"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "HTML Default"], ["created_at", "2026-02-18 16:38:11.414492"], ["updated_at", "2026-02-18 16:38:11.414492"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.0ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.415037"], ["updated_at", "2026-02-18 16:38:11.415037"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", "<strong>bold</strong>"], ["kind", 0], ["signal_type", nil], ["created_at", "2026-02-18 16:38:11.415360"], ["updated_at", "2026-02-18 16:38:11.415360"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+----------------------------------------------------------------
+ChatFlowTest: test_chat_show_renders_sanitized_html_when_enabled
+----------------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "html-enabled@example.com"], ["created_at", "2026-02-18 16:38:11.416274"], ["updated_at", "2026-02-18 16:38:11.416274"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "HTML Enabled"], ["created_at", "2026-02-18 16:38:11.416529"], ["updated_at", "2026-02-18 16:38:11.416529"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.0ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.417088"], ["updated_at", "2026-02-18 16:38:11.417088"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", "<strong>bold</strong><script>alert('x')</script>"], ["kind", 0], ["signal_type", nil], ["created_at", "2026-02-18 16:38:11.417416"], ["updated_at", "2026-02-18 16:38:11.417416"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+-----------------------------------------------------------------------------
+ChatFlowTest: test_chat_show_applies_custom_message_css_classes_from_resolver
+-----------------------------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "styling-owner@example.com"], ["created_at", "2026-02-18 16:38:11.418712"], ["updated_at", "2026-02-18 16:38:11.418712"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "styling-other@example.com"], ["created_at", "2026-02-18 16:38:11.419126"], ["updated_at", "2026-02-18 16:38:11.419126"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "Styling Chat"], ["created_at", "2026-02-18 16:38:11.419405"], ["updated_at", "2026-02-18 16:38:11.419405"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.420231"], ["updated_at", "2026-02-18 16:38:11.420231"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 3], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.423961"], ["updated_at", "2026-02-18 16:38:11.423961"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", "owner message"], ["kind", 0], ["signal_type", nil], ["created_at", "2026-02-18 16:38:11.424320"], ["updated_at", "2026-02-18 16:38:11.424320"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+------------------------------------------------------------------------------------------------
+ChatFlowTest: test_requires_chat_current_participant_to_return_an_acts_as_chat_participant_model
+------------------------------------------------------------------------------------------------
+Started GET "/chat/chats" for 127.0.0.1 at 2026-02-18 17:38:11 +0100
+Processing by ChatGem::ChatsController#index as HTML
+Completed 500 Internal Server Error in 1ms (ActiveRecord: 0.0ms | Allocations: 1299)
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+-------------------------------------------------------
+ChatFlowTest: test_chat_show_uses_message_history_limit
+-------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "history-limit@example.com"], ["created_at", "2026-02-18 16:38:11.469536"], ["updated_at", "2026-02-18 16:38:11.469536"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "History Limit"], ["created_at", "2026-02-18 16:38:11.470031"], ["updated_at", "2026-02-18 16:38:11.470031"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.470861"], ["updated_at", "2026-02-18 16:38:11.470861"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", "history-oldest"], ["kind", 0], ["signal_type", nil], ["created_at", "2026-02-18 16:35:11.471132"], ["updated_at", "2026-02-18 16:38:11.471291"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+-----------------------------------------------------------------------------------
+ChatFlowTest: test_chat_show_includes_turbo_and_actioncable_wiring_for_live_updates
+-----------------------------------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "wiring@example.com"], ["created_at", "2026-02-18 16:38:11.472375"], ["updated_at", "2026-02-18 16:38:11.472375"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "Wiring Chat"], ["created_at", "2026-02-18 16:38:11.472639"], ["updated_at", "2026-02-18 16:38:11.472639"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.473294"], ["updated_at", "2026-02-18 16:38:11.473294"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+Started GET "/chat/chats/3" for 127.0.0.1 at 2026-02-18 17:38:11 +0100
+Processing by ChatGem::ChatsController#show as HTML
+  Parameters: {"id"=>"3"}
+  [1m[36mChatGem::Chat Load (0.0ms)[0m  [1m[34mSELECT "chat_gem_chats".* FROM "chat_gem_chats" WHERE "chat_gem_chats"."id" = ? LIMIT ?[0m  [["id", 3], ["LIMIT", 1]]
+  [1m[36mUser Load (0.0ms)[0m  [1m[34mSELECT "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?[0m  [["LIMIT", 1]]
+  [1m[36mChatGem::ChatMembership Load (0.0ms)[0m  [1m[34mSELECT "chat_gem_chat_memberships".* FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."participant_type" = ? AND "chat_gem_chat_memberships"."participant_id" = ? LIMIT ?[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 1], ["LIMIT", 1]]
+  [1m[36mCACHE User Load (0.0ms)[0m  [1m[34mSELECT "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?[0m  [["LIMIT", 1]]
+  [1m[36mCACHE ChatGem::ChatMembership Load (0.0ms)[0m  [1m[34mSELECT "chat_gem_chat_memberships".* FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."participant_type" = ? AND "chat_gem_chat_memberships"."participant_id" = ? LIMIT ?[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 1], ["LIMIT", 1]]
+Completed 403 Forbidden in 2ms (ActiveRecord: 0.1ms | Allocations: 2555)
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+------------------------------------------------------------------------------------
+ChatFlowTest: test_chat_message_partial_renders_with_application_controller_renderer
+------------------------------------------------------------------------------------
+  [1m[36mChatGem::ChatMembership Load (0.1ms)[0m  [1m[34mSELECT "chat_gem_chat_memberships".* FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."participant_type" = ? AND "chat_gem_chat_memberships"."participant_id" = ? LIMIT ?[0m  [["chat_id", 22], ["participant_type", "User"], ["participant_id", 11], ["LIMIT", 1]]
+  Rendered /Users/haumer/code/Haumer/rails-projects/ruby_llm_chat/app/views/chat_gem/chat_messages/_message.html.erb (Duration: 1.0ms | Allocations: 1304)
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[36mbegin transaction[0m
+---------------------------------------------------------------------------------------
+ChatFlowTest: test_chat_show_can_include_the_current_participant_signal_when_configured
+---------------------------------------------------------------------------------------
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mUser Create (0.1ms)[0m  [1m[32mINSERT INTO "users" ("email", "created_at", "updated_at") VALUES (?, ?, ?) RETURNING "id"[0m  [["email", "self-visible@example.com"], ["created_at", "2026-02-18 16:38:11.483646"], ["updated_at", "2026-02-18 16:38:11.483646"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::Chat Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chats" ("title", "created_at", "updated_at", "closed_at") VALUES (?, ?, ?, ?) RETURNING "id"[0m  [["title", "Visible Signal Chat"], ["created_at", "2026-02-18 16:38:11.483996"], ["updated_at", "2026-02-18 16:38:11.483996"], ["closed_at", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMembership Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."id" IS NOT NULL[0m  [["chat_id", 3]]
+  [1m[36mChatGem::ChatMembership Create (0.0ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_memberships" ("chat_id", "participant_type", "participant_id", "role", "muted", "timed_out_until", "removed_at", "created_at", "updated_at", "custom_role_key") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["role", 0], ["muted", 0], ["timed_out_until", nil], ["removed_at", nil], ["created_at", "2026-02-18 16:38:11.484631"], ["updated_at", "2026-02-18 16:38:11.484631"], ["custom_role_key", nil]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mSAVEPOINT active_record_1[0m
+  [1m[36mChatGem::ChatMessage Create (0.1ms)[0m  [1m[32mINSERT INTO "chat_gem_chat_messages" ("chat_id", "participant_type", "participant_id", "body", "kind", "signal_type", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING "id"[0m  [["chat_id", 3], ["participant_type", "User"], ["participant_id", 2], ["body", ""], ["kind", 1], ["signal_type", 0], ["created_at", "2026-02-18 16:38:11.484970"], ["updated_at", "2026-02-18 16:38:11.484970"]]
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mRELEASE SAVEPOINT active_record_1[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.1ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = ? ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "schema_sha1"]]
+  [1m[36mActiveRecord::SchemaMigration Load (0.0ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mActiveRecord::InternalMetadata Load (0.4ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = ? ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1[0m  [[nil, "schema_sha1"]]
+  [1m[36mActiveRecord::SchemaMigration Load (0.0ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[36mbegin transaction[0m
+------------------------------------------------------------------------------------
+ChatFlowTest: test_chat_message_partial_renders_with_application_controller_renderer
+------------------------------------------------------------------------------------
+  [1m[36mChatGem::ChatMembership Load (0.1ms)[0m  [1m[34mSELECT "chat_gem_chat_memberships".* FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."participant_type" = ? AND "chat_gem_chat_memberships"."participant_id" = ? LIMIT ?[0m  [["chat_id", 22], ["participant_type", "User"], ["participant_id", 11], ["LIMIT", 1]]
+  Rendered /Users/haumer/code/Haumer/rails-projects/ruby_llm_chat/app/views/chat_gem/chat_messages/_message.html.erb (Duration: 10.3ms | Allocations: 7294)
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[31mrollback transaction[0m
+  [1m[36mChatGem::ChatMembership Load (0.1ms)[0m  [1m[34mSELECT "chat_gem_chat_memberships".* FROM "chat_gem_chat_memberships" WHERE "chat_gem_chat_memberships"."chat_id" = ? AND "chat_gem_chat_memberships"."removed_at" IS NULL AND "chat_gem_chat_memberships"."participant_type" = ? AND "chat_gem_chat_memberships"."participant_id" = ? LIMIT ?[0m  [["chat_id", 1], ["participant_type", "User"], ["participant_id", 1], ["LIMIT", 1]]
+  Rendered /Users/haumer/code/Haumer/rails-projects/ruby_llm_chat/app/views/chat_gem/chat_messages/_message.html.erb (Duration: 7.3ms | Allocations: 7564)
