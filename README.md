@@ -1,6 +1,20 @@
 # ChatGem
 
-Mountable Rails engine gem for lightweight chats using Turbo Streams.
+Mountable Rails engine gem for lightweight, realtime chats using Turbo Streams.
+
+## Sections
+
+- [Quick Start](#quick-start-)
+- [Host App Contract](#host-app-contract)
+- [Feature Overview](#feature-overview-)
+- [Configuration](#configuration)
+- [Chat Lifecycle](#chat-lifecycle)
+- [Mentions and Emoji](#mentions-and-emoji)
+- [Styling and Custom Markup](#styling-and-custom-markup-)
+- [Rich HTML Message Rendering](#rich-html-message-rendering)
+- [Browser Events](#browser-events)
+- [Participants, Roles, and Moderation](#participants-roles-and-moderation)
+- [Programmatic Signals](#programmatic-signals)
 
 ## Quick Start 🚀
 
@@ -26,15 +40,11 @@ bin/rails db:migrate
 mount ChatGem::Engine => "/chat"
 ```
 
-## What You Get ✨
+## Host App Contract
 
-- Mountable chat UI with Turbo Stream updates.
-- Message + signal rows (`typing`, `thinking`, `planning`).
-- Role-aware permissions, moderation, and mention controls.
-- Optional browser events for typing and message lifecycle hooks.
-- Programmatic signal helpers for AI/tooling workflows.
+### Participant models
 
-## Participant Models
+Any model that should join chats must call `acts_as_chat_participant`:
 
 ```ruby
 class User < ApplicationRecord
@@ -42,7 +52,9 @@ class User < ApplicationRecord
 end
 ```
 
-Expose the current chat participant from your host `ApplicationController`:
+### Current participant
+
+Expose the current participant from your host `ApplicationController`:
 
 ```ruby
 class ApplicationController < ActionController::Base
@@ -54,9 +66,60 @@ class ApplicationController < ActionController::Base
 end
 ```
 
-`chat_current_participant` must return a model that uses `acts_as_chat_participant` (or `nil` when unauthenticated).
+`chat_current_participant` must return a model using `acts_as_chat_participant`, or `nil` for unauthenticated sessions.
 
-## Configuration Defaults
+## Feature Overview ✨
+
+- Mountable chat UI with Turbo Stream updates.
+- Message rows + signal rows (`typing`, `thinking`, `planning`).
+- Role-aware permissions, mentions, moderation, and chat close/reopen.
+- Configurable styling and optional sanitized HTML rendering.
+- Optional browser events for typing and message submit lifecycle.
+- Programmatic signal helpers for API/AI workflows.
+
+## Configuration
+
+### Key options by concern
+
+#### Access and limits
+
+- `config.permission_adapter` (`ChatGem::Permission` by default).
+- `config.max_chat_participants` (`10` by default).
+- `config.max_message_length` (`1000` by default).
+- `config.message_history_limit` (`200` by default; set `nil` or `0` to disable).
+
+#### Behavior and lifecycle
+
+- `config.active_chat_window` (`5.minutes` by default).
+- `config.show_self_signals` (`false` by default).
+- `config.replace_signals_on_message_submit` (`false` by default).
+
+#### Mentions and emoji
+
+- `config.enable_mentions` (`true` by default).
+- `config.enable_emoji_aliases` (`true` by default).
+- `config.emoji_aliases` (`ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup` by default).
+
+#### Rendering and styling
+
+- `config.show_timestamp` (`true` by default).
+- `config.show_role` (`false` by default).
+- `config.own_message_hex_color`, `config.other_message_hex_color` (`nil` by default).
+- `config.role_message_hex_colors` (`{}` by default).
+- `config.message_css_class_resolver` (`nil` by default).
+- `config.render_message_html` (`false` by default).
+- `config.message_html_tags` (`%w[a b br code em i li ol p pre strong ul]` by default).
+- `config.message_html_attributes` (`%w[href target rel class]` by default).
+- `config.timestamp_formatter` (`->(timestamp, _chat_message) { I18n.l(timestamp.in_time_zone, format: :long) }` by default).
+- `config.role_formatter` (`->(role, _chat_message) { role.to_s.humanize }` by default).
+
+#### Browser events
+
+- `config.emit_typing_events` (`false` by default).
+- `config.emit_message_events` (`false` by default).
+
+<details>
+<summary>Full default initializer</summary>
 
 ```ruby
 ChatGem.configure do |config|
@@ -86,11 +149,12 @@ ChatGem.configure do |config|
 end
 ```
 
-### Chat Lifecycle (Active/Inactive)
+</details>
 
-A chat is considered active when it has a regular message in the configured window (default: 5 minutes).
-Signal rows (`typing`, `thinking`, `planning`) do not count as activity.
-When a chat is closed (`closed_at` set), members can still view it but cannot post new messages.
+## Chat Lifecycle
+
+A chat is considered active when it has a regular message within the configured window (`config.active_chat_window`).
+Signal rows do not count as activity. Closed chats (`closed_at` set) remain viewable but cannot receive new messages.
 
 ```ruby
 ChatGem.configure do |config|
@@ -105,51 +169,21 @@ ChatGem::Chat.inactive
 ChatGem::Chat.active(window: 10.minutes)
 ```
 
-### Optional Typing Lifecycle Events (Off By Default)
+## Mentions and Emoji
 
-Enable browser events if your host app wants hooks for local typing lifecycle:
+Mention suggestions are built from active chat memberships and can include:
 
-```ruby
-ChatGem.configure do |config|
-  config.emit_typing_events = true
-end
-```
-
-Listen in your app JavaScript:
-
-```js
-document.addEventListener("chat-gem:typing-started", function (event) {
-  // event.detail.chatId
-});
-
-document.addEventListener("chat-gem:typing-ended", function (event) {
-  // event.detail.chatId
-});
-```
-
-Typing indicators from your own participant are hidden by default.
-Set `config.show_self_signals = true` to show your own typing/thinking/planning indicators.
-Set `config.replace_signals_on_message_submit = true` to automatically clear/replace a participant's signal rows when that participant posts a regular message.
-By default, regular messages are limited to `1000` characters (`config.max_message_length`).
-By default, chat views load the latest `200` regular messages (`config.message_history_limit`). Set it to `nil` or `0` to disable the limit.
-Mentions and emoji aliases are enabled by default (`config.enable_mentions`, `config.enable_emoji_aliases`) for plain-text message rendering.
-
-### Mentions & Emoji
-
-Mention suggestions in the composer are scoped to active chat members and include:
 - member handles such as `@alex`
 - `@all`
 - role targets such as `@ADMIN` and `@MODERATOR`
 
-Mention options are filtered by role permissions:
-- `:mention_member` for member handles
-- `:mention_all` for `@all`
-- `:mention_role` for role mentions like `@ADMIN`
+Mentions are permission-filtered and server-validated:
 
-Role-restricted mentions are enforced server-side. Unauthorized mention tokens fail validation.
+- `:mention_member` controls member handles.
+- `:mention_all` controls `@all`.
+- `:mention_role` controls role mentions.
 
-Emoji aliases support common tokens such as `:smile:`, `:thumbsup:`, `:rocket:`, and `:thinking:`.
-You can extend aliases at runtime:
+Emoji aliases are enabled by default for plain-text message rendering.
 
 ```ruby
 ChatGem.configure do |config|
@@ -157,8 +191,6 @@ ChatGem.configure do |config|
   config.add_emoji_alias("party_parrot", "🦜")
 end
 ```
-
-Or fully replace the alias map:
 
 ```ruby
 ChatGem.configure do |config|
@@ -169,11 +201,9 @@ ChatGem.configure do |config|
 end
 ```
 
-### Message Card Styling (HTML/CSS) 🎨
+## Styling and Custom Markup 🎨
 
-Use `config.message_css_class_resolver` to apply custom classes to the entire message card (`<article class="chat-bubble ...">`).
-
-Use message color options when you want inline bubble color control with validated hex values:
+### Bubble colors
 
 ```ruby
 ChatGem.configure do |config|
@@ -189,7 +219,7 @@ end
 
 Role-specific colors override own/other defaults. Invalid hex values are ignored.
 
-#### CSS Class Resolver (Basic)
+### CSS class resolver (basic)
 
 ```ruby
 ChatGem.configure do |config|
@@ -198,8 +228,6 @@ ChatGem.configure do |config|
   }
 end
 ```
-
-Resulting rendered HTML (example):
 
 ```html
 <article id="chat_gem_chat_message_42" class="chat-bubble chat-bubble--own msg-card msg-card--own">
@@ -211,7 +239,7 @@ Resulting rendered HTML (example):
 </article>
 ```
 
-#### CSS Class Resolver (Role-Aware)
+### CSS class resolver (role-aware)
 
 ```ruby
 ChatGem.configure do |config|
@@ -225,28 +253,13 @@ ChatGem.configure do |config|
 end
 ```
 
-Resulting rendered HTML (example):
+### Full markup override
 
-```html
-<article id="chat_gem_chat_message_73" class="chat-bubble msg-card msg-card--other msg-card--role-support_agent msg-card--long">
-  <header class="chat-meta">
-    <span class="chat-meta__author">Support Agent</span>
-    <time datetime="2026-02-18T16:41:00Z">February 18, 2026 4:41 PM</time>
-  </header>
-  <p class="chat-body">Here is a longer automated response...</p>
-</article>
-```
+`message_css_class_resolver` controls classes only. To change structure, override the message partial in your host app.
 
-#### Full Markup Override
-
-Need to change the card structure (for example, add a second `div`, actions row, or footer)?
-`message_css_class_resolver` only controls classes. For full markup changes, override the message partial in your host app.
-
-1. Create `app/views/chat_gem/chat_messages/_message.html.erb` in your host app.
+1. Create `app/views/chat_gem/chat_messages/_message.html.erb`.
 2. Copy the engine partial and customize it.
 3. Keep `id="<%= dom_id(chat_message) %>"` on the wrapper so Turbo updates/removals keep working.
-
-Example override (with an extra card section):
 
 ```erb
 <% own_message = own_chat_message?(chat_message) %>
@@ -269,9 +282,9 @@ Example override (with an extra card section):
 </article>
 ```
 
-### Rich HTML Message Rendering
+## Rich HTML Message Rendering
 
-Set `config.render_message_html = true` to render sanitized HTML in message bodies:
+Enable sanitized HTML rendering for message bodies:
 
 ```ruby
 ChatGem.configure do |config|
@@ -281,7 +294,7 @@ ChatGem.configure do |config|
 end
 ```
 
-Example: extend the allowlist with extra tags/attributes:
+Extend the allowlist as needed:
 
 ```ruby
 ChatGem.configure do |config|
@@ -291,7 +304,7 @@ ChatGem.configure do |config|
 end
 ```
 
-Given this message body:
+Given:
 
 ```html
 <h4 title="notice">Update</h4><blockquote><mark>Done</mark></blockquote><u>underline</u>
@@ -303,9 +316,27 @@ Rendered/sanitized output:
 <h4 title="notice">Update</h4><blockquote><mark>Done</mark></blockquote>underline
 ```
 
-### Optional Message Sent Event (Off By Default)
+## Browser Events
 
-Enable browser event emission when a message submit succeeds:
+### Typing lifecycle events
+
+```ruby
+ChatGem.configure do |config|
+  config.emit_typing_events = true
+end
+```
+
+```js
+document.addEventListener("chat-gem:typing-started", function (event) {
+  // event.detail.chatId
+});
+
+document.addEventListener("chat-gem:typing-ended", function (event) {
+  // event.detail.chatId
+});
+```
+
+### Message sent event
 
 ```ruby
 ChatGem.configure do |config|
@@ -313,30 +344,27 @@ ChatGem.configure do |config|
 end
 ```
 
-Listen in your app JavaScript:
-
 ```js
 document.addEventListener("chat-gem:message-sent", function (event) {
   // event.detail.chatId
 });
 ```
 
-## Add Participants To A Chat
+## Participants, Roles, and Moderation
 
 Use `ChatGem::ChatMembership` to add participants to a chat.
-Any model using `acts_as_chat_participant` works here (for example users, bots, or service accounts).
-By default, each chat allows up to 10 active participants. Removed memberships (`removed_at` set) do not count.
+Any model using `acts_as_chat_participant` works (users, bots, service accounts).
 
 ```ruby
 chat = ChatGem::Chat.find(chat_id)
-
 participant = User.find(user_id)
+
 ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant) do |membership|
   membership.role = :member
 end
 ```
 
-Configure the limit:
+Configure participant limits:
 
 ```ruby
 ChatGem.configure do |config|
@@ -345,14 +373,13 @@ ChatGem.configure do |config|
 end
 ```
 
-Available roles: `:member`, `:moderator`, `:admin`.
+Built-in roles: `:member`, `:moderator`, `:admin`.
 
-Role capabilities in the default permission adapter:
-- `member`: can view chat, post messages, and mention members.
-- `moderator`: member capabilities plus invites, `@all`, `@ROLE`, mute/timeout/ban members, and delete member messages.
-- `admin`: moderator capabilities plus moderating moderators and closing/reopening chats.
+- `member`: view chat, post messages, mention members.
+- `moderator`: member abilities plus invites, `@all`, `@ROLE`, mute/timeout/ban members, and delete member messages.
+- `admin`: moderator abilities plus moderating moderators and closing/reopening chats.
 
-Register custom roles with a name, rank, and explicit permissions:
+Custom role registration:
 
 ```ruby
 ChatGem.configure do |config|
@@ -365,7 +392,7 @@ ChatGem.configure do |config|
 end
 ```
 
-Assign a custom role to a membership:
+Assign a custom role:
 
 ```ruby
 membership = ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant)
@@ -373,19 +400,19 @@ membership.role_key = :support_agent
 membership.save!
 ```
 
-Available permissions: `:view_chat`, `:post_message`, `:mention_member`, `:mention_all`, `:mention_role`, `:invite_member`, `:mute_member`, `:timeout_member`, `:ban_member`, `:delete_message`, `:close_chat`, `:reopen_chat`.
-Higher `rank` can moderate lower `rank` (and cannot moderate self).
+Available permissions:
+`:view_chat`, `:post_message`, `:mention_member`, `:mention_all`, `:mention_role`, `:invite_member`, `:mute_member`, `:timeout_member`, `:ban_member`, `:delete_message`, `:close_chat`, `:reopen_chat`
 
-Moderation actions only apply to active memberships in the same chat, and you cannot moderate yourself.
+Higher `rank` can moderate lower `rank` (never self).
 
-If a participant was removed previously (`removed_at` set), reactivate that same membership:
+If a participant was removed (`removed_at` set), reactivate that membership:
 
 ```ruby
 membership = ChatGem::ChatMembership.find_by!(chat: chat, participant: participant)
 membership.update!(removed_at: nil, muted: false, timed_out_until: nil)
 ```
 
-Use the moderation service for role-checked actions:
+Use moderation service APIs for role-checked actions:
 
 ```ruby
 chat = ChatGem::Chat.find(chat_id)
@@ -402,9 +429,9 @@ ChatGem::Moderation.close_chat!(actor: admin, chat: chat)
 ChatGem::Moderation.reopen_chat!(actor: admin, chat: chat)
 ```
 
-## Programmatic Signals (Typing/Thinking/Planning)
+## Programmatic Signals
 
-Use signals to show activity while a participant is working on an API call.
+Use signal helpers when a participant is working on an async/API step.
 
 ```ruby
 chat = ChatGem::Chat.find(chat_id)
@@ -422,14 +449,14 @@ ChatGem::ChatMessage.create!(
 )
 ```
 
-To replace a signal (for example `thinking` -> `planning`), call `start!` or `replace!` again:
+Replace signal state:
 
 ```ruby
 ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
 ChatGem::Signals.replace!(chat: chat, participant: participant, signal_type: :planning)
 ```
 
-Use `with` to automatically clear the signal after success or failure:
+Auto-clear signals with a block:
 
 ```ruby
 answer = ChatGem::Signals.with(chat: chat, participant: participant, signal_type: :thinking) do
