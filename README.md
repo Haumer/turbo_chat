@@ -30,6 +30,7 @@ end
 ChatGem.configure do |config|
   config.max_chat_participants = 10
   config.max_message_length = 1000
+  config.message_history_limit = 200
   config.show_timestamp = true
   config.show_role = false
   config.active_chat_window = 5.minutes
@@ -79,6 +80,7 @@ Typing indicators from your own participant are hidden by default.
 Set `config.show_self_signals = true` to show your own typing/thinking/planning indicators.
 Set `config.replace_signals_on_message_submit = true` to automatically clear/replace a participant's signal rows when that participant posts a regular message.
 By default, regular messages are limited to `1000` characters (`config.max_message_length`).
+By default, chat views load the latest `200` regular messages (`config.message_history_limit`). Set it to `nil` or `0` to disable the limit.
 
 Use `config.message_css_class_resolver` to apply custom classes to the entire message card (`<article class="chat-bubble ...">`).
 

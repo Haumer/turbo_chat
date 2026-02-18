@@ -1,4 +1,4 @@
-require "test_helper"
+require_relative "../../test_helper"
 
 module ChatGem
   class ConfigurationTest < ActiveSupport::TestCase
@@ -7,6 +7,7 @@ module ChatGem
 
       assert_equal 10, config.max_chat_participants
       assert_equal 1000, config.max_message_length
+      assert_equal 200, config.message_history_limit
       assert_equal true, config.show_timestamp
       assert_equal false, config.show_role
       assert_equal 5.minutes, config.active_chat_window

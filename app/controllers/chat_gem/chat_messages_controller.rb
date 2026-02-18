@@ -5,7 +5,7 @@ module ChatGem
     before_action -> { authorize_post_message!(@chat) }, only: :create
 
     def index
-      @chat_messages = @chat.chat_messages.messages_only.ordered.includes(:participant)
+      @chat_messages = @chat.visible_messages
     end
 
     def create
@@ -33,7 +33,8 @@ module ChatGem
           format.html { redirect_to chat_path(@chat) }
         end
       else
-        @chat_messages = @chat.chat_messages.messages_only.ordered.includes(:participant)
+        @chat_messages = @chat.visible_messages
+        @can_post_message = permission_for(@chat).can_post_message?
         respond_to do |format|
           format.turbo_stream { render "chat_gem/chats/show", status: :unprocessable_entity }
           format.html { render "chat_gem/chats/show", status: :unprocessable_entity }

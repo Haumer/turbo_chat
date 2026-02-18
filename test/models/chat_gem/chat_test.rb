@@ -1,4 +1,4 @@
-require "test_helper"
+require_relative "../../test_helper"
 
 module ChatGem
   class ChatTest < ActiveSupport::TestCase
@@ -88,6 +88,36 @@ module ChatGem
       end
 
       assert_includes error.message, "active chat window"
+    end
+
+    test "visible_messages returns only latest messages in ascending order when limited" do
+      user = User.create!(email: "visible-messages-limit@example.com")
+      chat = ChatGem::Chat.create!(title: "Visible Messages")
+
+      oldest = ChatGem::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "oldest",
+        kind: :message,
+        created_at: 3.minutes.ago
+      )
+      middle = ChatGem::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "middle",
+        kind: :message,
+        created_at: 2.minutes.ago
+      )
+      newest = ChatGem::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "newest",
+        kind: :message,
+        created_at: 1.minute.ago
+      )
+
+      assert_equal [middle.id, newest.id], chat.visible_messages(limit: 2).pluck(:id)
+      assert_equal [oldest.id, middle.id, newest.id], chat.visible_messages(limit: nil).pluck(:id)
     end
 
     test "chat can be closed and reopened with scopes" do

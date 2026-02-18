@@ -61,6 +61,19 @@ module ChatGem
       end.reverse
     end
 
+    def visible_messages(limit: ChatGem.configuration.message_history_limit)
+      relation = chat_messages.messages_only
+      normalized_limit = normalize_message_limit(limit)
+      limited_relation = if normalized_limit.nil?
+                           relation
+                         else
+                           recent_ids = relation.reorder(created_at: :desc, id: :desc).limit(normalized_limit).select(:id)
+                           relation.where(id: recent_ids)
+                         end
+
+      limited_relation.ordered.includes(:participant)
+    end
+
     def last_message_at
       chat_messages.message.maximum(:created_at)
     end
@@ -98,6 +111,17 @@ module ChatGem
       return seconds if seconds.positive?
 
       raise ArgumentError, "active chat window must be a positive duration"
+    end
+
+    private
+
+    def normalize_message_limit(limit)
+      return nil if limit.nil?
+
+      normalized = limit.to_i
+      return nil if normalized <= 0
+
+      normalized
     end
   end
 end

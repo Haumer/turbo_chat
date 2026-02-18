@@ -1,4 +1,4 @@
-require "test_helper"
+require_relative "../test_helper"
 
 class ChatFlowTest < ActionDispatch::IntegrationTest
   test "renders chats index and shows a chat" do
@@ -139,4 +139,26 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
   ensure
     ChatGem.configuration.render_message_html = previous_render_html
   end
+
+  test "chat show uses message history limit" do
+    previous_limit = ChatGem.configuration.message_history_limit
+    ChatGem.configuration.message_history_limit = 2
+
+    user = User.create!(email: "history-limit@example.com")
+    chat = ChatGem::Chat.create!(title: "History Limit")
+    ChatGem::ChatMembership.create!(chat: chat, participant: user)
+    ChatGem::ChatMessage.create!(chat: chat, participant: user, kind: :message, body: "history-oldest", created_at: 3.minutes.ago)
+    ChatGem::ChatMessage.create!(chat: chat, participant: user, kind: :message, body: "history-middle", created_at: 2.minutes.ago)
+    ChatGem::ChatMessage.create!(chat: chat, participant: user, kind: :message, body: "history-newest", created_at: 1.minute.ago)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_not_includes response.body, "history-oldest"
+    assert_includes response.body, "history-middle"
+    assert_includes response.body, "history-newest"
+  ensure
+    ChatGem.configuration.message_history_limit = previous_limit
+  end
+
 end

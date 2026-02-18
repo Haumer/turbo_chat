@@ -23,6 +23,7 @@ module ChatGem
     attr_accessor :permission_adapter,
                   :max_chat_participants,
                   :max_message_length,
+                  :message_history_limit,
                   :show_timestamp,
                   :show_role,
                   :active_chat_window,
@@ -41,6 +42,7 @@ module ChatGem
       @permission_adapter = ChatGem::Permission
       @max_chat_participants = 10
       @max_message_length = 1000
+      @message_history_limit = 200
       @show_timestamp = true
       @show_role = false
       @active_chat_window = 5.minutes
