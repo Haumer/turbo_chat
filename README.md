@@ -18,6 +18,7 @@ Mountable Rails engine gem for lightweight, realtime chats using Turbo Streams.
   - [Browser Events](#browser-events)
 - [Participants, Roles, and Moderation](#participants-roles-and-moderation)
 - [Programmatic Signals](#programmatic-signals)
+- [Dependencies](#dependencies)
 - [Maintainer](#maintainer)
 
 ## Quick Start
@@ -511,6 +512,23 @@ end
 ```
 
 With this enabled, existing signals for that participant are cleared before the message record is created.
+
+## Dependencies
+
+Runtime dependencies:
+
+- Ruby `>= 3.1`
+- Rails `>= 7.0`, `< 8.0`
+- `turbo-rails` `>= 1.4`, `< 3.0`
+
+Database adapter requirement:
+
+- PostgreSQL or SQLite (required for the partial unique index used by chat memberships).
+
+Development dependencies in this repository:
+
+- `sqlite3` `~> 1.4`
+- `minitest` `~> 5.27`
 
 ## Maintainer
 

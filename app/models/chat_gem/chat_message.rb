@@ -2,6 +2,10 @@ module ChatGem
   class ChatMessage < ApplicationRecord
     MENTION_PATTERN = /(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/.freeze
     ROLE_MENTION_PATTERN = /\A@[A-Z][A-Z0-9_]{0,31}\z/.freeze
+    STREAM_NAME = :messages
+    MESSAGE_PARTIAL = "chat_gem/chat_messages/message"
+    CHAT_MESSAGE_PARTIAL = "chat_gem/chat_messages/chat_message"
+    SIGNALS_PARTIAL = "chat_gem/chat_messages/signals"
 
     belongs_to :chat, class_name: "ChatGem::Chat", inverse_of: :chat_messages
     belongs_to :participant, polymorphic: true
@@ -52,9 +56,9 @@ module ChatGem
         return unless defined?(Turbo::StreamsChannel)
 
         Turbo::StreamsChannel.broadcast_update_to(
-          [chat, :messages],
+          [chat, STREAM_NAME],
           target: ActionView::RecordIdentifier.dom_id(chat, :signals),
-          partial: "chat_gem/chat_messages/signals",
+          partial: SIGNALS_PARTIAL,
           locals: { chat: chat }
         )
       end
@@ -70,19 +74,11 @@ module ChatGem
     end
 
     def formatted_timestamp
-      formatter = ChatGem.configuration.timestamp_formatter
-      formatted = apply_formatter(formatter, created_at, self)
-      return formatted if formatted.present?
-
-      I18n.l(created_at.in_time_zone, format: :long)
+      formatted_time_for(created_at)
     end
 
     def formatted_updated_timestamp
-      formatter = ChatGem.configuration.timestamp_formatter
-      formatted = apply_formatter(formatter, updated_at, self)
-      return formatted if formatted.present?
-
-      I18n.l(updated_at.in_time_zone, format: :long)
+      formatted_time_for(updated_at)
     end
 
     def edited?
@@ -138,13 +134,13 @@ module ChatGem
     def mentions_allowed_for_participant
       return unless ChatGem.configuration.enable_mentions
 
-      mentions = body.to_s.scan(MENTION_PATTERN).uniq
+      mentions = mention_tokens
       return if mentions.empty?
 
       permission = mention_permission
       return if permission.nil?
 
-      invalid_mention = mentions.find { |mention| !mention_allowed?(permission, mention) }
+      invalid_mention = first_invalid_mention(permission, mentions)
       return if invalid_mention.nil?
 
       errors.add(:body, mention_permission_error(invalid_mention))
@@ -165,13 +161,13 @@ module ChatGem
     def broadcast_create
       return unless respond_to?(:broadcast_update_to)
 
-      stream = [chat, :messages]
+      stream = stream_name
 
       if message? && respond_to?(:broadcast_append_to)
         broadcast_append_to(
           stream,
           target: ActionView::RecordIdentifier.dom_id(chat, :messages),
-          partial: "chat_gem/chat_messages/chat_message",
+          partial: CHAT_MESSAGE_PARTIAL,
           locals: { chat_message: self }
         )
       end
@@ -179,7 +175,7 @@ module ChatGem
       broadcast_update_to(
         stream,
         target: ActionView::RecordIdentifier.dom_id(chat, :signals),
-        partial: "chat_gem/chat_messages/signals",
+        partial: SIGNALS_PARTIAL,
         locals: { chat: chat }
       )
     end
@@ -190,15 +186,15 @@ module ChatGem
       return unless respond_to?(:broadcast_replace_to)
 
       broadcast_replace_to(
-        [chat, :messages],
+        stream_name,
         target: ActionView::RecordIdentifier.dom_id(self),
-        partial: "chat_gem/chat_messages/message",
+        partial: MESSAGE_PARTIAL,
         locals: { chat_message: self }
       )
     end
 
     def broadcast_destroy
-      stream = [chat, :messages]
+      stream = stream_name
 
       if message? && respond_to?(:broadcast_remove_to)
         broadcast_remove_to(
@@ -208,6 +204,26 @@ module ChatGem
       end
 
       self.class.broadcast_signal_refresh(chat)
+    end
+
+    def formatted_time_for(timestamp)
+      formatter = ChatGem.configuration.timestamp_formatter
+      formatted = apply_formatter(formatter, timestamp, self)
+      return formatted if formatted.present?
+
+      I18n.l(timestamp.in_time_zone, format: :long)
+    end
+
+    def mention_tokens
+      body.to_s.scan(MENTION_PATTERN).uniq
+    end
+
+    def first_invalid_mention(permission, mentions)
+      mentions.find { |mention| !mention_allowed?(permission, mention) }
+    end
+
+    def stream_name
+      [chat, STREAM_NAME]
     end
 
     def apply_formatter(formatter, *args)

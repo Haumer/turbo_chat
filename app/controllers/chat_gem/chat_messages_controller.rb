@@ -11,61 +11,26 @@ module ChatGem
     end
 
     def create
-      if clear_signal_request?
-        ChatGem::ChatMessage.clear_signals!(chat: @chat, participant: current_chat_participant)
-        respond_to do |format|
-          format.turbo_stream { render_signals_update }
-          format.html { redirect_to chat_path(@chat) }
-        end
-        return
-      end
+      return respond_to_clear_signal_request if clear_signal_request?
 
-      @chat_message = @chat.chat_messages.build(chat_message_params)
-      @chat_message.participant = current_chat_participant
+      build_chat_message
 
       if @chat_message.save
-        respond_to do |format|
-          format.turbo_stream do
-            if signal_request?
-              render_signals_update
-            else
-              head :ok
-            end
-          end
-          format.html { redirect_to chat_path(@chat) }
-        end
+        respond_to_chat_message_create_success
       else
-        @chat_messages = @chat.visible_messages
-        @chat_permission = permission_for(@chat)
-        @can_post_message = @chat_permission.can_post_message?
-        respond_to do |format|
-          format.turbo_stream { render "chat_gem/chats/show", status: :unprocessable_entity }
-          format.html { render "chat_gem/chats/show", status: :unprocessable_entity }
-        end
+        respond_to_chat_message_create_failure
       end
     end
 
     def update
       if @chat_message.update(edit_chat_message_params)
-        if turbo_stream_request?
-          render turbo_stream: turbo_stream.replace(
-            view_context.dom_id(@chat_message),
-            partial: "chat_gem/chat_messages/message",
-            locals: { chat_message: @chat_message }
-          )
-        else
-          redirect_to chat_path(@chat), notice: "Message updated"
-        end
+        return render_chat_message_update if turbo_stream_request?
+
+        redirect_to chat_path(@chat), notice: "Message updated"
       else
-        if turbo_stream_request?
-          render turbo_stream: turbo_stream.replace(
-            view_context.dom_id(@chat_message),
-            partial: "chat_gem/chat_messages/message",
-            locals: { chat_message: @chat_message, force_edit_open: true }
-          ), status: :unprocessable_entity
-        else
-          redirect_to chat_path(@chat), alert: @chat_message.errors.full_messages.to_sentence
-        end
+        return render_chat_message_update(force_edit_open: true, status: :unprocessable_entity) if turbo_stream_request?
+
+        redirect_to chat_path(@chat), alert: @chat_message.errors.full_messages.to_sentence
       end
     end
 
@@ -91,6 +56,38 @@ module ChatGem
       return false unless signal_request?
 
       ActiveModel::Type::Boolean.new.cast(params.dig(:chat_message, :clear))
+    end
+
+    def build_chat_message
+      @chat_message = @chat.chat_messages.build(chat_message_params)
+      @chat_message.participant = current_chat_participant
+    end
+
+    def respond_to_clear_signal_request
+      ChatGem::ChatMessage.clear_signals!(chat: @chat, participant: current_chat_participant)
+      respond_to do |format|
+        format.turbo_stream { render_signals_update }
+        format.html { redirect_to chat_path(@chat) }
+      end
+    end
+
+    def respond_to_chat_message_create_success
+      respond_to do |format|
+        format.turbo_stream do
+          signal_request? ? render_signals_update : head(:ok)
+        end
+        format.html { redirect_to chat_path(@chat) }
+      end
+    end
+
+    def respond_to_chat_message_create_failure
+      @chat_messages = @chat.visible_messages
+      @chat_permission = permission_for(@chat)
+      @can_post_message = @chat_permission.can_post_message?
+      respond_to do |format|
+        format.turbo_stream { render "chat_gem/chats/show", status: :unprocessable_entity }
+        format.html { render "chat_gem/chats/show", status: :unprocessable_entity }
+      end
     end
 
     def render_signals_update
@@ -128,6 +125,16 @@ module ChatGem
         format.html { redirect_to chat_path(@chat), alert: "Not allowed to edit this message" }
         format.any { head :forbidden }
       end
+    end
+
+    def render_chat_message_update(force_edit_open: false, status: :ok)
+      locals = { chat_message: @chat_message }
+      locals[:force_edit_open] = true if force_edit_open
+      render turbo_stream: turbo_stream.replace(
+        view_context.dom_id(@chat_message),
+        partial: "chat_gem/chat_messages/message",
+        locals: locals
+      ), status: status
     end
 
     def turbo_stream_request?
