@@ -2,21 +2,25 @@
 
 Mountable Rails engine gem for lightweight, realtime chats using Turbo Streams.
 
-## Sections
+## Table of Contents
 
-- [Quick Start](#quick-start-)
+- [Quick Start](#quick-start)
 - [Host App Contract](#host-app-contract)
-- [Feature Overview](#feature-overview-)
+- [Simple Example](#simple-example)
+- [Feature Overview](#feature-overview)
 - [Configuration](#configuration)
-- [Chat Lifecycle](#chat-lifecycle)
-- [Mentions and Emoji](#mentions-and-emoji)
-- [Styling and Custom Markup](#styling-and-custom-markup-)
-- [Rich HTML Message Rendering](#rich-html-message-rendering)
-- [Browser Events](#browser-events)
+- [Core Concepts](#core-concepts)
+  - [Chat Lifecycle](#chat-lifecycle)
+  - [Mentions and Emoji](#mentions-and-emoji)
+- [UI Customization](#ui-customization)
+  - [Styling and Custom Markup](#styling-and-custom-markup)
+  - [Rich HTML Message Rendering](#rich-html-message-rendering)
+  - [Browser Events](#browser-events)
 - [Participants, Roles, and Moderation](#participants-roles-and-moderation)
 - [Programmatic Signals](#programmatic-signals)
+- [Maintainer](#maintainer)
 
-## Quick Start 🚀
+## Quick Start
 
 1. Add the gem to your host app:
 
@@ -68,14 +72,29 @@ end
 
 `chat_current_participant` must return a model using `acts_as_chat_participant`, or `nil` for unauthenticated sessions.
 
-## Feature Overview ✨
+## Simple Example
+
+Create a chat, add the current participant, and link to the chat view:
+
+```ruby
+chat = ChatGem::Chat.create!(title: "Support")
+ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :member)
+```
+
+```erb
+<%= link_to "Open chat", chat_gem.chat_path(chat) %>
+```
+
+`chat_gem` is the default route helper prefix when mounted as `mount ChatGem::Engine => "/chat"`.
+
+## Feature Overview
 
 - Mountable chat UI with Turbo Stream updates.
 - Message rows + signal rows (`typing`, `thinking`, `planning`).
 - Role-aware permissions, mentions, moderation, and chat close/reopen.
 - Configurable styling and optional sanitized HTML rendering.
 - Optional browser events for typing and message submit lifecycle.
-- Programmatic signal helpers for API/AI workflows.
+- Programmatic signal helpers for user-facing typing/thinking/planning states.
 
 ## Configuration
 
@@ -92,7 +111,7 @@ end
 
 - `config.active_chat_window` (`5.minutes` by default).
 - `config.show_self_signals` (`false` by default).
-- `config.replace_signals_on_message_submit` (`false` by default).
+- `config.replace_signals_on_message_submit` (`false` by default; clears a participant's existing signals when they submit a regular message).
 
 #### Mentions and emoji
 
@@ -151,7 +170,9 @@ end
 
 </details>
 
-## Chat Lifecycle
+## Core Concepts
+
+### Chat Lifecycle
 
 A chat is considered active when it has a regular message within the configured window (`config.active_chat_window`).
 Signal rows do not count as activity. Closed chats (`closed_at` set) remain viewable but cannot receive new messages.
@@ -169,11 +190,11 @@ ChatGem::Chat.inactive
 ChatGem::Chat.active(window: 10.minutes)
 ```
 
-## Mentions and Emoji
+### Mentions and Emoji
 
 Mention suggestions are built from active chat memberships and can include:
 
-- member handles such as `@alex`
+- member handles such as `@username`
 - `@all`
 - role targets such as `@ADMIN` and `@MODERATOR`
 
@@ -185,12 +206,16 @@ Mentions are permission-filtered and server-validated:
 
 Emoji aliases are enabled by default for plain-text message rendering.
 
+#### Add aliases incrementally
+
 ```ruby
 ChatGem.configure do |config|
   config.add_emoji_alias(:shipit, "🚢")
   config.add_emoji_alias("party_parrot", "🦜")
 end
 ```
+
+#### Override alias map
 
 ```ruby
 ChatGem.configure do |config|
@@ -201,9 +226,11 @@ ChatGem.configure do |config|
 end
 ```
 
-## Styling and Custom Markup 🎨
+## UI Customization
 
-### Bubble colors
+### Styling and Custom Markup
+
+#### Bubble colors
 
 ```ruby
 ChatGem.configure do |config|
@@ -219,7 +246,7 @@ end
 
 Role-specific colors override own/other defaults. Invalid hex values are ignored.
 
-### CSS class resolver (basic)
+#### CSS class resolver (basic)
 
 ```ruby
 ChatGem.configure do |config|
@@ -239,7 +266,7 @@ end
 </article>
 ```
 
-### CSS class resolver (role-aware)
+#### CSS class resolver (role-aware)
 
 ```ruby
 ChatGem.configure do |config|
@@ -253,7 +280,7 @@ ChatGem.configure do |config|
 end
 ```
 
-### Full markup override
+#### Full markup override
 
 `message_css_class_resolver` controls classes only. To change structure, override the message partial in your host app.
 
@@ -282,7 +309,9 @@ end
 </article>
 ```
 
-## Rich HTML Message Rendering
+### Rich HTML Message Rendering
+
+#### Enable sanitized rendering
 
 Enable sanitized HTML rendering for message bodies:
 
@@ -294,6 +323,8 @@ ChatGem.configure do |config|
 end
 ```
 
+#### Extend the allowlist
+
 Extend the allowlist as needed:
 
 ```ruby
@@ -303,6 +334,8 @@ ChatGem.configure do |config|
   config.message_html_attributes = ChatGem::Configuration::DEFAULT_MESSAGE_HTML_ATTRIBUTES + %w[title]
 end
 ```
+
+#### Simple Example
 
 Given:
 
@@ -316,9 +349,9 @@ Rendered/sanitized output:
 <h4 title="notice">Update</h4><blockquote><mark>Done</mark></blockquote>underline
 ```
 
-## Browser Events
+### Browser Events
 
-### Typing lifecycle events
+#### Typing lifecycle events
 
 ```ruby
 ChatGem.configure do |config|
@@ -336,7 +369,7 @@ document.addEventListener("chat-gem:typing-ended", function (event) {
 });
 ```
 
-### Message sent event
+#### Message sent event
 
 ```ruby
 ChatGem.configure do |config|
@@ -431,42 +464,54 @@ ChatGem::Moderation.reopen_chat!(actor: admin, chat: chat)
 
 ## Programmatic Signals
 
-Use signal helpers when a participant is working on an async/API step.
+Use signal helpers to show temporary participant states in normal chat flows (`typing`, `thinking`, `planning`).
+
+### Start and clear a signal
 
 ```ruby
 chat = ChatGem::Chat.find(chat_id)
-participant = User.find(user_id)
+participant = Current.user
 
 ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
-answer = ExternalAiClient.answer(prompt)
+# ...perform work (drafting, validation, lookup, etc.)...
 ChatGem::Signals.clear!(chat: chat, participant: participant)
-
-ChatGem::ChatMessage.create!(
-  chat: chat,
-  participant: participant,
-  kind: :message,
-  body: answer
-)
 ```
 
-Replace signal state:
+### Replace signal state
 
 ```ruby
 ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
 ChatGem::Signals.replace!(chat: chat, participant: participant, signal_type: :planning)
 ```
 
-Auto-clear signals with a block:
+### Auto-clear signals with a block
 
 ```ruby
-answer = ChatGem::Signals.with(chat: chat, participant: participant, signal_type: :thinking) do
-  ExternalAiClient.answer(prompt)
+final_text = ChatGem::Signals.with(chat: chat, participant: participant, signal_type: :thinking) do
+  params[:body].to_s.strip
 end
 
 ChatGem::ChatMessage.create!(
   chat: chat,
   participant: participant,
   kind: :message,
-  body: answer
+  body: final_text
 )
 ```
+
+### Submit-time replacement on message send
+
+When the composer submits a regular message, it stops the typing loop and requests signal clear.
+For an additional server-side safeguard, enable submit-time cleanup:
+
+```ruby
+ChatGem.configure do |config|
+  config.replace_signals_on_message_submit = true
+end
+```
+
+With this enabled, existing signals for that participant are cleared before the message record is created.
+
+## Maintainer
+
+[haumer](https://github.com/haumer)
