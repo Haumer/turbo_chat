@@ -36,6 +36,47 @@ module ChatGem
       assert_equal [visible.id], chat.chat_messages.messages_only.ordered.pluck(:id)
     end
 
+    test "validates default max message length" do
+      user = User.create!(email: "max-length-default@example.com")
+      chat = ChatGem::Chat.create!(title: "Max Length Default")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user)
+
+      message = ChatGem::ChatMessage.new(
+        chat: chat,
+        participant: user,
+        kind: :message,
+        body: "a" * 1001
+      )
+
+      assert_not message.valid?
+      assert_includes message.errors[:body], "is too long (maximum is 1000 characters)"
+    end
+
+    test "supports configurable max message length" do
+      user = User.create!(email: "max-length-custom@example.com")
+      chat = ChatGem::Chat.create!(title: "Max Length Custom")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user)
+
+      with_chat_configuration(max_message_length: 5) do
+        short_message = ChatGem::ChatMessage.new(
+          chat: chat,
+          participant: user,
+          kind: :message,
+          body: "hello"
+        )
+        long_message = ChatGem::ChatMessage.new(
+          chat: chat,
+          participant: user,
+          kind: :message,
+          body: "toolong"
+        )
+
+        assert short_message.valid?
+        assert_not long_message.valid?
+        assert_includes long_message.errors[:body], "is too long (maximum is 5 characters)"
+      end
+    end
+
     test "replace_signal keeps only latest participant signal" do
       user = User.create!(email: "replace_signal@example.com")
       chat = ChatGem::Chat.create!(title: "Replace Signal")
@@ -63,6 +104,35 @@ module ChatGem
 
       assert_equal :ok, result
       assert_equal 0, chat.chat_messages.signal.where(participant: user).count
+    end
+
+    test "message submit does not replace participant signal rows by default" do
+      user = User.create!(email: "submit-default@example.com")
+      chat = ChatGem::Chat.create!(title: "Submit Default")
+      ChatGem::ChatMembership.create!(chat: chat, participant: user)
+
+      ChatGem::ChatMessage.start_signal!(chat: chat, participant: user, signal_type: :typing)
+      ChatGem::ChatMessage.create!(chat: chat, participant: user, body: "sent", kind: :message)
+
+      assert_equal 1, chat.chat_messages.signal.where(participant: user).count
+    end
+
+    test "message submit replaces only submitter signal rows when enabled" do
+      sender = User.create!(email: "submit-enabled@example.com")
+      other = User.create!(email: "submit-enabled-other@example.com")
+      chat = ChatGem::Chat.create!(title: "Submit Enabled")
+      ChatGem::ChatMembership.create!(chat: chat, participant: sender)
+      ChatGem::ChatMembership.create!(chat: chat, participant: other)
+
+      ChatGem::ChatMessage.start_signal!(chat: chat, participant: sender, signal_type: :typing)
+      ChatGem::ChatMessage.start_signal!(chat: chat, participant: other, signal_type: :thinking)
+
+      with_chat_configuration(replace_signals_on_message_submit: true) do
+        ChatGem::ChatMessage.create!(chat: chat, participant: sender, body: "sent", kind: :message)
+      end
+
+      assert_equal 0, chat.chat_messages.signal.where(participant: sender).count
+      assert_equal 1, chat.chat_messages.signal.where(participant: other).count
     end
 
     test "clear_signals broadcasts signal refresh" do
@@ -152,6 +222,8 @@ module ChatGem
       original = {
         show_timestamp: config.show_timestamp,
         show_role: config.show_role,
+        max_message_length: config.max_message_length,
+        replace_signals_on_message_submit: config.replace_signals_on_message_submit,
         timestamp_formatter: config.timestamp_formatter,
         role_formatter: config.role_formatter
       }

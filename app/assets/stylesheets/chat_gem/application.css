@@ -58,6 +58,18 @@
   border-color: #8ec5ff;
 }
 
+.chat-body {
+  margin: 0;
+}
+
+.chat-body p {
+  margin: 0 0 8px;
+}
+
+.chat-body p:last-child {
+  margin-bottom: 0;
+}
+
 .chat-meta {
   display: flex;
   align-items: center;

@@ -17,25 +17,41 @@ module ChatGem
         permissions: %i[view_chat post_message mute_member timeout_member ban_member delete_message close_chat reopen_chat]
       }
     }.freeze
+    DEFAULT_MESSAGE_HTML_TAGS = %w[a b br code em i li ol p pre strong ul].freeze
+    DEFAULT_MESSAGE_HTML_ATTRIBUTES = %w[href target rel class].freeze
 
     attr_accessor :permission_adapter,
                   :max_chat_participants,
+                  :max_message_length,
                   :show_timestamp,
                   :show_role,
                   :active_chat_window,
                   :emit_typing_events,
                   :emit_message_events,
+                  :show_self_signals,
+                  :replace_signals_on_message_submit,
+                  :message_css_class_resolver,
+                  :render_message_html,
+                  :message_html_tags,
+                  :message_html_attributes,
                   :timestamp_formatter,
                   :role_formatter
 
     def initialize
       @permission_adapter = ChatGem::Permission
       @max_chat_participants = 10
+      @max_message_length = 1000
       @show_timestamp = true
       @show_role = false
       @active_chat_window = 5.minutes
       @emit_typing_events = false
       @emit_message_events = false
+      @show_self_signals = false
+      @replace_signals_on_message_submit = false
+      @message_css_class_resolver = nil
+      @render_message_html = false
+      @message_html_tags = DEFAULT_MESSAGE_HTML_TAGS.dup
+      @message_html_attributes = DEFAULT_MESSAGE_HTML_ATTRIBUTES.dup
       @additional_roles = {}
       @timestamp_formatter = lambda { |timestamp, _chat_message = nil|
         I18n.l(timestamp.in_time_zone, format: :long)

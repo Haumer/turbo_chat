@@ -6,11 +6,18 @@ module ChatGem
       config = ChatGem.configuration
 
       assert_equal 10, config.max_chat_participants
+      assert_equal 1000, config.max_message_length
       assert_equal true, config.show_timestamp
       assert_equal false, config.show_role
       assert_equal 5.minutes, config.active_chat_window
       assert_equal false, config.emit_typing_events
       assert_equal false, config.emit_message_events
+      assert_equal false, config.show_self_signals
+      assert_equal false, config.replace_signals_on_message_submit
+      assert_nil config.message_css_class_resolver
+      assert_equal false, config.render_message_html
+      assert_equal %w[a b br code em i li ol p pre strong ul], config.message_html_tags
+      assert_equal %w[href target rel class], config.message_html_attributes
       assert_respond_to config.timestamp_formatter, :call
       assert_respond_to config.role_formatter, :call
       assert_includes config.role_definitions.keys, "member"

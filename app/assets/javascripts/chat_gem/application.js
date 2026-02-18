@@ -73,10 +73,37 @@
     document.querySelectorAll(".chat-messages").forEach(setupMessageAutoScroll);
   }
 
+  function hideOwnSignals(container) {
+    if (!container) {
+      return;
+    }
+
+    if (datasetFlagEnabled(container, "chatShowSelfSignals")) {
+      return;
+    }
+
+    var selfType = container.dataset.chatSelfParticipantType;
+    var selfId = container.dataset.chatSelfParticipantId;
+    if (!selfType || !selfId) {
+      return;
+    }
+
+    container.querySelectorAll(".chat-typing-indicator").forEach(function (node) {
+      if (
+        node.dataset.chatSignalParticipantType === selfType &&
+        node.dataset.chatSignalParticipantId === selfId
+      ) {
+        node.remove();
+      }
+    });
+  }
+
   function syncSignalContainerState(container) {
     if (!container) {
       return;
     }
+
+    hideOwnSignals(container);
 
     var hasVisibleSignals = container.querySelector(
       ".chat-typing-indicator:not(.chat-typing-indicator--leaving)"

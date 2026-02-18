@@ -1,4 +1,7 @@
 <section class="chat-shell">
+  <% current_participant = current_chat_participant %>
+  <% current_participant_type = current_participant.class.base_class.name %>
+  <% current_participant_id = current_participant.id %>
   <header class="chat-header">
     <h1><%= @chat.title %></h1>
     <%= link_to "Back", chats_path, class: "chat-btn chat-btn--ghost" %>
@@ -11,7 +14,11 @@
       <%= render @chat_messages %>
     </div>
 
-    <div id="<%= dom_id(@chat, :signals) %>" class="chat-signals">
+    <div id="<%= dom_id(@chat, :signals) %>"
+         class="chat-signals"
+         data-chat-show-self-signals="<%= ChatGem.configuration.show_self_signals %>"
+         data-chat-self-participant-type="<%= current_participant_type %>"
+         data-chat-self-participant-id="<%= current_participant_id %>">
       <%= render "chat_gem/chat_messages/signals", chat: @chat %>
     </div>
   </section>

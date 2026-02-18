@@ -12,8 +12,10 @@ module ChatGem
     validates :participant_type, :participant_id, presence: true
     validates :body, presence: true, if: :message?
     validates :signal_type, presence: true, if: :signal?
+    validate :body_within_max_length, if: :message?
 
     before_validation :normalize_signal_fields
+    before_create :replace_participant_signals_on_submit, if: :message?
 
     after_create_commit :broadcast_create
     after_destroy_commit :broadcast_destroy
@@ -100,6 +102,29 @@ module ChatGem
     def normalize_signal_fields
       self.signal_type = nil if message?
       self.body = "" if signal?
+    end
+
+    def body_within_max_length
+      configured_limit = ChatGem.configuration.max_message_length
+      return if configured_limit.nil?
+
+      limit = configured_limit.to_i
+      return if limit <= 0
+      return if body.to_s.length <= limit
+
+      errors.add(:body, "is too long (maximum is #{limit} characters)")
+    end
+
+    def replace_participant_signals_on_submit
+      return unless ChatGem.configuration.replace_signals_on_message_submit
+      return if chat_id.blank? || participant_type.blank? || participant_id.blank?
+
+      self.class.where(
+        chat_id: chat_id,
+        participant_type: participant_type,
+        participant_id: participant_id,
+        kind: self.class.kinds[:signal]
+      ).delete_all
     end
 
     def broadcast_create
