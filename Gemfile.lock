@@ -2,8 +2,8 @@ PATH
   remote: .
   specs:
     chat_gem (0.1.0)
-      rails (>= 7.0)
-      turbo-rails (>= 1.4)
+      rails (>= 7.0, < 8.0)
+      turbo-rails (>= 1.4, < 3.0)
 
 GEM
   remote: https://rubygems.org/

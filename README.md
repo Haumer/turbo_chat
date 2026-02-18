@@ -2,6 +2,38 @@
 
 Mountable Rails engine gem for lightweight chats using Turbo Streams.
 
+## Quick Start 🚀
+
+1. Add the gem to your host app:
+
+```ruby
+# Gemfile
+gem "chat_gem"
+```
+
+2. Install and copy setup files:
+
+```bash
+bundle install
+bin/rails generate chat_gem:install
+bin/rails db:migrate
+```
+
+3. Mount the engine:
+
+```ruby
+# config/routes.rb
+mount ChatGem::Engine => "/chat"
+```
+
+## What You Get ✨
+
+- Mountable chat UI with Turbo Stream updates.
+- Message + signal rows (`typing`, `thinking`, `planning`).
+- Role-aware permissions, moderation, and mention controls.
+- Optional browser events for typing and message lifecycle hooks.
+- Programmatic signal helpers for AI/tooling workflows.
+
 ## Participant Models
 
 ```ruby
@@ -24,10 +56,11 @@ end
 
 `chat_current_participant` must return a model that uses `acts_as_chat_participant` (or `nil` when unauthenticated).
 
-## Message Metadata
+## Configuration Defaults
 
 ```ruby
 ChatGem.configure do |config|
+  config.permission_adapter = ChatGem::Permission
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
@@ -170,7 +203,6 @@ ChatGem.configure do |config|
     classes = ["msg-card"]
     classes << (own_message ? "msg-card--own" : "msg-card--other")
     classes << "msg-card--role-#{chat_message.participant_membership_role}" if chat_message.participant_membership_role.present?
-    classes << "msg-card--ai" if chat_message.participant_type == "Bot"
     classes << "msg-card--long" if chat_message.body.to_s.length > 280
     classes
   }
@@ -180,9 +212,9 @@ end
 Resulting rendered HTML (example):
 
 ```html
-<article id="chat_gem_chat_message_73" class="chat-bubble msg-card msg-card--other msg-card--role-support_agent msg-card--ai msg-card--long">
+<article id="chat_gem_chat_message_73" class="chat-bubble msg-card msg-card--other msg-card--role-support_agent msg-card--long">
   <header class="chat-meta">
-    <span class="chat-meta__author">Support Bot</span>
+    <span class="chat-meta__author">Support Agent</span>
     <time datetime="2026-02-18T16:41:00Z">February 18, 2026 4:41 PM</time>
   </header>
   <p class="chat-body">Here is a longer automated response...</p>
@@ -199,7 +231,7 @@ Need to change the card structure (for example, add a second `div`, actions row,
 Example override (with an extra card section):
 
 ```erb
-<% own_message = respond_to?(:current_chat_participant, true) && (chat_message.participant == current_chat_participant) %>
+<% own_message = own_chat_message?(chat_message) %>
 <% show_timestamp = ChatGem.configuration.show_timestamp %>
 <article id="<%= dom_id(chat_message) %>" class="<%= chat_message_css_classes(chat_message: chat_message, own_message: own_message) %>">
   <div class="msg-card__header">
@@ -283,21 +315,15 @@ document.addEventListener("chat-gem:message-sent", function (event) {
 
 ## Add Participants To A Chat
 
-Use `ChatGem::ChatMembership` to add either humans or bots to a chat.
+Use `ChatGem::ChatMembership` to add participants to a chat.
+Any model using `acts_as_chat_participant` works here (for example users, bots, or service accounts).
 By default, each chat allows up to 10 active participants. Removed memberships (`removed_at` set) do not count.
 
 ```ruby
 chat = ChatGem::Chat.find(chat_id)
 
-# Human
-user = User.find(user_id)
-ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: user) do |membership|
-  membership.role = :member
-end
-
-# Bot
-bot = Bot.find(bot_id)
-ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: bot) do |membership|
+participant = User.find(user_id)
+ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant) do |membership|
   membership.role = :member
 end
 ```
@@ -315,7 +341,7 @@ Available roles: `:member`, `:moderator`, `:admin`.
 
 Role capabilities in the default permission adapter:
 - `member`: can view chat, post messages, and mention members.
-- `moderator`: member capabilities plus `@all`, `@ROLE`, mute/timeout/ban members, and delete member messages.
+- `moderator`: member capabilities plus invites, `@all`, `@ROLE`, mute/timeout/ban members, and delete member messages.
 - `admin`: moderator capabilities plus moderating moderators and closing/reopening chats.
 
 Register custom roles with a name, rank, and explicit permissions:
@@ -334,12 +360,12 @@ end
 Assign a custom role to a membership:
 
 ```ruby
-membership = ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: user)
+membership = ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant)
 membership.role_key = :support_agent
 membership.save!
 ```
 
-Available permissions: `:view_chat`, `:post_message`, `:mention_member`, `:mention_all`, `:mention_role`, `:mute_member`, `:timeout_member`, `:ban_member`, `:delete_message`, `:close_chat`, `:reopen_chat`.
+Available permissions: `:view_chat`, `:post_message`, `:mention_member`, `:mention_all`, `:mention_role`, `:invite_member`, `:mute_member`, `:timeout_member`, `:ban_member`, `:delete_message`, `:close_chat`, `:reopen_chat`.
 Higher `rank` can moderate lower `rank` (and cannot moderate self).
 
 Moderation actions only apply to active memberships in the same chat, and you cannot moderate yourself.
@@ -347,7 +373,7 @@ Moderation actions only apply to active memberships in the same chat, and you ca
 If a participant was removed previously (`removed_at` set), reactivate that same membership:
 
 ```ruby
-membership = ChatGem::ChatMembership.find_by!(chat: chat, participant: user_or_bot)
+membership = ChatGem::ChatMembership.find_by!(chat: chat, participant: participant)
 membership.update!(removed_at: nil, muted: false, timed_out_until: nil)
 ```
 
@@ -370,19 +396,19 @@ ChatGem::Moderation.reopen_chat!(actor: admin, chat: chat)
 
 ## Programmatic Signals (Typing/Thinking/Planning)
 
-Use signals to show activity while a participant (human or bot) is working on an API call.
+Use signals to show activity while a participant is working on an API call.
 
 ```ruby
 chat = ChatGem::Chat.find(chat_id)
-bot = Bot.find(bot_id)
+participant = User.find(user_id)
 
-ChatGem::Signals.start!(chat: chat, participant: bot, signal_type: :thinking)
+ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
 answer = ExternalAiClient.answer(prompt)
-ChatGem::Signals.clear!(chat: chat, participant: bot)
+ChatGem::Signals.clear!(chat: chat, participant: participant)
 
 ChatGem::ChatMessage.create!(
   chat: chat,
-  participant: bot,
+  participant: participant,
   kind: :message,
   body: answer
 )
@@ -391,20 +417,20 @@ ChatGem::ChatMessage.create!(
 To replace a signal (for example `thinking` -> `planning`), call `start!` or `replace!` again:
 
 ```ruby
-ChatGem::Signals.start!(chat: chat, participant: bot, signal_type: :thinking)
-ChatGem::Signals.replace!(chat: chat, participant: bot, signal_type: :planning)
+ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
+ChatGem::Signals.replace!(chat: chat, participant: participant, signal_type: :planning)
 ```
 
 Use `with` to automatically clear the signal after success or failure:
 
 ```ruby
-answer = ChatGem::Signals.with(chat: chat, participant: bot, signal_type: :thinking) do
+answer = ChatGem::Signals.with(chat: chat, participant: participant, signal_type: :thinking) do
   ExternalAiClient.answer(prompt)
 end
 
 ChatGem::ChatMessage.create!(
   chat: chat,
-  participant: bot,
+  participant: participant,
   kind: :message,
   body: answer
 )

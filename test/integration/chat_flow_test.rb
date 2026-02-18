@@ -56,8 +56,8 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_includes response.body, %(data-chat-show-self-signals="false")
-    assert_includes response.body, other_user.email
-    assert_not_includes response.body, current_user.email
+    assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
+    assert_select "#signals_chat_#{chat.id} strong", text: current_user.email, count: 0
   end
 
   test "chat show can include the current participant signal when configured" do
@@ -182,10 +182,10 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "chat message partial renders with application controller renderer" do
-    participant = User.new(id: 11, email: "renderer@example.com")
-    chat = ChatGem::Chat.new(id: 22, title: "Renderer Chat")
-    chat_message = ChatGem::ChatMessage.new(
-      id: 33,
+    participant = User.create!(email: "renderer@example.com")
+    chat = ChatGem::Chat.create!(title: "Renderer Chat")
+    ChatGem::ChatMembership.create!(chat: chat, participant: participant, role: :member)
+    chat_message = ChatGem::ChatMessage.create!(
       chat: chat,
       participant: participant,
       kind: :message,
@@ -201,7 +201,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes rendered, "chat-bubble"
     assert_includes rendered, "renderer message"
     assert_includes rendered, %(data-chat-message-participant-type="User")
-    assert_includes rendered, %(data-chat-message-participant-id="11")
+    assert_includes rendered, %(data-chat-message-participant-id="#{participant.id}")
   end
 
 end

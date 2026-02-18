@@ -12,19 +12,17 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir.chdir(__dir__) do
     Dir[
-      "{app,bin,config,db,lib,test}/**/*",
-      "Gemfile",
+      "{app,config,db,lib}/**/*",
       "MIT-LICENSE",
       "README.md",
-      "Rakefile",
       "chat_gem.gemspec"
     ]
   end
 
   spec.required_ruby_version = ">= 3.1"
 
-  spec.add_dependency "rails", ">= 7.0"
-  spec.add_dependency "turbo-rails", ">= 1.4"
+  spec.add_dependency "rails", ">= 7.0", "< 8.0"
+  spec.add_dependency "turbo-rails", ">= 1.4", "< 3.0"
 
   spec.metadata["rubygems_mfa_required"] = "true"
 end
