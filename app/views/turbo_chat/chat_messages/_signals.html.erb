@@ -1,0 +1,24 @@
+<% show_self_signals = TurboChat.configuration.show_self_signals %>
+<% current_participant = respond_to?(:current_chat_participant, true) ? current_chat_participant : nil %>
+<% current_participant_type = current_participant&.class&.base_class&.name %>
+<% current_participant_id = current_participant&.id %>
+
+<% chat.active_signals.each do |signal_message| %>
+  <% if !show_self_signals &&
+        current_participant_type.present? &&
+        signal_message.participant_type == current_participant_type &&
+        signal_message.participant_id == current_participant_id %>
+    <% next %>
+  <% end %>
+
+  <div class="chat-typing-indicator"
+       id="typing-<%= signal_message.participant_type.underscore %>-<%= signal_message.participant_id %>"
+       data-chat-signal-at="<%= signal_message.created_at.to_i %>"
+       data-chat-signal-participant-type="<%= signal_message.participant_type %>"
+       data-chat-signal-participant-id="<%= signal_message.participant_id %>">
+    <strong><%= signal_message.participant_display_name %></strong>
+    <span class="chat-dots">
+      <i></i><i></i><i></i>
+    </span>
+  </div>
+<% end %>

@@ -11,7 +11,7 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
-  create_table "chat_gem_chat_memberships", force: :cascade do |t|
+  create_table "turbo_chat_chat_memberships", force: :cascade do |t|
     t.integer "chat_id", null: false
     t.string "participant_type", null: false
     t.integer "participant_id", null: false
@@ -23,13 +23,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
     t.datetime "updated_at", null: false
     t.string "custom_role_key"
     t.boolean "invitation_accepted", default: true, null: false
-    t.index ["chat_id", "participant_type", "participant_id"], name: "index_chat_gem_memberships_on_chat_participant_active", unique: true, where: "removed_at IS NULL"
-    t.index ["chat_id"], name: "index_chat_gem_chat_memberships_on_chat_id"
-    t.index ["custom_role_key"], name: "index_chat_gem_chat_memberships_on_custom_role_key"
-    t.index ["participant_type", "participant_id"], name: "index_chat_gem_chat_memberships_on_participant"
+    t.index ["chat_id", "participant_type", "participant_id"], name: "index_turbo_chat_memberships_on_chat_participant_active", unique: true, where: "removed_at IS NULL"
+    t.index ["chat_id"], name: "index_turbo_chat_chat_memberships_on_chat_id"
+    t.index ["custom_role_key"], name: "index_turbo_chat_chat_memberships_on_custom_role_key"
+    t.index ["participant_type", "participant_id"], name: "index_turbo_chat_chat_memberships_on_participant"
   end
 
-  create_table "chat_gem_chat_messages", force: :cascade do |t|
+  create_table "turbo_chat_chat_messages", force: :cascade do |t|
     t.integer "chat_id", null: false
     t.string "participant_type", null: false
     t.integer "participant_id", null: false
@@ -38,17 +38,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
     t.integer "signal_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["chat_id", "created_at", "id"], name: "index_chat_gem_messages_order"
-    t.index ["chat_id"], name: "index_chat_gem_chat_messages_on_chat_id"
-    t.index ["participant_type", "participant_id"], name: "index_chat_gem_chat_messages_on_participant"
+    t.index ["chat_id", "created_at", "id"], name: "index_turbo_chat_messages_order"
+    t.index ["chat_id"], name: "index_turbo_chat_chat_messages_on_chat_id"
+    t.index ["participant_type", "participant_id"], name: "index_turbo_chat_chat_messages_on_participant"
   end
 
-  create_table "chat_gem_chats", force: :cascade do |t|
+  create_table "turbo_chat_chats", force: :cascade do |t|
     t.string "title", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "closed_at"
-    t.index ["closed_at"], name: "index_chat_gem_chats_on_closed_at"
+    t.index ["closed_at"], name: "index_turbo_chat_chats_on_closed_at"
   end
 
   create_table "users", force: :cascade do |t|
@@ -57,6 +57,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
     t.datetime "updated_at", null: false
   end
 
-  add_foreign_key "chat_gem_chat_memberships", "chat_gem_chats", column: "chat_id"
-  add_foreign_key "chat_gem_chat_messages", "chat_gem_chats", column: "chat_id"
+  add_foreign_key "turbo_chat_chat_memberships", "turbo_chat_chats", column: "chat_id"
+  add_foreign_key "turbo_chat_chat_messages", "turbo_chat_chats", column: "chat_id"
 end

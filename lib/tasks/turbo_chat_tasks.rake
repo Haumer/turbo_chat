@@ -1,10 +1,14 @@
 namespace :turbo_chat do
   namespace :install do
-    desc "Install TurboChat migrations (alias for chat_gem:install:migrations)"
+    desc "Install TurboChat migrations"
     task :migrations do
-      task = Rake::Task["chat_gem:install:migrations"]
+      previous_from = ENV["FROM"]
+      ENV["FROM"] = "turbo_chat"
+      task = Rake::Task["railties:install:migrations"]
       task.reenable
       task.invoke
+    ensure
+      ENV["FROM"] = previous_from
     end
   end
 end

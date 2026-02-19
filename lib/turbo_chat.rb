@@ -1,24 +1,20 @@
-require_relative "chat_gem"
-require_relative "turbo_chat/version"
+require "turbo_chat/version"
+require "turbo-rails"
+require "turbo_chat/configuration"
+require "turbo_chat/model_extensions/chat_participant"
+require "turbo_chat/permission"
+require "turbo_chat/moderation"
+require "turbo_chat/signals"
+require "turbo_chat/engine"
 
 module TurboChat
   class << self
     def configuration
-      ChatGem.configuration
+      @configuration ||= TurboChat::Configuration.new
     end
 
-    def configure(&block)
-      ChatGem.configure(&block)
-    end
-
-    def table_name_prefix
-      ChatGem.table_name_prefix
-    end
-
-    def const_missing(name)
-      return ChatGem.const_get(name) if ChatGem.const_defined?(name)
-
-      super
+    def configure
+      yield(configuration)
     end
   end
 end

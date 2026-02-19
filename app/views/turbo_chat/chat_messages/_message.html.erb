@@ -1,0 +1,83 @@
+<% own_message = own_chat_message?(chat_message) %>
+<% show_timestamp = TurboChat.configuration.show_timestamp %>
+<% show_role = TurboChat.configuration.show_role %>
+<% role_label = show_role ? chat_message.formatted_participant_role : nil %>
+<% edited_message = chat_message.respond_to?(:edited?) && chat_message.edited? %>
+<% bubble_style = chat_message_inline_style(chat_message: chat_message, own_message: own_message) %>
+<% mention_tokens = if respond_to?(:chat_message_mention_tokens)
+                      chat_message_mention_tokens(chat_message)
+                    else
+                      chat_message.body.to_s.scan(/(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/).uniq
+                    end %>
+<% edit_message_path = if respond_to?(:chat_chat_message_path)
+                         chat_chat_message_path(chat_message.chat, chat_message)
+                       end %>
+<% can_edit_message = chat_message.persisted? && edit_message_path.present? && can_edit_chat_message?(chat_message) %>
+<% force_edit_open = local_assigns.fetch(:force_edit_open, false) && can_edit_message %>
+<article id="<%= dom_id(chat_message) %>"
+         class="<%= chat_message_css_classes(chat_message: chat_message, own_message: own_message) %>"
+         data-chat-message-id="<%= chat_message.id %>"
+         data-chat-message-participant-type="<%= chat_message.participant_type %>"
+         data-chat-message-participant-id="<%= chat_message.participant_id %>"
+         data-chat-message-mentions="<%= json_escape(mention_tokens.to_json) %>"
+         <%= %(style="#{bubble_style}") if bubble_style.present? %>>
+  <header class="chat-meta">
+    <span class="chat-meta__author"><%= chat_message.participant_display_name %></span>
+    <% if role_label.present? %>
+      <span class="chat-meta__role"><%= role_label %></span>
+    <% end %>
+    <% if show_timestamp %>
+      <time class="chat-meta__timestamp" datetime="<%= chat_message.created_at.iso8601 %>"><%= chat_message.formatted_timestamp %></time>
+    <% end %>
+    <% if edited_message %>
+      <span class="chat-meta__edited" title="Edited <%= chat_message.formatted_updated_timestamp %>">
+        edited
+      </span>
+    <% end %>
+  </header>
+
+  <div class="chat-message-view" data-chat-message-view <%= "hidden" if force_edit_open %>>
+    <%= render_chat_message_body(chat_message) %>
+  </div>
+
+  <% if can_edit_message %>
+    <footer class="chat-message-actions">
+      <button type="button"
+              class="chat-message-action"
+              data-chat-message-edit-control
+              data-chat-edit-start
+              <%= "hidden" if force_edit_open %>>
+        Edit
+      </button>
+    </footer>
+
+    <div class="chat-message-edit" data-chat-message-edit <%= "hidden" unless force_edit_open %>>
+      <% if chat_message.errors.any? %>
+        <p class="chat-inline-edit-error"><%= chat_message.errors.full_messages.to_sentence %></p>
+      <% end %>
+
+      <% edit_mention_options = chat_mention_options(chat: chat_message.chat) %>
+      <% edit_mentions_enabled = chat_mentions_enabled_for?(chat: chat_message.chat) %>
+      <%= form_with model: chat_message,
+                    url: edit_message_path,
+                    class: "chat-inline-edit-form",
+                    data: {
+                      chat_inline_edit_form: true,
+                      chat_enable_mentions: edit_mentions_enabled,
+                      chat_mention_options: json_escape(edit_mention_options.to_json)
+                    } do |f| %>
+        <div class="chat-inline-edit-field">
+          <%= f.text_area :body, rows: 3, required: true, data: { chat_inline_edit_input: true } %>
+        </div>
+        <div class="chat-inline-edit-actions">
+          <%= f.submit "Save", class: "chat-btn chat-btn--small", data: { chat_edit_save: true } %>
+          <button type="button"
+                  class="chat-btn chat-btn--ghost chat-btn--small"
+                  data-chat-edit-cancel>
+            Cancel
+          </button>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</article>

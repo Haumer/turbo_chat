@@ -1,4 +1,4 @@
-ChatGem::Engine.routes.draw do
+TurboChat::Engine.routes.draw do
   root to: "chats#index"
 
   resources :chats, only: %i[index show new create] do

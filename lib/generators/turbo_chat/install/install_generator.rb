@@ -11,7 +11,7 @@ module TurboChat
       end
 
       def install_migrations
-        rake "railties:install:migrations FROM=chat_gem"
+        rake "railties:install:migrations FROM=turbo_chat"
       end
     end
   end

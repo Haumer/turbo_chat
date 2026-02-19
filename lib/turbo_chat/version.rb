@@ -1,5 +1,3 @@
-require_relative "../chat_gem/version"
-
 module TurboChat
-  VERSION = ChatGem::VERSION
+  VERSION = "0.1.2"
 end

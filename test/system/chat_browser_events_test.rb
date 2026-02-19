@@ -11,13 +11,13 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     clear_chat_records!
   end
 
-  test "inviting a participant emits chat-gem:chat-invited in browser" do
-    ChatGem.configuration.emit_chat_lifecycle_events = true
+  test "inviting a participant emits turbo-chat:chat-invited in browser" do
+    TurboChat.configuration.emit_chat_lifecycle_events = true
 
     admin = User.create!(email: "system-invite-admin@example.com")
     invitee = User.create!(email: "system-invite-target@example.com")
-    chat = ChatGem::Chat.create!(title: "System Invite")
-    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    chat = TurboChat::Chat.create!(title: "System Invite")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
 
     visit "/chat/chats/#{chat.id}"
 
@@ -25,22 +25,22 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     click_button "Invite"
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
-    install_event_capture(%w[chat-gem:chat-invited])
+    install_event_capture(%w[turbo-chat:chat-invited])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:chat-invited")
+    event = wait_for_captured_event("turbo-chat:chat-invited")
     assert_equal "invited", event.fetch("detail").fetch("action")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
   end
 
-  test "declining an invitation emits chat-gem:chat-declined in browser" do
-    ChatGem.configuration.emit_chat_lifecycle_events = true
+  test "declining an invitation emits turbo-chat:chat-declined in browser" do
+    TurboChat.configuration.emit_chat_lifecycle_events = true
 
     invitee = User.create!(email: "system-decline-invitee@example.com")
     admin = User.create!(email: "system-decline-admin@example.com")
-    chat = ChatGem::Chat.create!(title: "System Decline")
-    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
-    membership = ChatGem::ChatMembership.create!(
+    chat = TurboChat::Chat.create!(title: "System Decline")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    membership = TurboChat::ChatMembership.create!(
       chat: chat,
       participant: invitee,
       role: :member,
@@ -51,40 +51,40 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     click_button "Decline"
     assert_current_path "/chat/chats", ignore_query: true
 
-    install_event_capture(%w[chat-gem:chat-declined])
+    install_event_capture(%w[turbo-chat:chat-declined])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:chat-declined")
+    event = wait_for_captured_event("turbo-chat:chat-declined")
     assert_equal "declined", event.fetch("detail").fetch("action")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
     assert_equal membership.id.to_s, event.fetch("detail").fetch("chatMembershipId").to_s
   end
 
-  test "reopening a chat emits chat-gem:chat-reopened in browser" do
-    ChatGem.configuration.emit_chat_lifecycle_events = true
+  test "reopening a chat emits turbo-chat:chat-reopened in browser" do
+    TurboChat.configuration.emit_chat_lifecycle_events = true
 
     admin = User.create!(email: "system-reopen-admin@example.com")
-    chat = ChatGem::Chat.create!(title: "System Reopen", closed_at: Time.current)
-    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    chat = TurboChat::Chat.create!(title: "System Reopen", closed_at: Time.current)
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
 
     visit "/chat/chats/#{chat.id}"
     click_button "Reopen"
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
-    install_event_capture(%w[chat-gem:chat-reopened])
+    install_event_capture(%w[turbo-chat:chat-reopened])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:chat-reopened")
+    event = wait_for_captured_event("turbo-chat:chat-reopened")
     assert_equal "reopened", event.fetch("detail").fetch("action")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
   end
 
-  test "accepting an invitation emits chat-gem:chat-joined in browser" do
-    ChatGem.configuration.emit_chat_lifecycle_events = true
+  test "accepting an invitation emits turbo-chat:chat-joined in browser" do
+    TurboChat.configuration.emit_chat_lifecycle_events = true
 
     invitee = User.create!(email: "system-joined-invitee@example.com")
-    chat = ChatGem::Chat.create!(title: "System Joined")
-    membership = ChatGem::ChatMembership.create!(
+    chat = TurboChat::Chat.create!(title: "System Joined")
+    membership = TurboChat::ChatMembership.create!(
       chat: chat,
       participant: invitee,
       role: :member,
@@ -95,60 +95,60 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     click_button "Accept"
     assert_current_path "/chat/chats", ignore_query: true
 
-    install_event_capture(%w[chat-gem:chat-joined])
+    install_event_capture(%w[turbo-chat:chat-joined])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:chat-joined")
+    event = wait_for_captured_event("turbo-chat:chat-joined")
     assert_equal "joined", event.fetch("detail").fetch("action")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
     assert_equal membership.id.to_s, event.fetch("detail").fetch("chatMembershipId").to_s
   end
 
-  test "leaving a chat emits chat-gem:chat-left in browser" do
-    ChatGem.configuration.emit_chat_lifecycle_events = true
+  test "leaving a chat emits turbo-chat:chat-left in browser" do
+    TurboChat.configuration.emit_chat_lifecycle_events = true
 
     participant = User.create!(email: "system-leave-participant@example.com")
-    chat = ChatGem::Chat.create!(title: "System Leave")
-    membership = ChatGem::ChatMembership.create!(chat: chat, participant: participant, role: :member)
+    chat = TurboChat::Chat.create!(title: "System Leave")
+    membership = TurboChat::ChatMembership.create!(chat: chat, participant: participant, role: :member)
 
     visit "/chat/chats/#{chat.id}"
     click_button "Leave"
     assert_current_path "/chat/chats", ignore_query: true
 
-    install_event_capture(%w[chat-gem:chat-left])
+    install_event_capture(%w[turbo-chat:chat-left])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:chat-left")
+    event = wait_for_captured_event("turbo-chat:chat-left")
     assert_equal "left", event.fetch("detail").fetch("action")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
     assert_equal membership.id.to_s, event.fetch("detail").fetch("chatMembershipId").to_s
   end
 
-  test "closing a chat emits chat-gem:chat-closed in browser" do
-    ChatGem.configuration.emit_chat_lifecycle_events = true
+  test "closing a chat emits turbo-chat:chat-closed in browser" do
+    TurboChat.configuration.emit_chat_lifecycle_events = true
 
     admin = User.create!(email: "system-close-admin@example.com")
-    chat = ChatGem::Chat.create!(title: "System Close")
-    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    chat = TurboChat::Chat.create!(title: "System Close")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
 
     visit "/chat/chats/#{chat.id}"
     click_button "Close"
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
-    install_event_capture(%w[chat-gem:chat-closed])
+    install_event_capture(%w[turbo-chat:chat-closed])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:chat-closed")
+    event = wait_for_captured_event("turbo-chat:chat-closed")
     assert_equal "closed", event.fetch("detail").fetch("action")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
   end
 
-  test "accepting an invitation emits chat-gem:invitation-accepted in browser" do
-    ChatGem.configuration.emit_invitation_events = true
+  test "accepting an invitation emits turbo-chat:invitation-accepted in browser" do
+    TurboChat.configuration.emit_invitation_events = true
 
     invitee = User.create!(email: "system-accept-invitee@example.com")
-    chat = ChatGem::Chat.create!(title: "System Accept")
-    membership = ChatGem::ChatMembership.create!(
+    chat = TurboChat::Chat.create!(title: "System Accept")
+    membership = TurboChat::ChatMembership.create!(
       chat: chat,
       participant: invitee,
       role: :member,
@@ -159,45 +159,45 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     click_button "Accept"
     assert_current_path "/chat/chats", ignore_query: true
 
-    install_event_capture(%w[chat-gem:invitation-accepted])
+    install_event_capture(%w[turbo-chat:invitation-accepted])
     rerun_lifecycle_event_bootstrap!
 
-    event = wait_for_captured_event("chat-gem:invitation-accepted")
+    event = wait_for_captured_event("turbo-chat:invitation-accepted")
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
     assert_equal membership.id.to_s, event.fetch("detail").fetch("chatMembershipId").to_s
   end
 
   test "typing and sending emits typing and message events in browser" do
-    ChatGem.configuration.emit_typing_events = true
-    ChatGem.configuration.emit_message_events = true
+    TurboChat.configuration.emit_typing_events = true
+    TurboChat.configuration.emit_message_events = true
 
     user = User.create!(email: "system-message-user@example.com")
-    chat = ChatGem::Chat.create!(title: "System Message Events")
-    ChatGem::ChatMembership.create!(chat: chat, participant: user, role: :member)
+    chat = TurboChat::Chat.create!(title: "System Message Events")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user, role: :member)
 
     visit "/chat/chats/#{chat.id}"
-    install_event_capture(%w[chat-gem:typing-started chat-gem:typing-ended chat-gem:message-sent])
+    install_event_capture(%w[turbo-chat:typing-started turbo-chat:typing-ended turbo-chat:message-sent])
 
     find("textarea[name='chat_message[body]']").send_keys("hello from system test")
-    wait_for_captured_event("chat-gem:typing-started")
+    wait_for_captured_event("turbo-chat:typing-started")
 
     click_button "Send"
     assert_text "hello from system test"
-    wait_for_captured_event("chat-gem:message-sent")
-    wait_for_captured_event("chat-gem:typing-ended")
+    wait_for_captured_event("turbo-chat:message-sent")
+    wait_for_captured_event("turbo-chat:typing-ended")
   end
 
   private
 
   def clear_chat_records!
-    ChatGem::ChatMessage.delete_all
-    ChatGem::ChatMembership.delete_all
-    ChatGem::Chat.delete_all
+    TurboChat::ChatMessage.delete_all
+    TurboChat::ChatMembership.delete_all
+    TurboChat::Chat.delete_all
     User.delete_all
   end
 
   def reset_event_configuration!
-    config = ChatGem.configuration
+    config = TurboChat.configuration
     config.emit_typing_events = false
     config.emit_message_events = false
     config.emit_invitation_events = false

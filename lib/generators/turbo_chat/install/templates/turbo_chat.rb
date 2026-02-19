@@ -1,5 +1,7 @@
 TurboChat.configure do |config|
   config.permission_adapter = TurboChat::Permission
+  # If your auth method is not `current_user`, wire it here.
+  # config.current_participant_resolver = ->(controller) { controller.send(:current_member) }
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
