@@ -1,8 +1,8 @@
-require_relative "lib/chat_gem/version"
+require_relative "lib/turbo_chat/version"
 
 Gem::Specification.new do |spec|
-  spec.name        = "chat_gem"
-  spec.version     = ChatGem::VERSION
+  spec.name        = "turbo_chat"
+  spec.version     = TurboChat::VERSION
   spec.authors     = ["Alexander Haumer"]
   spec.homepage    = "https://github.com/Haumer/ruby_llm_chat"
   spec.summary     = "Lightweight mountable chat engine for Rails"
@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
       "{app,config,db,lib}/**/*",
       "MIT-LICENSE",
       "README.md",
-      "chat_gem.gemspec"
+      "turbo_chat.gemspec"
     ]
   end
 

@@ -1,4 +1,4 @@
-# ChatGem
+# TurboChat
 
 Mountable Rails engine gem for lightweight, realtime chats using Turbo Streams.
 
@@ -27,21 +27,21 @@ Mountable Rails engine gem for lightweight, realtime chats using Turbo Streams.
 
 ```ruby
 # Gemfile
-gem "chat_gem"
+gem "turbo_chat"
 ```
 
 2. Install and copy setup files:
 
 ```bash
 bundle install
-bin/rails generate chat_gem:install
+bin/rails generate turbo_chat:install
 bin/rails db:migrate
 ```
 
-When upgrading `chat_gem`, also install engine migrations in the host app before migrating:
+When upgrading `turbo_chat`, also install engine migrations in the host app before migrating:
 
 ```bash
-bin/rails chat_gem:install:migrations
+bin/rails turbo_chat:install:migrations
 bin/rails db:migrate
 ```
 
@@ -49,8 +49,10 @@ bin/rails db:migrate
 
 ```ruby
 # config/routes.rb
-mount ChatGem::Engine => "/chat"
+mount TurboChat::Engine => "/"
 ```
+
+`turbo_chat` exposes `TurboChat` and keeps `ChatGem` as a backwards-compatible alias.
 
 ## Host App Contract
 
@@ -85,15 +87,15 @@ end
 Create a chat, add the current participant, and link to the chat view:
 
 ```ruby
-chat = ChatGem::Chat.create!(title: "Support")
-ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :member)
+chat = TurboChat::Chat.create!(title: "Support")
+TurboChat::ChatMembership.create!(chat: chat, participant: Current.user, role: :member)
 ```
 
 ```erb
 <%= link_to "Open chat", chat_gem.chat_path(chat) %>
 ```
 
-`chat_gem` is the default route helper prefix when mounted as `mount ChatGem::Engine => "/chat"`.
+`chat_gem` is the default route helper prefix when mounted as `mount TurboChat::Engine => "/"`.
 
 ## Feature Overview
 
@@ -110,7 +112,7 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 
 #### Access and limits
 
-- `config.permission_adapter` (`ChatGem::Permission` by default).
+- `config.permission_adapter` (`TurboChat::Permission` by default).
 - `config.max_chat_participants` (`10` by default).
 - `config.max_message_length` (`1000` by default).
 - `config.message_history_limit` (`200` by default; set `nil` or `0` to disable).
@@ -127,7 +129,7 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 - `config.mention_filter_exclude_self` (`true` by default; hides current participant from mention autocomplete options).
 - `config.mention_filter_hide_roles` (`true` by default; hides role mention options like `@ADMIN` from autocomplete).
 - `config.enable_emoji_aliases` (`true` by default).
-- `config.emoji_aliases` (`ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup` by default).
+- `config.emoji_aliases` (`TurboChat::Configuration::DEFAULT_EMOJI_ALIASES.dup` by default).
 - `config.blocked_words` (`[]` by default).
 - `config.blocked_words_action` (`:reject` by default; supports `:reject` or `:scramble`).
 
@@ -160,8 +162,8 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 <summary>Full default initializer</summary>
 
 ```ruby
-ChatGem.configure do |config|
-  config.permission_adapter = ChatGem::Permission
+TurboChat.configure do |config|
+  config.permission_adapter = TurboChat::Permission
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
@@ -169,7 +171,7 @@ ChatGem.configure do |config|
   config.mention_filter_exclude_self = true
   config.mention_filter_hide_roles = true
   config.enable_emoji_aliases = true
-  config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup
+  config.emoji_aliases = TurboChat::Configuration::DEFAULT_EMOJI_ALIASES.dup
   config.blocked_words = []
   config.blocked_words_action = :reject
   config.mention_mark_hex_color = nil
@@ -208,16 +210,16 @@ A chat is considered active when it has a regular message within the configured 
 Signal rows do not count as activity. Closed chats (`closed_at` set) remain viewable but cannot receive new messages.
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.active_chat_window = 5.minutes
 end
 
 chat.active?    # => true/false
 chat.inactive?  # => true/false
 
-ChatGem::Chat.active
-ChatGem::Chat.inactive
-ChatGem::Chat.active(window: 10.minutes)
+TurboChat::Chat.active
+TurboChat::Chat.inactive
+TurboChat::Chat.active(window: 10.minutes)
 ```
 
 ### Mentions and Emoji
@@ -241,7 +243,7 @@ Emoji aliases are enabled by default for plain-text message rendering.
 #### Add aliases incrementally
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.add_emoji_alias(:shipit, "🚢")
   config.add_emoji_alias("party_parrot", "🦜")
 end
@@ -250,8 +252,8 @@ end
 #### Override alias map
 
 ```ruby
-ChatGem.configure do |config|
-  config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.merge(
+TurboChat.configure do |config|
+  config.emoji_aliases = TurboChat::Configuration::DEFAULT_EMOJI_ALIASES.merge(
     "shipit" => "🚢",
     "party_parrot" => "🦜"
   )
@@ -265,14 +267,14 @@ Configure blocked words and choose whether to reject messages or scramble blocke
 `scramble` now shuffles the blocked word's own characters (for example, `badword` -> `darbwod`).
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.blocked_words = %w[foo bar]
   config.blocked_words_action = :reject
 end
 ```
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.blocked_words = %w[foo bar]
   config.blocked_words_action = :scramble
 end
@@ -285,7 +287,7 @@ end
 #### Bubble colors
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.own_message_hex_color = "#c9f2ff"
   config.other_message_hex_color = "#f6f8fb"
   config.role_message_hex_colors = {
@@ -301,7 +303,7 @@ Role-specific colors override own/other defaults. Invalid hex values are ignored
 Viewer-targeted mentions can be color-customized:
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.mention_mark_hex_color = "#cf1322"
 end
 ```
@@ -309,7 +311,7 @@ end
 #### CSS class resolver (basic)
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.message_css_class_resolver = ->(_chat_message, own_message) {
     own_message ? "msg-card msg-card--own" : "msg-card msg-card--other"
   }
@@ -329,7 +331,7 @@ end
 #### CSS class resolver (role-aware)
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.message_css_class_resolver = lambda { |chat_message, own_message|
     classes = ["msg-card"]
     classes << (own_message ? "msg-card--own" : "msg-card--other")
@@ -350,7 +352,7 @@ end
 
 ```erb
 <% own_message = own_chat_message?(chat_message) %>
-<% show_timestamp = ChatGem.configuration.show_timestamp %>
+<% show_timestamp = TurboChat.configuration.show_timestamp %>
 <article id="<%= dom_id(chat_message) %>" class="<%= chat_message_css_classes(chat_message: chat_message, own_message: own_message) %>">
   <div class="msg-card__header">
     <span class="chat-meta__author"><%= chat_message.participant_display_name %></span>
@@ -376,7 +378,7 @@ end
 Enable sanitized HTML rendering for message bodies:
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.render_message_html = true
   config.message_html_tags = %w[a b br code em i li ol p pre strong ul]
   config.message_html_attributes = %w[href target rel class]
@@ -388,10 +390,10 @@ end
 Extend the allowlist as needed:
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.render_message_html = true
-  config.message_html_tags = ChatGem::Configuration::DEFAULT_MESSAGE_HTML_TAGS + %w[blockquote h4 mark]
-  config.message_html_attributes = ChatGem::Configuration::DEFAULT_MESSAGE_HTML_ATTRIBUTES + %w[title]
+  config.message_html_tags = TurboChat::Configuration::DEFAULT_MESSAGE_HTML_TAGS + %w[blockquote h4 mark]
+  config.message_html_attributes = TurboChat::Configuration::DEFAULT_MESSAGE_HTML_ATTRIBUTES + %w[title]
 end
 ```
 
@@ -414,7 +416,7 @@ Rendered/sanitized output:
 #### Typing lifecycle events
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_typing_events = true
 end
 ```
@@ -432,7 +434,7 @@ document.addEventListener("chat-gem:typing-ended", function (event) {
 #### Message sent event
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_message_events = true
 end
 ```
@@ -446,7 +448,7 @@ document.addEventListener("chat-gem:message-sent", function (event) {
 #### Mention event
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_mention_events = true
 end
 ```
@@ -464,12 +466,12 @@ document.addEventListener("chat-gem:mention", function (event) {
 #### Invitation accepted event
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_invitation_events = true
 end
 ```
 
-When an invited participant accepts from the chats index (`PATCH /chat/chats/:id/accept`),
+When an invited participant accepts from the chats index (`PATCH /chats/:id/accept`),
 the chats index emits `chat-gem:invitation-accepted` on page load after redirect.
 
 ```js
@@ -483,7 +485,7 @@ document.addEventListener("chat-gem:invitation-accepted", function (event) {
 #### Chat lifecycle events
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_chat_lifecycle_events = true
 end
 ```
@@ -542,12 +544,12 @@ document.addEventListener("chat-gem:chat-reopened", function (event) {
 #### Moderation notifications (server-side)
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_moderation_events = true
 end
 ```
 
-When enabled, ChatGem instruments `ActiveSupport::Notifications` events:
+When enabled, TurboChat instruments `ActiveSupport::Notifications` events:
 
 - `chat_gem.moderation.member_muted`
 - `chat_gem.moderation.member_unmuted`
@@ -567,7 +569,7 @@ end
 #### Blocked words notifications (server-side)
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.emit_blocked_words_events = true
 end
 ```
@@ -586,26 +588,26 @@ end
 
 ## Participants, Roles, and Moderation
 
-Use `ChatGem::ChatMembership` to add participants to a chat.
+Use `TurboChat::ChatMembership` to add participants to a chat.
 Any model using `acts_as_chat_participant` works (users, bots, service accounts).
 
 ```ruby
-chat = ChatGem::Chat.find(chat_id)
+chat = TurboChat::Chat.find(chat_id)
 participant = User.find(user_id)
 
-ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant) do |membership|
+TurboChat::ChatMembership.find_or_create_by!(chat: chat, participant: participant) do |membership|
   membership.role = :member
 end
 ```
 
 Invitations are pending until accepted by the invited participant.
-`POST /chat/chats/:id/chat_memberships` creates or reopens a pending invite (`invitation_accepted: false`).
-Pending invites are listed on the chats index for the invited participant, where they can accept (`PATCH /chat/chats/:id/accept`) or decline (`PATCH /chat/chats/:id/decline`).
+`POST /chats/:id/chat_memberships` creates or reopens a pending invite (`invitation_accepted: false`).
+Pending invites are listed on the chats index for the invited participant, where they can accept (`PATCH /chats/:id/accept`) or decline (`PATCH /chats/:id/decline`).
 
 Configure participant limits:
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.max_chat_participants = 10
   # Set to nil or 0 to disable the limit.
 end
@@ -620,7 +622,7 @@ Built-in roles: `:member`, `:moderator`, `:admin`.
 Custom role registration:
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.add_role(
     :support_agent,
     name: "Support Agent",
@@ -633,7 +635,7 @@ end
 Assign a custom role:
 
 ```ruby
-membership = ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant)
+membership = TurboChat::ChatMembership.find_or_create_by!(chat: chat, participant: participant)
 membership.role_key = :support_agent
 membership.save!
 ```
@@ -646,25 +648,25 @@ Higher `rank` can moderate lower `rank` (never self).
 If a participant was removed (`removed_at` set), reactivate that membership:
 
 ```ruby
-membership = ChatGem::ChatMembership.find_by!(chat: chat, participant: participant)
+membership = TurboChat::ChatMembership.find_by!(chat: chat, participant: participant)
 membership.update!(removed_at: nil, muted: false, timed_out_until: nil)
 ```
 
 Use moderation service APIs for role-checked actions:
 
 ```ruby
-chat = ChatGem::Chat.find(chat_id)
+chat = TurboChat::Chat.find(chat_id)
 moderator = User.find(moderator_id)
 member_membership = chat.chat_memberships.find_by!(participant_id: member_id, participant_type: "User")
 
-ChatGem::Moderation.mute_member!(actor: moderator, membership: member_membership)
-ChatGem::Moderation.timeout_member!(actor: moderator, membership: member_membership, until_time: 30.minutes.from_now)
-ChatGem::Moderation.ban_member!(actor: moderator, membership: member_membership)
-ChatGem::Moderation.delete_message!(actor: moderator, message: chat.chat_messages.find(message_id))
+TurboChat::Moderation.mute_member!(actor: moderator, membership: member_membership)
+TurboChat::Moderation.timeout_member!(actor: moderator, membership: member_membership, until_time: 30.minutes.from_now)
+TurboChat::Moderation.ban_member!(actor: moderator, membership: member_membership)
+TurboChat::Moderation.delete_message!(actor: moderator, message: chat.chat_messages.find(message_id))
 
 admin = User.find(admin_id)
-ChatGem::Moderation.close_chat!(actor: admin, chat: chat)
-ChatGem::Moderation.reopen_chat!(actor: admin, chat: chat)
+TurboChat::Moderation.close_chat!(actor: admin, chat: chat)
+TurboChat::Moderation.reopen_chat!(actor: admin, chat: chat)
 ```
 
 ## Programmatic Signals
@@ -674,29 +676,29 @@ Use signal helpers to show temporary participant states in normal chat flows (`t
 ### Start and clear a signal
 
 ```ruby
-chat = ChatGem::Chat.find(chat_id)
+chat = TurboChat::Chat.find(chat_id)
 participant = Current.user
 
-ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
+TurboChat::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
 # ...perform work (drafting, validation, lookup, etc.)...
-ChatGem::Signals.clear!(chat: chat, participant: participant)
+TurboChat::Signals.clear!(chat: chat, participant: participant)
 ```
 
 ### Replace signal state
 
 ```ruby
-ChatGem::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
-ChatGem::Signals.replace!(chat: chat, participant: participant, signal_type: :planning)
+TurboChat::Signals.start!(chat: chat, participant: participant, signal_type: :thinking)
+TurboChat::Signals.replace!(chat: chat, participant: participant, signal_type: :planning)
 ```
 
 ### Auto-clear signals with a block
 
 ```ruby
-final_text = ChatGem::Signals.with(chat: chat, participant: participant, signal_type: :thinking) do
+final_text = TurboChat::Signals.with(chat: chat, participant: participant, signal_type: :thinking) do
   params[:body].to_s.strip
 end
 
-ChatGem::ChatMessage.create!(
+TurboChat::ChatMessage.create!(
   chat: chat,
   participant: participant,
   kind: :message,
@@ -710,7 +712,7 @@ When the composer submits a regular message, it stops the typing loop and reques
 For an additional server-side safeguard, enable submit-time cleanup:
 
 ```ruby
-ChatGem.configure do |config|
+TurboChat.configure do |config|
   config.replace_signals_on_message_submit = true
 end
 ```

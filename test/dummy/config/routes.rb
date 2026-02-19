@@ -1,4 +1,4 @@
 Rails.application.routes.draw do
-  mount ChatGem::Engine => "/chat"
+  mount TurboChat::Engine => "/chat"
   root to: redirect("/chat")
 end

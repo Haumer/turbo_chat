@@ -1,0 +1,36 @@
+TurboChat.configure do |config|
+  config.permission_adapter = TurboChat::Permission
+  config.max_chat_participants = 10
+  config.max_message_length = 1000
+  config.message_history_limit = 200
+  config.enable_mentions = true
+  config.mention_filter_exclude_self = true
+  config.mention_filter_hide_roles = true
+  config.enable_emoji_aliases = true
+  config.emoji_aliases = TurboChat::Configuration::DEFAULT_EMOJI_ALIASES.dup
+  config.blocked_words = []
+  config.blocked_words_action = :reject
+  config.mention_mark_hex_color = nil
+  config.mention_highlight_hex_color = nil
+  config.own_message_hex_color = nil
+  config.other_message_hex_color = nil
+  config.role_message_hex_colors = {}
+  config.show_timestamp = true
+  config.show_role = false
+  config.active_chat_window = 5.minutes
+  config.emit_typing_events = false
+  config.emit_message_events = false
+  config.emit_mention_events = false
+  config.emit_invitation_events = false
+  config.emit_chat_lifecycle_events = false
+  config.emit_moderation_events = false
+  config.emit_blocked_words_events = false
+  config.show_self_signals = false
+  config.replace_signals_on_message_submit = false
+  config.message_css_class_resolver = nil
+  config.render_message_html = false
+  config.message_html_tags = %w[a b br code em i li ol p pre strong ul]
+  config.message_html_attributes = %w[href target rel class]
+  config.timestamp_formatter = ->(timestamp, _chat_message) { I18n.l(timestamp.in_time_zone, format: :long) }
+  config.role_formatter = ->(role, _chat_message) { role.to_s.humanize }
+end

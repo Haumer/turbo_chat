@@ -2,7 +2,7 @@ require_relative "boot"
 require "rails/all"
 
 Bundler.require(*Rails.groups)
-require "chat_gem"
+require "turbo_chat"
 
 module Dummy
   class Application < Rails::Application
@@ -10,6 +10,6 @@ module Dummy
     config.eager_load = false
     config.secret_key_base = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     config.hosts << "www.example.com"
-    config.paths["db/migrate"] << ChatGem::Engine.root.join("db/migrate").to_s
+    config.paths["db/migrate"] << TurboChat::Engine.root.join("db/migrate").to_s
   end
 end
