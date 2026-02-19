@@ -7,6 +7,7 @@ module ChatGem
     def create
       participant = invite_participant
       membership = @chat.chat_memberships.find_or_initialize_by(participant: participant)
+      pending_invitation_attributes = invitation_pending_attributes
 
       if membership.persisted?
         membership.assign_attributes(
@@ -14,8 +15,10 @@ module ChatGem
           muted: false,
           timed_out_until: nil
         )
+        membership.assign_attributes(pending_invitation_attributes)
       else
-        membership.role = :member
+        membership.assign_attributes(role: :member)
+        membership.assign_attributes(pending_invitation_attributes)
       end
 
       membership.save!
@@ -64,6 +67,12 @@ module ChatGem
       return false if inviter.nil?
 
       participant_class.base_class.name == inviter.class.base_class.name
+    end
+
+    def invitation_pending_attributes
+      return {} unless ChatGem::ChatMembership.invitation_tracking_supported?
+
+      { invitation_accepted: false }
     end
   end
 end

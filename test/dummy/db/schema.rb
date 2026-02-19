@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_18_000012) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
   create_table "chat_gem_chat_memberships", force: :cascade do |t|
     t.integer "chat_id", null: false
     t.string "participant_type", null: false
@@ -22,6 +22,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_18_000012) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "custom_role_key"
+    t.boolean "invitation_accepted", default: true, null: false
     t.index ["chat_id", "participant_type", "participant_id"], name: "index_chat_gem_memberships_on_chat_participant_active", unique: true, where: "removed_at IS NULL"
     t.index ["chat_id"], name: "index_chat_gem_chat_memberships_on_chat_id"
     t.index ["custom_role_key"], name: "index_chat_gem_chat_memberships_on_custom_role_key"

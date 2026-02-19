@@ -38,6 +38,13 @@ bin/rails generate chat_gem:install
 bin/rails db:migrate
 ```
 
+When upgrading `chat_gem`, also install engine migrations in the host app before migrating:
+
+```bash
+bin/rails chat_gem:install:migrations
+bin/rails db:migrate
+```
+
 3. Mount the engine:
 
 ```ruby
@@ -144,6 +151,7 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 - `config.emit_typing_events` (`false` by default).
 - `config.emit_message_events` (`false` by default).
 - `config.emit_mention_events` (`false` by default).
+- `config.emit_invitation_events` (`false` by default).
 
 <details>
 <summary>Full default initializer</summary>
@@ -172,6 +180,7 @@ ChatGem.configure do |config|
   config.emit_typing_events = false
   config.emit_message_events = false
   config.emit_mention_events = false
+  config.emit_invitation_events = false
   config.show_self_signals = false
   config.replace_signals_on_message_submit = false
   config.message_css_class_resolver = nil
@@ -446,6 +455,25 @@ document.addEventListener("chat-gem:mention", function (event) {
 });
 ```
 
+#### Invitation accepted event
+
+```ruby
+ChatGem.configure do |config|
+  config.emit_invitation_events = true
+end
+```
+
+When an invited participant accepts from the chats index (`PATCH /chat/chats/:id/accept`),
+the chats index emits `chat-gem:invitation-accepted` on page load after redirect.
+
+```js
+document.addEventListener("chat-gem:invitation-accepted", function (event) {
+  // event.detail.chatId
+  // event.detail.chatTitle
+  // event.detail.chatMembershipId
+});
+```
+
 ## Participants, Roles, and Moderation
 
 Use `ChatGem::ChatMembership` to add participants to a chat.
@@ -459,6 +487,10 @@ ChatGem::ChatMembership.find_or_create_by!(chat: chat, participant: participant)
   membership.role = :member
 end
 ```
+
+Invitations are pending until accepted by the invited participant.
+`POST /chat/chats/:id/chat_memberships` creates or reopens a pending invite (`invitation_accepted: false`).
+Pending invites are listed on the chats index for the invited participant, where they can accept (`PATCH /chat/chats/:id/accept`) or decline (`PATCH /chat/chats/:id/decline`).
 
 Configure participant limits:
 

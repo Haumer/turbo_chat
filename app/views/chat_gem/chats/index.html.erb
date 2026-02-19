@@ -1,14 +1,49 @@
-<section class="chat-shell">
+<section class="chat-shell"
+         data-chat-index
+         data-chat-emit-invitation-events="<%= chat_emit_invitation_events? %>"
+         data-chat-invitation-accepted="<%= json_escape(@invitation_accepted_event.to_json) if @invitation_accepted_event.present? %>">
   <header class="chat-header">
     <h1>Chats</h1>
     <%= link_to "New Chat", new_chat_path, class: "chat-btn" %>
   </header>
 
-  <ul class="chat-list">
-    <% @chats.each do |chat| %>
-      <li>
-        <%= link_to chat.title, chat_path(chat), class: "chat-list-link" %>
-      </li>
+  <% if @pending_invitations.present? %>
+    <section class="chat-invitations">
+      <h2>Pending Invitations</h2>
+      <ul class="chat-list">
+        <% @pending_invitations.each do |membership| %>
+          <% invitation_chat = membership.chat %>
+          <li class="chat-list-item chat-list-item--invitation">
+            <span class="chat-list-title"><%= invitation_chat.title %></span>
+            <div class="chat-list-actions">
+              <%= button_to "Accept",
+                            accept_chat_path(invitation_chat),
+                            method: :patch,
+                            form_class: "chat-inline-form",
+                            class: "chat-btn chat-btn--success chat-btn--small" %>
+              <%= button_to "Decline",
+                            decline_chat_path(invitation_chat),
+                            method: :patch,
+                            form_class: "chat-inline-form",
+                            class: "chat-btn chat-btn--danger chat-btn--small" %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <section class="chat-joined">
+    <h2>Your Chats</h2>
+    <ul class="chat-list">
+      <% @chats.each do |chat| %>
+        <li>
+          <%= link_to chat.title, chat_path(chat), class: "chat-list-link" %>
+        </li>
+      <% end %>
+    </ul>
+    <% if @chats.empty? %>
+      <p class="chat-hint">No accepted chats yet.</p>
     <% end %>
-  </ul>
+  </section>
 </section>

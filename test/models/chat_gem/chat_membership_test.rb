@@ -12,6 +12,36 @@ module ChatGem
       assert membership.active?
     end
 
+    test "pending invitation is inactive until accepted" do
+      user = User.create!(email: "pending-membership@example.com")
+      chat = ChatGem::Chat.create!(title: "Pending Membership")
+
+      membership = ChatGem::ChatMembership.create!(
+        chat: chat,
+        participant: user,
+        invitation_accepted: false
+      )
+
+      assert membership.pending?
+      assert_not membership.active?
+
+      membership.accept_invitation!
+      assert membership.reload.active?
+    end
+
+    test "falls back to removed_at-only checks when invitation tracking column is unavailable" do
+      user = User.create!(email: "legacy-membership@example.com")
+      chat = ChatGem::Chat.create!(title: "Legacy Membership")
+      membership = ChatGem::ChatMembership.create!(chat: chat, participant: user)
+
+      ChatGem::ChatMembership.stub(:invitation_tracking_supported?, false) do
+        assert membership.active?
+        assert_not membership.pending?
+        assert_equal [membership.id], ChatGem::ChatMembership.active.where(id: membership.id).pluck(:id)
+        assert_empty ChatGem::ChatMembership.pending.where(id: membership.id)
+      end
+    end
+
     test "enforces max active participants per chat" do
       with_max_chat_participants(2) do
         chat = ChatGem::Chat.create!(title: "Participant Limit")

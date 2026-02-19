@@ -38,6 +38,23 @@
     return node.dataset[key] === "true";
   }
 
+  function parseJsonObject(raw) {
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return null;
+      }
+
+      return parsed;
+    } catch (_error) {
+      return null;
+    }
+  }
+
   function parseMentionOptions(raw) {
     if (!raw) {
       return [];
@@ -1256,7 +1273,36 @@
     document.querySelectorAll("[data-chat-composer]").forEach(setupComposer);
   }
 
+  function setupInvitationEvents() {
+    document.querySelectorAll("[data-chat-index]").forEach(function (element) {
+      if (!element || !element.dataset || element.dataset.chatInvitationEventsBound === "true") {
+        return;
+      }
+
+      element.dataset.chatInvitationEventsBound = "true";
+      if (!datasetFlagEnabled(element, "chatEmitInvitationEvents")) {
+        return;
+      }
+
+      var payload = parseJsonObject(element.dataset.chatInvitationAccepted);
+      if (!payload) {
+        return;
+      }
+
+      var event = new CustomEvent("chat-gem:invitation-accepted", {
+        bubbles: true,
+        detail: {
+          chatId: payload.chatId || null,
+          chatTitle: payload.chatTitle || null,
+          chatMembershipId: payload.chatMembershipId || null
+        }
+      });
+      element.dispatchEvent(event);
+    });
+  }
+
   function setupChatGemUi() {
+    setupInvitationEvents();
     setupAllComposers();
     setupAllMessageAutoScroll();
     setupAllSignalContainers();

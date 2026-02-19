@@ -5,16 +5,48 @@ module ChatGem
 
     enum :role, { member: 0, moderator: 1, admin: 2 }, default: :member
 
-    scope :active, -> { where(removed_at: nil) }
+    scope :active, lambda {
+      base_scope = where(removed_at: nil)
+      invitation_tracking_supported? ? base_scope.where(invitation_accepted: true) : base_scope
+    }
+    scope :pending, lambda {
+      return none unless invitation_tracking_supported?
+
+      where(removed_at: nil, invitation_accepted: false)
+    }
 
     validates :participant_type, :participant_id, presence: true
+    validates :invitation_accepted, inclusion: { in: [true, false] }, if: :invitation_tracking_supported_for_record?
     validate :enforce_chat_participant_limit, if: :active?
     validate :custom_role_must_exist, if: -> { custom_role_key.present? }
 
     before_validation :normalize_custom_role_key
 
+    class << self
+      def invitation_tracking_supported?
+        column_names.include?("invitation_accepted")
+      rescue ActiveRecord::StatementInvalid, ActiveRecord::NoDatabaseError
+        false
+      end
+    end
+
     def active?
-      removed_at.nil?
+      return removed_at.nil? unless self.class.invitation_tracking_supported?
+
+      removed_at.nil? && invitation_accepted?
+    end
+
+    def pending?
+      return false unless removed_at.nil?
+      return false unless self.class.invitation_tracking_supported?
+
+      !invitation_accepted?
+    end
+
+    def accept_invitation!
+      update_attributes = { muted: false, timed_out_until: nil }
+      update_attributes[:invitation_accepted] = true if self.class.invitation_tracking_supported?
+      update!(update_attributes)
     end
 
     def role_key
@@ -67,6 +99,10 @@ module ChatGem
     end
 
     private
+
+    def invitation_tracking_supported_for_record?
+      self.class.invitation_tracking_supported?
+    end
 
     def normalize_custom_role_key
       self.custom_role_key = normalize_role_key_value(custom_role_key)

@@ -3,6 +3,8 @@ ChatGem::Engine.routes.draw do
 
   resources :chats, only: %i[index show new create] do
     member do
+      patch :accept
+      patch :decline
       patch :leave
       patch :close
       patch :reopen

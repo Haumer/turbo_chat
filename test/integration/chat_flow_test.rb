@@ -16,6 +16,19 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "hello"
   end
 
+  test "chats index falls back when invitation migration is not yet applied" do
+    user = User.create!(email: "legacy-index@example.com")
+    chat = ChatGem::Chat.create!(title: "Legacy Index Chat")
+    ChatGem::ChatMembership.create!(chat: chat, participant: user)
+
+    ChatGem::ChatMembership.stub(:invitation_tracking_supported?, false) do
+      get "/chat/chats"
+      assert_response :success
+      assert_includes response.body, "Legacy Index Chat"
+      assert_not_includes response.body, "Pending Invitations"
+    end
+  end
+
   test "chat show includes turbo and actioncable wiring for live updates" do
     user = User.create!(email: "wiring@example.com")
     chat = ChatGem::Chat.create!(title: "Wiring Chat")

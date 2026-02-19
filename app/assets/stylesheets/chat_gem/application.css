@@ -619,6 +619,39 @@ body {
   padding: 0;
 }
 
+.chat-invitations {
+  margin: 0 0 16px;
+}
+
+.chat-invitations h2,
+.chat-joined h2 {
+  margin: 0 0 9px;
+  font-size: 16px;
+}
+
+.chat-list-item--invitation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--chat-border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: #ffffff;
+}
+
+.chat-list-title {
+  font-weight: 700;
+}
+
+.chat-list-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .chat-list-link {
   display: block;
   padding: 11px 13px;
@@ -691,6 +724,10 @@ body {
   }
 
   .chat-form--invite {
+    flex-wrap: wrap;
+  }
+
+  .chat-list-item--invitation {
     flex-wrap: wrap;
   }
 

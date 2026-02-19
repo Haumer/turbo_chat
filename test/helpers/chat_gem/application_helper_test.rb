@@ -16,6 +16,7 @@ module ChatGem
       @original_emoji_aliases = config.emoji_aliases.deep_dup
       @original_mention_mark_hex_color = config.mention_mark_hex_color
       @original_mention_highlight_hex_color = config.mention_highlight_hex_color
+      @original_emit_invitation_events = config.emit_invitation_events
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -31,6 +32,7 @@ module ChatGem
       config.emoji_aliases = @original_emoji_aliases
       config.mention_mark_hex_color = @original_mention_mark_hex_color
       config.mention_highlight_hex_color = @original_mention_highlight_hex_color
+      config.emit_invitation_events = @original_emit_invitation_events
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -115,7 +117,14 @@ module ChatGem
         assert_equal true, chat_mention_filter_exclude_self?
         assert_equal true, chat_mention_filter_hide_roles?
         assert_equal false, chat_emit_mention_events?
+        assert_equal false, chat_emit_invitation_events?
       end
+    end
+
+    test "chat_emit_invitation_events? follows configuration" do
+      ChatGem.configuration.emit_invitation_events = true
+
+      assert_equal true, chat_emit_invitation_events?
     end
 
     test "chat_message_mention_tokens extracts unique mention tokens" do

@@ -116,6 +116,25 @@ module ChatGem
       assert_not permission.can_post_message?
     end
 
+    test "pending invitation cannot view or post until accepted" do
+      chat = ChatGem::Chat.create!(title: "Pending Invitation Permission")
+      user = User.create!(email: "pending-permission@example.com")
+      membership = ChatGem::ChatMembership.create!(
+        chat: chat,
+        participant: user,
+        invitation_accepted: false
+      )
+
+      permission = ChatGem::Permission.new(user, chat)
+      assert membership.pending?
+      assert_not permission.can_view_chat?
+      assert_not permission.can_post_message?
+
+      membership.accept_invitation!
+      assert permission.can_view_chat?
+      assert permission.can_post_message?
+    end
+
     test "custom role permissions are honored" do
       with_custom_role(
         :support_agent,
