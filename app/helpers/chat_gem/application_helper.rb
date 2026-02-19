@@ -105,6 +105,10 @@ module ChatGem
       chat_config_boolean(:emit_invitation_events, default: false)
     end
 
+    def chat_emit_chat_lifecycle_events?
+      chat_config_boolean(:emit_chat_lifecycle_events, default: false)
+    end
+
     def chat_self_mention_tokens(chat:, participant: nil)
       viewer = participant || current_chat_participant_for_view
       return [] if viewer.nil?

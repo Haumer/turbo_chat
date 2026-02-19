@@ -152,6 +152,7 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 - `config.emit_message_events` (`false` by default).
 - `config.emit_mention_events` (`false` by default).
 - `config.emit_invitation_events` (`false` by default).
+- `config.emit_chat_lifecycle_events` (`false` by default).
 
 <details>
 <summary>Full default initializer</summary>
@@ -181,6 +182,7 @@ ChatGem.configure do |config|
   config.emit_message_events = false
   config.emit_mention_events = false
   config.emit_invitation_events = false
+  config.emit_chat_lifecycle_events = false
   config.show_self_signals = false
   config.replace_signals_on_message_submit = false
   config.message_css_class_resolver = nil
@@ -471,6 +473,42 @@ document.addEventListener("chat-gem:invitation-accepted", function (event) {
   // event.detail.chatId
   // event.detail.chatTitle
   // event.detail.chatMembershipId
+});
+```
+
+#### Chat lifecycle events
+
+```ruby
+ChatGem.configure do |config|
+  config.emit_chat_lifecycle_events = true
+end
+```
+
+Emits lifecycle events on page load after redirect:
+
+- `chat-gem:chat-joined` when the current participant joins a chat (chat creation or invitation acceptance)
+- `chat-gem:chat-left` when the current participant leaves a chat
+- `chat-gem:chat-closed` when the current participant closes a chat
+
+```js
+document.addEventListener("chat-gem:chat-joined", function (event) {
+  // event.detail.action        => "joined"
+  // event.detail.chatId
+  // event.detail.chatTitle
+  // event.detail.chatMembershipId
+});
+
+document.addEventListener("chat-gem:chat-left", function (event) {
+  // event.detail.action        => "left"
+  // event.detail.chatId
+  // event.detail.chatTitle
+  // event.detail.chatMembershipId
+});
+
+document.addEventListener("chat-gem:chat-closed", function (event) {
+  // event.detail.action        => "closed"
+  // event.detail.chatId
+  // event.detail.chatTitle
 });
 ```
 

@@ -1,4 +1,6 @@
-<section class="chat-shell <%= "chat-shell--closed" if @chat.closed? %>">
+<section class="chat-shell <%= "chat-shell--closed" if @chat.closed? %>"
+         data-chat-emit-chat-lifecycle-events="<%= chat_emit_chat_lifecycle_events? %>"
+         data-chat-lifecycle-event="<%= json_escape(@chat_lifecycle_event.to_json) if @chat_lifecycle_event.present? %>">
   <% current_participant = current_chat_participant %>
   <% current_participant_type = current_participant.class.base_class.name %>
   <% current_participant_id = current_participant.id %>

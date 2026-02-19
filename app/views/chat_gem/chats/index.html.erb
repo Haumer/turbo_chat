@@ -1,7 +1,9 @@
 <section class="chat-shell"
          data-chat-index
          data-chat-emit-invitation-events="<%= chat_emit_invitation_events? %>"
-         data-chat-invitation-accepted="<%= json_escape(@invitation_accepted_event.to_json) if @invitation_accepted_event.present? %>">
+         data-chat-emit-chat-lifecycle-events="<%= chat_emit_chat_lifecycle_events? %>"
+         data-chat-invitation-accepted="<%= json_escape(@invitation_accepted_event.to_json) if @invitation_accepted_event.present? %>"
+         data-chat-lifecycle-event="<%= json_escape(@chat_lifecycle_event.to_json) if @chat_lifecycle_event.present? %>">
   <header class="chat-header">
     <h1>Chats</h1>
     <%= link_to "New Chat", new_chat_path, class: "chat-btn" %>

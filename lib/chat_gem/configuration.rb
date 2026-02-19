@@ -64,6 +64,7 @@ module ChatGem
                   :emit_message_events,
                   :emit_mention_events,
                   :emit_invitation_events,
+                  :emit_chat_lifecycle_events,
                   :show_self_signals,
                   :replace_signals_on_message_submit,
                   :message_css_class_resolver,
@@ -98,6 +99,7 @@ module ChatGem
       @emit_message_events = false
       @emit_mention_events = false
       @emit_invitation_events = false
+      @emit_chat_lifecycle_events = false
       @show_self_signals = false
       @replace_signals_on_message_submit = false
       @message_css_class_resolver = nil

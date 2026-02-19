@@ -1301,8 +1301,43 @@
     });
   }
 
+  function setupChatLifecycleEvents() {
+    document.querySelectorAll("[data-chat-lifecycle-event]").forEach(function (element) {
+      if (!element || !element.dataset || element.dataset.chatLifecycleEventsBound === "true") {
+        return;
+      }
+
+      element.dataset.chatLifecycleEventsBound = "true";
+      if (!datasetFlagEnabled(element, "chatEmitChatLifecycleEvents")) {
+        return;
+      }
+
+      var payload = parseJsonObject(element.dataset.chatLifecycleEvent);
+      if (!payload) {
+        return;
+      }
+
+      var eventName = String(payload.eventName || "").trim();
+      if (!eventName) {
+        return;
+      }
+
+      var event = new CustomEvent(eventName, {
+        bubbles: true,
+        detail: {
+          action: payload.action || null,
+          chatId: payload.chatId || null,
+          chatTitle: payload.chatTitle || null,
+          chatMembershipId: payload.chatMembershipId || null
+        }
+      });
+      element.dispatchEvent(event);
+    });
+  }
+
   function setupChatGemUi() {
     setupInvitationEvents();
+    setupChatLifecycleEvents();
     setupAllComposers();
     setupAllMessageAutoScroll();
     setupAllSignalContainers();

@@ -95,6 +95,27 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert membership.reload.removed_at.present?
   end
 
+  test "leaving chat includes lifecycle event payload when enabled" do
+    previous_emit_chat_lifecycle_events = ChatGem.configuration.emit_chat_lifecycle_events
+    ChatGem.configuration.emit_chat_lifecycle_events = true
+
+    participant = User.create!(email: "leave-event-user@example.com")
+    chat = ChatGem::Chat.create!(title: "Leave Event Chat")
+    ChatGem::ChatMembership.create!(chat: chat, participant: participant, role: :member)
+
+    with_chat_current_participant(participant) do
+      patch "/chat/chats/#{chat.id}/leave"
+      assert_redirected_to "/chat/chats"
+      follow_redirect!
+      assert_response :success
+    end
+
+    assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
+    assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-left&quot;)
+  ensure
+    ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
+  end
+
   test "invited participant can accept invitation from chats index" do
     admin = User.create!(email: "accept-admin@example.com")
     invitee = User.create!(email: "accept-invitee@example.com")
@@ -146,6 +167,32 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_includes response.body, %(data-chat-invitation-accepted="{&quot;chatId&quot;:&quot;#{chat.id}&quot;)
   ensure
     ChatGem.configuration.emit_invitation_events = previous_emit_invitation_events
+  end
+
+  test "accepting invitation includes lifecycle event payload when enabled" do
+    previous_emit_chat_lifecycle_events = ChatGem.configuration.emit_chat_lifecycle_events
+    ChatGem.configuration.emit_chat_lifecycle_events = true
+
+    invitee = User.create!(email: "accept-lifecycle-invitee@example.com")
+    chat = ChatGem::Chat.create!(title: "Accept Lifecycle Chat")
+    ChatGem::ChatMembership.create!(
+      chat: chat,
+      participant: invitee,
+      role: :member,
+      invitation_accepted: false
+    )
+
+    with_chat_current_participant(invitee) do
+      patch "/chat/chats/#{chat.id}/accept"
+      assert_redirected_to "/chat/chats"
+      follow_redirect!
+      assert_response :success
+    end
+
+    assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
+    assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-joined&quot;)
+  ensure
+    ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
   end
 
   test "accept redirects with migration alert when invitation tracking is unavailable" do
@@ -226,6 +273,27 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to "/chat/chats/#{chat.id}"
     assert chat.reload.opened?
+  end
+
+  test "closing chat includes lifecycle event payload when enabled" do
+    previous_emit_chat_lifecycle_events = ChatGem.configuration.emit_chat_lifecycle_events
+    ChatGem.configuration.emit_chat_lifecycle_events = true
+
+    admin = User.create!(email: "close-event-admin@example.com")
+    chat = ChatGem::Chat.create!(title: "Close Event Chat")
+    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    with_chat_current_participant(admin) do
+      patch "/chat/chats/#{chat.id}/close"
+      assert_redirected_to "/chat/chats/#{chat.id}"
+      follow_redirect!
+      assert_response :success
+    end
+
+    assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
+    assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-closed&quot;)
+  ensure
+    ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
   end
 
   test "participant can edit own message" do

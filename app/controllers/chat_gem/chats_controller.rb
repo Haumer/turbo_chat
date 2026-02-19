@@ -8,15 +8,16 @@ module ChatGem
       @chats = ChatGem::Chat.for_participant(participant).order(created_at: :desc, id: :desc)
       @pending_invitations = pending_invitations_for(participant)
       @invitation_accepted_event = invitation_accepted_payload
+      @chat_lifecycle_event = chat_lifecycle_event_payload
     end
 
     def accept
       participant = current_chat_participant
       return head :forbidden if participant.nil?
-      return redirect_to(chats_path, alert: "Run latest chat_gem migrations to accept invitations") unless ChatGem::ChatMembership.invitation_tracking_supported?
+      return redirect_to(chats_path, alert: "Run latest chat_gem migrations to accept invitations", status: :see_other) unless ChatGem::ChatMembership.invitation_tracking_supported?
 
       membership = @chat.chat_memberships.pending.find_by(participant: participant)
-      return redirect_to chats_path, alert: "Invitation not found" if membership.nil?
+      return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
 
       membership.accept_invitation!
       flash[:chat_gem_invitation_accepted] = {
@@ -24,19 +25,20 @@ module ChatGem
         chatTitle: @chat.title,
         chatMembershipId: membership.id
       }
-      redirect_to chats_path, notice: "Invitation accepted"
+      set_chat_lifecycle_event(action: :joined, chat: @chat, membership: membership)
+      redirect_to chats_path, notice: "Invitation accepted", status: :see_other
     end
 
     def decline
       participant = current_chat_participant
       return head :forbidden if participant.nil?
-      return redirect_to(chats_path, alert: "Run latest chat_gem migrations to decline invitations") unless ChatGem::ChatMembership.invitation_tracking_supported?
+      return redirect_to(chats_path, alert: "Run latest chat_gem migrations to decline invitations", status: :see_other) unless ChatGem::ChatMembership.invitation_tracking_supported?
 
       membership = @chat.chat_memberships.pending.find_by(participant: participant)
-      return redirect_to chats_path, alert: "Invitation not found" if membership.nil?
+      return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
 
       membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil, invitation_accepted: false)
-      redirect_to chats_path, notice: "Invitation declined"
+      redirect_to chats_path, notice: "Invitation declined", status: :see_other
     end
 
     def new
@@ -47,7 +49,8 @@ module ChatGem
       @chat = ChatGem::Chat.new(chat_params)
 
       if @chat.save
-        @chat.chat_memberships.create!(participant: current_chat_participant, role: :admin)
+        membership = @chat.chat_memberships.create!(participant: current_chat_participant, role: :admin)
+        set_chat_lifecycle_event(action: :joined, chat: @chat, membership: membership)
         redirect_to chat_path(@chat), notice: "Chat created"
       else
         render :new, status: :unprocessable_entity
@@ -58,6 +61,7 @@ module ChatGem
       authorize_view_chat!(@chat)
       return if performed?
 
+      @chat_lifecycle_event = chat_lifecycle_event_payload
       @chat_permission = permission_for(@chat)
       @chat_messages = @chat.visible_messages
       @can_post_message = @chat_permission.can_post_message?
@@ -79,10 +83,11 @@ module ChatGem
       return if performed?
 
       membership = @chat.chat_memberships.active.find_by(participant: current_chat_participant)
-      return redirect_to chats_path, alert: "You are no longer a participant in this chat" if membership.nil?
+      return redirect_to(chats_path, alert: "You are no longer a participant in this chat", status: :see_other) if membership.nil?
 
       membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil)
-      redirect_to chats_path, notice: "You left the chat"
+      set_chat_lifecycle_event(action: :left, chat: @chat, membership: membership)
+      redirect_to chats_path, notice: "You left the chat", status: :see_other
     end
 
     def close
@@ -90,7 +95,8 @@ module ChatGem
       return head :forbidden unless chat_permission.can_close_chat?
 
       @chat.close!
-      redirect_to chat_path(@chat), notice: "Chat closed"
+      set_chat_lifecycle_event(action: :closed, chat: @chat)
+      redirect_to chat_path(@chat), notice: "Chat closed", status: :see_other
     end
 
     def reopen
@@ -98,7 +104,7 @@ module ChatGem
       return head :forbidden unless chat_permission.can_reopen_chat?
 
       @chat.reopen!
-      redirect_to chat_path(@chat), notice: "Chat reopened"
+      redirect_to chat_path(@chat), notice: "Chat reopened", status: :see_other
     end
 
     private
@@ -150,6 +156,40 @@ module ChatGem
       }.compact
     rescue StandardError
       nil
+    end
+
+    def chat_lifecycle_event_payload
+      payload = flash[:chat_gem_chat_lifecycle_event]
+      return nil unless payload.respond_to?(:to_h)
+
+      symbolized_payload = payload.to_h.symbolize_keys
+      event_name = symbolized_payload[:eventName].presence || symbolized_payload[:event_name].presence
+      return nil if event_name.blank?
+
+      chat_id = symbolized_payload[:chatId].presence || symbolized_payload[:chat_id].presence
+
+      {
+        eventName: event_name.to_s,
+        action: symbolized_payload[:action].presence,
+        chatId: chat_id.to_s.presence,
+        chatTitle: symbolized_payload[:chatTitle].presence || symbolized_payload[:chat_title].presence,
+        chatMembershipId: symbolized_payload[:chatMembershipId].presence || symbolized_payload[:chat_membership_id].presence
+      }.compact
+    rescue StandardError
+      nil
+    end
+
+    def set_chat_lifecycle_event(action:, chat:, membership: nil)
+      return if action.blank? || chat.nil?
+
+      action_key = action.to_s
+      flash[:chat_gem_chat_lifecycle_event] = {
+        eventName: "chat-gem:chat-#{action_key}",
+        action: action_key,
+        chatId: chat.id.to_s,
+        chatTitle: chat.title,
+        chatMembershipId: membership&.id&.to_s
+      }.compact
     end
   end
 end
