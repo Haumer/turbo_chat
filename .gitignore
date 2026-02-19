@@ -1,4 +1,7 @@
 /.bundle
+/.ruby-lsp/
+/.vscode/
+/.idea/
 /log/*
 /tmp/*
 !/log/.keep
@@ -16,4 +19,6 @@ coverage/
 .yardoc
 .yardoc/
 *.gem
+*.swp
+*.swo
 .DS_Store
