@@ -147,6 +147,8 @@ GEM
     nio4r (2.7.5)
     nokogiri (1.19.0-arm64-darwin)
       racc (~> 1.4)
+    nokogiri (1.19.0-x86_64-linux-gnu)
+      racc (~> 1.4)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -223,6 +225,7 @@ GEM
       activesupport (>= 6.1)
       sprockets (>= 3.0.0)
     sqlite3 (1.7.3-arm64-darwin)
+    sqlite3 (1.7.3-x86_64-linux)
     stringio (3.2.0)
     thor (1.5.0)
     timeout (0.6.0)
@@ -243,6 +246,7 @@ GEM
 
 PLATFORMS
   arm64-darwin
+  x86_64-linux
 
 DEPENDENCIES
   capybara (~> 3.40)
