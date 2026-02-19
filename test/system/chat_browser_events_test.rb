@@ -112,7 +112,9 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     membership = TurboChat::ChatMembership.create!(chat: chat, participant: participant, role: :member)
 
     visit "/chat/chats/#{chat.id}"
-    click_button "Leave"
+    accept_confirm("Leave this chat?") do
+      click_button "Leave"
+    end
     assert_current_path "/chat/chats", ignore_query: true
 
     install_event_capture(%w[turbo-chat:chat-left])
@@ -132,7 +134,9 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
 
     visit "/chat/chats/#{chat.id}"
-    click_button "Close"
+    accept_confirm("Close this chat?") do
+      click_button "Close"
+    end
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
     install_event_capture(%w[turbo-chat:chat-closed])
