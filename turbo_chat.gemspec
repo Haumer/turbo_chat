@@ -4,7 +4,7 @@ Gem::Specification.new do |spec|
   spec.name        = "turbo_chat"
   spec.version     = TurboChat::VERSION
   spec.authors     = ["Alexander Haumer"]
-  spec.homepage    = "https://github.com/Haumer/ruby_llm_chat"
+  spec.homepage    = "https://github.com/Haumer/turbo_chat"
   spec.summary     = "Lightweight mountable chat engine for Rails"
   spec.description = "A mountable Rails engine with chats, messages, memberships, and Turbo Stream updates."
   spec.license     = "MIT"
