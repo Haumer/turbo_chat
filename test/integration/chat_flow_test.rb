@@ -40,10 +40,10 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "action-cable-url"
     assert_match(/turbo/i, response.body)
     assert_includes response.body, "turbo-cable-stream-source"
-    assert_includes response.body, "/javascripts/chat_gem/shared.js"
-    assert_includes response.body, "/javascripts/chat_gem/messages.js"
-    assert_includes response.body, "/javascripts/chat_gem/realtime.js"
-    assert_includes response.body, "/javascripts/chat_gem/lifecycle_events.js"
+    assert_match %r{/(?:assets|javascripts)/chat_gem/shared(?:-[0-9a-f]+)?\.js}, response.body
+    assert_match %r{/(?:assets|javascripts)/chat_gem/messages(?:-[0-9a-f]+)?\.js}, response.body
+    assert_match %r{/(?:assets|javascripts)/chat_gem/realtime(?:-[0-9a-f]+)?\.js}, response.body
+    assert_match %r{/(?:assets|javascripts)/chat_gem/lifecycle_events(?:-[0-9a-f]+)?\.js}, response.body
   end
 
   test "requires chat_current_participant to return an acts_as_chat_participant model" do

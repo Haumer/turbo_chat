@@ -7,4 +7,7 @@ Rails.application.configure do
   config.action_dispatch.show_exceptions = :none
   config.action_controller.allow_forgery_protection = false
   config.active_support.deprecation = :stderr
+  # System tests use ephemeral localhost/127.0.0.1 hosts and ports.
+  # Keep host authorization disabled in test only to avoid false negatives.
+  config.hosts.clear
 end
