@@ -439,4 +439,4 @@
   }
 
   namespace.setupAllMessageAutoScroll = setupAllMessageAutoScroll;
-})(window.ChatGemUI = window.ChatGemUI || {});
+})(window.TurboChatUI = window.TurboChatUI || {});

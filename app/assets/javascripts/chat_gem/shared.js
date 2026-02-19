@@ -485,4 +485,4 @@
   namespace.signalOverlayOffset = signalOverlayOffset;
   namespace.prefersReducedMotion = prefersReducedMotion;
   namespace.scrollMessageIntoView = scrollMessageIntoView;
-})(window.ChatGemUI = window.ChatGemUI || {});
+})(window.TurboChatUI = window.TurboChatUI || {});

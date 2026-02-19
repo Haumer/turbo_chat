@@ -64,7 +64,7 @@
     });
   }
 
-  function setupChatGemUi() {
+  function setupTurboChatUi() {
     setupInvitationEvents();
     setupChatLifecycleEvents();
 
@@ -82,12 +82,12 @@
     }
   }
 
-  document.addEventListener("turbo:load", setupChatGemUi);
-  document.addEventListener("DOMContentLoaded", setupChatGemUi);
-  document.addEventListener("turbo:render", setupChatGemUi);
+  document.addEventListener("turbo:load", setupTurboChatUi);
+  document.addEventListener("DOMContentLoaded", setupTurboChatUi);
+  document.addEventListener("turbo:render", setupTurboChatUi);
   setInterval(function () {
     if (typeof namespace.pruneSignals === "function") {
       namespace.pruneSignals();
     }
   }, 1000);
-})(window.ChatGemUI = window.ChatGemUI || {});
+})(window.TurboChatUI = window.TurboChatUI || {});

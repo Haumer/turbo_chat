@@ -395,4 +395,4 @@
   namespace.setupAllSignalContainers = setupAllSignalContainers;
   namespace.setupAllComposers = setupAllComposers;
   namespace.pruneSignals = pruneSignals;
-})(window.ChatGemUI = window.ChatGemUI || {});
+})(window.TurboChatUI = window.TurboChatUI || {});

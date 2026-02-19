@@ -52,7 +52,7 @@ bin/rails db:migrate
 mount TurboChat::Engine => "/"
 ```
 
-`turbo_chat` exposes `TurboChat` and keeps `ChatGem` as a backwards-compatible alias.
+Use the `TurboChat` namespace in host app code.
 
 ## Host App Contract
 

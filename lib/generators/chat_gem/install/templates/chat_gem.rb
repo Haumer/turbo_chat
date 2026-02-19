@@ -1,5 +1,5 @@
-ChatGem.configure do |config|
-  config.permission_adapter = ChatGem::Permission
+TurboChat.configure do |config|
+  config.permission_adapter = TurboChat::Permission
   config.max_chat_participants = 10
   config.max_message_length = 1000
   config.message_history_limit = 200
@@ -7,7 +7,7 @@ ChatGem.configure do |config|
   config.mention_filter_exclude_self = true
   config.mention_filter_hide_roles = true
   config.enable_emoji_aliases = true
-  config.emoji_aliases = ChatGem::Configuration::DEFAULT_EMOJI_ALIASES.dup
+  config.emoji_aliases = TurboChat::Configuration::DEFAULT_EMOJI_ALIASES.dup
   config.blocked_words = []
   config.blocked_words_action = :reject
   config.mention_mark_hex_color = nil
