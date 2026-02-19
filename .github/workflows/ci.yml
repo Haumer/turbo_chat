@@ -24,4 +24,6 @@ jobs:
       - name: Run test suite
         env:
           RAILS_ENV: test
-        run: bundle exec bin/rails test:all
+        run: |
+          bundle exec bin/rails db:prepare
+          bundle exec bin/rails test:all
