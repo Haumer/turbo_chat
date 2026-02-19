@@ -41,6 +41,7 @@ module ChatGem
       return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
 
       membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil, invitation_accepted: false)
+      set_chat_lifecycle_event(action: :declined, chat: @chat, membership: membership)
       redirect_to chats_path, notice: "Invitation declined", status: :see_other
     end
 
@@ -107,6 +108,7 @@ module ChatGem
       return head :forbidden unless chat_permission.can_reopen_chat?
 
       @chat.reopen!
+      set_chat_lifecycle_event(action: :reopened, chat: @chat)
       redirect_to chat_path(@chat), notice: "Chat reopened", status: :see_other
     end
 

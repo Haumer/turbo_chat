@@ -153,6 +153,8 @@ ChatGem::ChatMembership.create!(chat: chat, participant: Current.user, role: :me
 - `config.emit_mention_events` (`false` by default).
 - `config.emit_invitation_events` (`false` by default).
 - `config.emit_chat_lifecycle_events` (`false` by default).
+- `config.emit_moderation_events` (`false` by default; emits `ActiveSupport::Notifications` moderation events).
+- `config.emit_blocked_words_events` (`false` by default; emits `ActiveSupport::Notifications` blocked-word moderation events).
 
 <details>
 <summary>Full default initializer</summary>
@@ -183,6 +185,8 @@ ChatGem.configure do |config|
   config.emit_mention_events = false
   config.emit_invitation_events = false
   config.emit_chat_lifecycle_events = false
+  config.emit_moderation_events = false
+  config.emit_blocked_words_events = false
   config.show_self_signals = false
   config.replace_signals_on_message_submit = false
   config.message_css_class_resolver = nil
@@ -486,13 +490,30 @@ end
 
 Emits lifecycle events on page load after redirect:
 
+- `chat-gem:chat-invited` when the current participant invites someone to a chat
 - `chat-gem:chat-joined` when the current participant joins a chat (chat creation or invitation acceptance)
+- `chat-gem:chat-declined` when the current participant declines a pending invitation
 - `chat-gem:chat-left` when the current participant leaves a chat
 - `chat-gem:chat-closed` when the current participant closes a chat
+- `chat-gem:chat-reopened` when the current participant reopens a chat
 
 ```js
+document.addEventListener("chat-gem:chat-invited", function (event) {
+  // event.detail.action        => "invited"
+  // event.detail.chatId
+  // event.detail.chatTitle
+  // event.detail.chatMembershipId
+});
+
 document.addEventListener("chat-gem:chat-joined", function (event) {
   // event.detail.action        => "joined"
+  // event.detail.chatId
+  // event.detail.chatTitle
+  // event.detail.chatMembershipId
+});
+
+document.addEventListener("chat-gem:chat-declined", function (event) {
+  // event.detail.action        => "declined"
   // event.detail.chatId
   // event.detail.chatTitle
   // event.detail.chatMembershipId
@@ -510,6 +531,57 @@ document.addEventListener("chat-gem:chat-closed", function (event) {
   // event.detail.chatId
   // event.detail.chatTitle
 });
+
+document.addEventListener("chat-gem:chat-reopened", function (event) {
+  // event.detail.action        => "reopened"
+  // event.detail.chatId
+  // event.detail.chatTitle
+});
+```
+
+#### Moderation notifications (server-side)
+
+```ruby
+ChatGem.configure do |config|
+  config.emit_moderation_events = true
+end
+```
+
+When enabled, ChatGem instruments `ActiveSupport::Notifications` events:
+
+- `chat_gem.moderation.member_muted`
+- `chat_gem.moderation.member_unmuted`
+- `chat_gem.moderation.member_timed_out`
+- `chat_gem.moderation.member_timeout_cleared`
+- `chat_gem.moderation.member_banned`
+- `chat_gem.moderation.message_deleted`
+- `chat_gem.moderation.chat_closed`
+- `chat_gem.moderation.chat_reopened`
+
+```ruby
+ActiveSupport::Notifications.subscribe("chat_gem.moderation.member_banned") do |_name, _start, _finish, _id, payload|
+  # payload includes chat_id, membership_id, participant_type, participant_id, actor_type, actor_id
+end
+```
+
+#### Blocked words notifications (server-side)
+
+```ruby
+ChatGem.configure do |config|
+  config.emit_blocked_words_events = true
+end
+```
+
+When enabled, blocked-word moderation instruments:
+
+- `chat_gem.blocked_words.detected`
+- `chat_gem.blocked_words.rejected`
+- `chat_gem.blocked_words.scrambled`
+
+```ruby
+ActiveSupport::Notifications.subscribe("chat_gem.blocked_words.detected") do |_name, _start, _finish, _id, payload|
+  # payload includes chat_id, message_id, participant_type, participant_id, blocked_words, action
+end
 ```
 
 ## Participants, Roles, and Moderation

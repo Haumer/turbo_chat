@@ -23,6 +23,8 @@ ChatGem.configure do |config|
   config.emit_mention_events = false
   config.emit_invitation_events = false
   config.emit_chat_lifecycle_events = false
+  config.emit_moderation_events = false
+  config.emit_blocked_words_events = false
   config.show_self_signals = false
   config.replace_signals_on_message_submit = false
   config.message_css_class_resolver = nil

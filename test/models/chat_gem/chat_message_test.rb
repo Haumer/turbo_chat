@@ -173,6 +173,39 @@ module ChatGem
       end
     end
 
+    test "blocked words emit detect and reject notifications when enabled" do
+      member = User.create!(email: "member-blocked-notify-reject@example.com")
+      chat = ChatGem::Chat.create!(title: "Blocked Notify Reject")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      events = []
+      callback = lambda do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+        events << event
+      end
+
+      with_chat_configuration(
+        blocked_words: ["badword"],
+        blocked_words_action: :reject,
+        emit_blocked_words_events: true
+      ) do
+        ActiveSupport::Notifications.subscribed(callback, /chat_gem\.blocked_words\./) do
+          message = ChatGem::ChatMessage.new(
+            chat: chat,
+            participant: member,
+            body: "this has badword inside",
+            kind: :message
+          )
+
+          assert_not message.valid?
+        end
+      end
+
+      event_names = events.map(&:name)
+      assert_includes event_names, "chat_gem.blocked_words.detected"
+      assert_includes event_names, "chat_gem.blocked_words.rejected"
+    end
+
     test "blocked words scramble message when moderation action is scramble" do
       member = User.create!(email: "member-blocked-scramble@example.com")
       chat = ChatGem::Chat.create!(title: "Blocked Scramble")
@@ -195,6 +228,68 @@ module ChatGem
         assert_not_equal "badword", scrambled_word.downcase
         assert_equal "badword".chars.sort, scrambled_word.downcase.chars.sort
       end
+    end
+
+    test "blocked words emit detect and scramble notifications when enabled" do
+      member = User.create!(email: "member-blocked-notify-scramble@example.com")
+      chat = ChatGem::Chat.create!(title: "Blocked Notify Scramble")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      events = []
+      callback = lambda do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+        events << event
+      end
+
+      with_chat_configuration(
+        blocked_words: ["badword"],
+        blocked_words_action: :scramble,
+        emit_blocked_words_events: true
+      ) do
+        ActiveSupport::Notifications.subscribed(callback, /chat_gem\.blocked_words\./) do
+          ChatGem::ChatMessage.create!(
+            chat: chat,
+            participant: member,
+            body: "this has badword inside",
+            kind: :message
+          )
+        end
+      end
+
+      event_names = events.map(&:name)
+      assert_includes event_names, "chat_gem.blocked_words.detected"
+      assert_includes event_names, "chat_gem.blocked_words.scrambled"
+    end
+
+    test "blocked words notifications are disabled by default" do
+      member = User.create!(email: "member-blocked-notify-off@example.com")
+      chat = ChatGem::Chat.create!(title: "Blocked Notify Off")
+      ChatGem::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+      events = []
+      callback = lambda do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+        events << event
+      end
+
+      with_chat_configuration(
+        blocked_words: ["badword"],
+        blocked_words_action: :reject,
+        emit_blocked_words_events: false
+      ) do
+        ActiveSupport::Notifications.subscribed(callback, /chat_gem\.blocked_words\./) do
+          message = ChatGem::ChatMessage.new(
+            chat: chat,
+            participant: member,
+            body: "this has badword inside",
+            kind: :message
+          )
+
+          assert_not message.valid?
+        end
+      end
+
+      assert_empty events
     end
 
     test "blocked words do not reject when list is empty" do
@@ -405,6 +500,7 @@ module ChatGem
         permission_adapter: config.permission_adapter,
         blocked_words: config.blocked_words,
         blocked_words_action: config.blocked_words_action,
+        emit_blocked_words_events: config.emit_blocked_words_events,
         replace_signals_on_message_submit: config.replace_signals_on_message_submit,
         timestamp_formatter: config.timestamp_formatter,
         role_formatter: config.role_formatter

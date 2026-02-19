@@ -86,6 +86,58 @@ module ChatGem
       assert ChatGem::ChatMessage.exists?(admin_message.id)
     end
 
+    test "emits moderation notifications when enabled" do
+      context = build_chat_with_roles("moderation-events")
+      moderator = context[:moderator]
+      member_membership = context[:member_membership]
+
+      original_emit_moderation_events = ChatGem.configuration.emit_moderation_events
+      ChatGem.configuration.emit_moderation_events = true
+
+      event_names = []
+      callback = lambda do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+        event_names << event.name
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, /chat_gem\.moderation\./) do
+        ChatGem::Moderation.mute_member!(actor: moderator, membership: member_membership)
+        ChatGem::Moderation.timeout_member!(actor: moderator, membership: member_membership, until_time: 10.minutes.from_now)
+        ChatGem::Moderation.clear_timeout!(actor: moderator, membership: member_membership)
+        ChatGem::Moderation.ban_member!(actor: moderator, membership: member_membership)
+      end
+
+      assert_includes event_names, "chat_gem.moderation.member_muted"
+      assert_includes event_names, "chat_gem.moderation.member_timed_out"
+      assert_includes event_names, "chat_gem.moderation.member_timeout_cleared"
+      assert_includes event_names, "chat_gem.moderation.member_banned"
+    ensure
+      ChatGem.configuration.emit_moderation_events = original_emit_moderation_events
+    end
+
+    test "does not emit moderation notifications when disabled" do
+      context = build_chat_with_roles("moderation-events-off")
+      moderator = context[:moderator]
+      member_membership = context[:member_membership]
+
+      original_emit_moderation_events = ChatGem.configuration.emit_moderation_events
+      ChatGem.configuration.emit_moderation_events = false
+
+      event_names = []
+      callback = lambda do |*args|
+        event = ActiveSupport::Notifications::Event.new(*args)
+        event_names << event.name
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, /chat_gem\.moderation\./) do
+        ChatGem::Moderation.mute_member!(actor: moderator, membership: member_membership)
+      end
+
+      assert_empty event_names
+    ensure
+      ChatGem.configuration.emit_moderation_events = original_emit_moderation_events
+    end
+
     private
 
     def build_chat_with_roles(prefix)

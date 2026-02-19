@@ -29,6 +29,33 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_not invited_membership.active?
   end
 
+  test "inviting participant includes lifecycle event payload when enabled" do
+    previous_emit_chat_lifecycle_events = ChatGem.configuration.emit_chat_lifecycle_events
+    ChatGem.configuration.emit_chat_lifecycle_events = true
+
+    admin = User.create!(email: "invite-event-admin@example.com")
+    invitee = User.create!(email: "invite-event-target@example.com")
+    chat = ChatGem::Chat.create!(title: "Invite Event Chat")
+    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    with_chat_current_participant(admin) do
+      post "/chat/chats/#{chat.id}/chat_memberships", params: {
+        chat_membership: {
+          participant_type: "User",
+          participant_id: invitee.id
+        }
+      }
+      assert_redirected_to "/chat/chats/#{chat.id}"
+      follow_redirect!
+      assert_response :success
+    end
+
+    assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
+    assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-invited&quot;)
+  ensure
+    ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
+  end
+
   test "member cannot invite participant to chat" do
     member = User.create!(email: "invite-member@example.com")
     invitee = User.create!(email: "invite-blocked@example.com")
@@ -235,6 +262,32 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_not invited_membership.active?
   end
 
+  test "declining invitation includes lifecycle event payload when enabled" do
+    previous_emit_chat_lifecycle_events = ChatGem.configuration.emit_chat_lifecycle_events
+    ChatGem.configuration.emit_chat_lifecycle_events = true
+
+    invitee = User.create!(email: "decline-event-invitee@example.com")
+    chat = ChatGem::Chat.create!(title: "Decline Event Chat")
+    ChatGem::ChatMembership.create!(
+      chat: chat,
+      participant: invitee,
+      role: :member,
+      invitation_accepted: false
+    )
+
+    with_chat_current_participant(invitee) do
+      patch "/chat/chats/#{chat.id}/decline"
+      assert_redirected_to "/chat/chats"
+      follow_redirect!
+      assert_response :success
+    end
+
+    assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
+    assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-declined&quot;)
+  ensure
+    ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
+  end
+
   test "decline redirects with migration alert when invitation tracking is unavailable" do
     invitee = User.create!(email: "decline-legacy-invitee@example.com")
     chat = ChatGem::Chat.create!(title: "Decline Legacy Chat")
@@ -292,6 +345,27 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
 
     assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
     assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-closed&quot;)
+  ensure
+    ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
+  end
+
+  test "reopening chat includes lifecycle event payload when enabled" do
+    previous_emit_chat_lifecycle_events = ChatGem.configuration.emit_chat_lifecycle_events
+    ChatGem.configuration.emit_chat_lifecycle_events = true
+
+    admin = User.create!(email: "reopen-event-admin@example.com")
+    chat = ChatGem::Chat.create!(title: "Reopen Event Chat", closed_at: Time.current)
+    ChatGem::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    with_chat_current_participant(admin) do
+      patch "/chat/chats/#{chat.id}/reopen"
+      assert_redirected_to "/chat/chats/#{chat.id}"
+      follow_redirect!
+      assert_response :success
+    end
+
+    assert_includes response.body, %(data-chat-emit-chat-lifecycle-events="true")
+    assert_includes response.body, %(data-chat-lifecycle-event="{&quot;eventName&quot;:&quot;chat-gem:chat-reopened&quot;)
   ensure
     ChatGem.configuration.emit_chat_lifecycle_events = previous_emit_chat_lifecycle_events
   end

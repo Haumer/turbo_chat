@@ -1,5 +1,7 @@
 module ChatGem
   class ChatMembershipsController < ApplicationController
+    include ChatGem::ChatsController::EventPayloadSupport
+
     before_action :set_chat
     before_action -> { authorize_view_chat!(@chat) }
     before_action :authorize_invite_member!
@@ -22,6 +24,7 @@ module ChatGem
       end
 
       membership.save!
+      set_chat_lifecycle_event(action: :invited, chat: @chat, membership: membership)
       redirect_to chat_path(@chat), notice: "Participant invited"
     rescue ActiveRecord::RecordNotFound
       redirect_to chat_path(@chat), alert: "Participant not found"

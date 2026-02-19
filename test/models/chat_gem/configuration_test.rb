@@ -29,6 +29,8 @@ module ChatGem
       assert_equal false, config.emit_mention_events
       assert_equal false, config.emit_invitation_events
       assert_equal false, config.emit_chat_lifecycle_events
+      assert_equal false, config.emit_moderation_events
+      assert_equal false, config.emit_blocked_words_events
       assert_equal false, config.show_self_signals
       assert_equal false, config.replace_signals_on_message_submit
       assert_nil config.message_css_class_resolver

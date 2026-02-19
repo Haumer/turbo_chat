@@ -158,12 +158,30 @@ module ChatGem
       return if matches.empty?
 
       action = blocked_words_action_from_configuration
+      emit_blocked_words_event(
+        "chat_gem.blocked_words.detected",
+        blocked_words: matches,
+        action: action
+      )
       if action == "scramble"
+        original_body = body.to_s.dup
         scramble_blocked_words!(blocked_words)
+        emit_blocked_words_event(
+          "chat_gem.blocked_words.scrambled",
+          blocked_words: matches,
+          action: action,
+          original_body: original_body,
+          moderated_body: body.to_s
+        )
         return
       end
 
       errors.add(:body, "contains blocked language")
+      emit_blocked_words_event(
+        "chat_gem.blocked_words.rejected",
+        blocked_words: matches,
+        action: action
+      )
     end
 
     def replace_participant_signals_on_submit
@@ -360,6 +378,32 @@ module ChatGem
       configuration.effective_blocked_words_action.to_s
     rescue StandardError
       "reject"
+    end
+
+    def emit_blocked_words_event(name, blocked_words:, action:, original_body: nil, moderated_body: nil)
+      return unless blocked_words_events_enabled?
+      return unless defined?(ActiveSupport::Notifications)
+
+      payload = {
+        chat_id: chat_id,
+        message_id: id,
+        participant_type: participant_type,
+        participant_id: participant_id,
+        blocked_words: Array(blocked_words).map(&:to_s),
+        action: action.to_s
+      }
+      payload[:original_body] = original_body if original_body.present?
+      payload[:moderated_body] = moderated_body if moderated_body.present?
+      ActiveSupport::Notifications.instrument(name, payload)
+    end
+
+    def blocked_words_events_enabled?
+      configuration = ChatGem.configuration
+      return false unless configuration.respond_to?(:emit_blocked_words_events)
+
+      ActiveModel::Type::Boolean.new.cast(configuration.emit_blocked_words_events)
+    rescue StandardError
+      false
     end
 
   end
