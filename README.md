@@ -49,7 +49,7 @@ bin/rails db:migrate
 
 ```ruby
 # config/routes.rb
-mount TurboChat::Engine => "/"
+mount TurboChat::Engine => "/", as: "turbo_chat"
 ```
 
 Use the `TurboChat` namespace in host app code.
@@ -92,10 +92,10 @@ TurboChat::ChatMembership.create!(chat: chat, participant: Current.user, role: :
 ```
 
 ```erb
-<%= link_to "Open chat", chat_gem.chat_path(chat) %>
+<%= link_to "Open chat", turbo_chat.chat_path(chat) %>
 ```
 
-`chat_gem` is the default route helper prefix when mounted as `mount TurboChat::Engine => "/"`.
+`turbo_chat` is the route helper prefix when mounted as `mount TurboChat::Engine => "/", as: "turbo_chat"`.
 
 ## Feature Overview
 
