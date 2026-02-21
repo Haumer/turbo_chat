@@ -25,6 +25,11 @@ module TurboChat
       assert_equal true, config.show_timestamp
       assert_equal false, config.show_role
       assert_equal true, config.show_members
+      assert_equal "start chatting", config.composer_placeholder_text
+      assert_equal false, config.composer_add_files_display
+      assert_equal false, config.composer_add_files_active
+      assert_equal false, config.composer_microphone_display
+      assert_equal false, config.composer_microphone_active
       assert_equal 5.minutes, config.active_chat_window
       assert_equal false, config.emit_typing_events
       assert_equal false, config.emit_message_events

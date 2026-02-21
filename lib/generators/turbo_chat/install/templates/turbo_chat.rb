@@ -20,6 +20,11 @@ TurboChat.configure do |config|
   config.show_timestamp = true
   config.show_role = false
   config.show_members = true
+  config.composer_placeholder_text = "start chatting"
+  config.composer_add_files_display = false
+  config.composer_add_files_active = false
+  config.composer_microphone_display = false
+  config.composer_microphone_active = false
   config.active_chat_window = 5.minutes
   config.emit_typing_events = false
   config.emit_message_events = false

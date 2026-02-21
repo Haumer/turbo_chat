@@ -19,6 +19,11 @@ module TurboChat
       @original_emit_invitation_events = config.emit_invitation_events
       @original_emit_chat_lifecycle_events = config.emit_chat_lifecycle_events
       @original_show_members = config.show_members
+      @original_composer_placeholder_text = config.composer_placeholder_text
+      @original_composer_add_files_display = config.composer_add_files_display
+      @original_composer_add_files_active = config.composer_add_files_active
+      @original_composer_microphone_display = config.composer_microphone_display
+      @original_composer_microphone_active = config.composer_microphone_active
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -37,6 +42,11 @@ module TurboChat
       config.emit_invitation_events = @original_emit_invitation_events
       config.emit_chat_lifecycle_events = @original_emit_chat_lifecycle_events
       config.show_members = @original_show_members
+      config.composer_placeholder_text = @original_composer_placeholder_text
+      config.composer_add_files_display = @original_composer_add_files_display
+      config.composer_add_files_active = @original_composer_add_files_active
+      config.composer_microphone_display = @original_composer_microphone_display
+      config.composer_microphone_active = @original_composer_microphone_active
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -124,6 +134,11 @@ module TurboChat
         assert_equal false, chat_emit_invitation_events?
         assert_equal false, chat_emit_chat_lifecycle_events?
         assert_equal true, chat_show_members?
+        assert_equal "start chatting", chat_composer_placeholder_text
+        assert_equal false, chat_composer_add_files_display?
+        assert_equal false, chat_composer_add_files_active?
+        assert_equal false, chat_composer_microphone_display?
+        assert_equal false, chat_composer_microphone_active?
       end
     end
 
@@ -143,6 +158,30 @@ module TurboChat
       TurboChat.configuration.show_members = false
 
       assert_equal false, chat_show_members?
+    end
+
+    test "chat_composer_placeholder_text follows configuration and normalizes blanks" do
+      TurboChat.configuration.composer_placeholder_text = "Send a message"
+      assert_equal "Send a message", chat_composer_placeholder_text
+
+      TurboChat.configuration.composer_placeholder_text = "   "
+      assert_equal "start chatting", chat_composer_placeholder_text
+    end
+
+    test "chat_composer_add_files_* methods follow configuration" do
+      TurboChat.configuration.composer_add_files_display = true
+      TurboChat.configuration.composer_add_files_active = false
+
+      assert_equal true, chat_composer_add_files_display?
+      assert_equal false, chat_composer_add_files_active?
+    end
+
+    test "chat_composer_microphone_* methods follow configuration" do
+      TurboChat.configuration.composer_microphone_display = true
+      TurboChat.configuration.composer_microphone_active = false
+
+      assert_equal true, chat_composer_microphone_display?
+      assert_equal false, chat_composer_microphone_active?
     end
 
     test "chat_message_mention_tokens extracts unique mention tokens" do

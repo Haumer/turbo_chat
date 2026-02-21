@@ -25,6 +25,28 @@ module TurboChat
         chat_config_boolean(:show_members, default: true)
       end
 
+      def chat_composer_placeholder_text
+        value = chat_config_value(:composer_placeholder_text, default: "start chatting")
+        normalized = value.to_s.strip
+        normalized.present? ? normalized : "start chatting"
+      end
+
+      def chat_composer_add_files_display?
+        chat_config_boolean(:composer_add_files_display, default: false)
+      end
+
+      def chat_composer_add_files_active?
+        chat_config_boolean(:composer_add_files_active, default: false)
+      end
+
+      def chat_composer_microphone_display?
+        chat_config_boolean(:composer_microphone_display, default: false)
+      end
+
+      def chat_composer_microphone_active?
+        chat_config_boolean(:composer_microphone_active, default: false)
+      end
+
       private
 
       def chat_config_value(method_name, default: nil)

@@ -42,6 +42,70 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     TurboChat.configuration.show_members = previous_show_members
   end
 
+  test "composer add files and microphone buttons are hidden by default" do
+    previous_placeholder = TurboChat.configuration.composer_placeholder_text
+    previous_add_display = TurboChat.configuration.composer_add_files_display
+    previous_add_active = TurboChat.configuration.composer_add_files_active
+    previous_microphone_display = TurboChat.configuration.composer_microphone_display
+    previous_microphone_active = TurboChat.configuration.composer_microphone_active
+
+    TurboChat.configuration.composer_placeholder_text = "start chatting"
+    TurboChat.configuration.composer_add_files_display = false
+    TurboChat.configuration.composer_add_files_active = false
+    TurboChat.configuration.composer_microphone_display = false
+    TurboChat.configuration.composer_microphone_active = false
+
+    user = User.create!(email: "composer-hidden@example.com")
+    chat = TurboChat::Chat.create!(title: "Composer Hidden Buttons")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select "button.chat-composer-tool--add", 0
+    assert_select "button.chat-composer-tool--voice", 0
+    assert_select ".chat-composer-shell.chat-composer-shell--no-leading-tool", 1
+    assert_includes response.body, %(placeholder="start chatting")
+  ensure
+    TurboChat.configuration.composer_placeholder_text = previous_placeholder
+    TurboChat.configuration.composer_add_files_display = previous_add_display
+    TurboChat.configuration.composer_add_files_active = previous_add_active
+    TurboChat.configuration.composer_microphone_display = previous_microphone_display
+    TurboChat.configuration.composer_microphone_active = previous_microphone_active
+  end
+
+  test "composer add files and microphone buttons can render as inactive controls" do
+    previous_placeholder = TurboChat.configuration.composer_placeholder_text
+    previous_add_display = TurboChat.configuration.composer_add_files_display
+    previous_add_active = TurboChat.configuration.composer_add_files_active
+    previous_microphone_display = TurboChat.configuration.composer_microphone_display
+    previous_microphone_active = TurboChat.configuration.composer_microphone_active
+
+    TurboChat.configuration.composer_placeholder_text = "Say hi"
+    TurboChat.configuration.composer_add_files_display = true
+    TurboChat.configuration.composer_add_files_active = false
+    TurboChat.configuration.composer_microphone_display = true
+    TurboChat.configuration.composer_microphone_active = false
+
+    user = User.create!(email: "composer-inactive@example.com")
+    chat = TurboChat::Chat.create!(title: "Composer Inactive Buttons")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select "button.chat-composer-tool--add[disabled][aria-disabled='true']", 1
+    assert_select "button.chat-composer-tool--voice[disabled][aria-disabled='true']", 1
+    assert_select ".chat-composer-shell.chat-composer-shell--no-leading-tool", 0
+    assert_includes response.body, %(placeholder="Say hi")
+  ensure
+    TurboChat.configuration.composer_placeholder_text = previous_placeholder
+    TurboChat.configuration.composer_add_files_display = previous_add_display
+    TurboChat.configuration.composer_add_files_active = previous_add_active
+    TurboChat.configuration.composer_microphone_display = previous_microphone_display
+    TurboChat.configuration.composer_microphone_active = previous_microphone_active
+  end
+
   test "chats index falls back when invitation migration is not yet applied" do
     user = User.create!(email: "legacy-index@example.com")
     chat = TurboChat::Chat.create!(title: "Legacy Index Chat")

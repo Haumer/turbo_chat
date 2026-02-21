@@ -501,10 +501,9 @@ body {
 
 .chat-composer-shell {
   flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: end;
-  column-gap: 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
   border: 1px solid #c8d8ea;
   border-radius: 28px;
   background: #ffffff;
@@ -519,6 +518,8 @@ body {
 }
 
 .chat-composer .chat-composer-input {
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   min-height: 24px;
   max-height: 210px;
@@ -531,6 +532,12 @@ body {
   background: transparent;
   overflow-y: hidden;
   line-height: 1.35;
+}
+
+.chat-composer-shell--no-leading-tool .chat-composer-input {
+  padding-left: 10px;
+  padding-top: 5px;
+  padding-bottom: 7px;
 }
 
 .chat-composer .chat-composer-input:focus {
@@ -566,6 +573,16 @@ body {
 .chat-composer-tool:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(31, 110, 220, 0.18);
+}
+
+.chat-composer-tool:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.chat-composer-tool:disabled:hover {
+  background: #ffffff;
+  border-color: #d2deed;
 }
 
 .chat-composer-tool--add {
@@ -619,10 +636,18 @@ body {
   border-radius: 999px;
 }
 
-.chat-composer-submit span[aria-hidden="true"] {
-  font-size: 25px;
-  line-height: 1;
-  transform: translateY(-1px);
+.chat-composer-send-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.chat-composer-send-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .chat-visually-hidden {
@@ -913,7 +938,7 @@ body {
 
   .chat-composer-shell {
     border-radius: 22px;
-    column-gap: 8px;
+    gap: 8px;
     padding: 7px 8px;
   }
 
@@ -940,8 +965,9 @@ body {
     height: 34px;
   }
 
-  .chat-composer-submit span[aria-hidden="true"] {
-    font-size: 22px;
+  .chat-composer-send-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .chat-form--invite {

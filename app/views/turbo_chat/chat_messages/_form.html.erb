@@ -1,6 +1,12 @@
 <% mention_permission = local_assigns[:chat_permission] %>
 <% mention_options = chat_mention_options(chat: chat, permission: mention_permission) %>
 <% mentions_enabled = chat_mentions_enabled_for?(chat: chat, permission: mention_permission) %>
+<% show_add_files_button = chat_composer_add_files_display? %>
+<% add_files_button_active = chat_composer_add_files_active? %>
+<% show_microphone_button = chat_composer_microphone_display? %>
+<% microphone_button_active = chat_composer_microphone_active? %>
+<% composer_shell_classes = ["chat-composer-shell"] %>
+<% composer_shell_classes << "chat-composer-shell--no-leading-tool" unless show_add_files_button %>
 <div class="chat-composer"
      data-chat-composer
      data-chat-id="<%= chat.id %>"
@@ -10,20 +16,35 @@
      data-chat-mention-options="<%= json_escape(mention_options.to_json) %>">
   <%= form_with model: [chat, chat_message], data: { chat_message_form: true }, class: "chat-form" do |f| %>
     <%= f.hidden_field :kind, value: :message %>
-    <div class="chat-composer-shell">
-      <button type="button" class="chat-composer-tool chat-composer-tool--add" aria-label="Add item">+</button>
+    <div class="<%= composer_shell_classes.join(" ") %>">
+      <% if show_add_files_button %>
+        <button type="button"
+                class="chat-composer-tool chat-composer-tool--add"
+                aria-label="Add files"
+                aria-disabled="<%= (!add_files_button_active).to_s %>"
+                <%= "disabled" unless add_files_button_active %>>+</button>
+      <% end %>
       <%= f.text_area :body,
                       rows: 1,
                       required: true,
                       class: "chat-composer-input",
-                      placeholder: "Ask anything",
+                      placeholder: chat_composer_placeholder_text,
                       data: { chat_message_input: true } %>
-      <button type="button" class="chat-composer-tool chat-composer-tool--voice" aria-label="Voice input">
-        <span class="chat-composer-mic" aria-hidden="true"></span>
-        <span class="chat-visually-hidden">Voice input</span>
-      </button>
+      <% if show_microphone_button %>
+        <button type="button"
+                class="chat-composer-tool chat-composer-tool--voice"
+                aria-label="Voice input"
+                aria-disabled="<%= (!microphone_button_active).to_s %>"
+                <%= "disabled" unless microphone_button_active %>>
+          <span class="chat-composer-mic" aria-hidden="true"></span>
+          <span class="chat-visually-hidden">Voice input</span>
+        </button>
+      <% end %>
       <button type="submit" class="chat-btn chat-btn--send chat-composer-submit" aria-label="Send">
-        <span aria-hidden="true">↑</span>
+        <svg class="chat-composer-send-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 17V7"></path>
+          <path d="M7.5 11.5L12 7l4.5 4.5"></path>
+        </svg>
         <span class="chat-visually-hidden">Send</span>
       </button>
     </div>

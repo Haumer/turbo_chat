@@ -61,6 +61,11 @@ module TurboChat
                   :show_timestamp,
                   :show_role,
                   :show_members,
+                  :composer_placeholder_text,
+                  :composer_add_files_display,
+                  :composer_add_files_active,
+                  :composer_microphone_display,
+                  :composer_microphone_active,
                   :active_chat_window,
                   :emit_typing_events,
                   :emit_message_events,
@@ -100,6 +105,11 @@ module TurboChat
       @show_timestamp = true
       @show_role = false
       @show_members = true
+      @composer_placeholder_text = "start chatting"
+      @composer_add_files_display = false
+      @composer_add_files_active = false
+      @composer_microphone_display = false
+      @composer_microphone_active = false
       @active_chat_window = 5.minutes
       @emit_typing_events = false
       @emit_message_events = false
