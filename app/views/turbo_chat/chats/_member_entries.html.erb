@@ -1,5 +1,37 @@
 <% chat_members = chat.chat_memberships.active.includes(:participant).order(:id).to_a %>
-<% mention_lookup = chat_member_mention_lookup(chat: chat) %>
+<% mention_lookup = {} %>
+<% taken_mention_tokens = {} %>
+<% chat_members.each do |membership| %>
+  <% participant = membership.participant %>
+  <% next if participant.nil? %>
+  <% base_identifier = if participant.respond_to?(:username) && participant.username.present?
+    participant.username
+  elsif participant.respond_to?(:email) && participant.email.present?
+    participant.email.to_s.split("@").first
+  elsif participant.respond_to?(:name) && participant.name.present?
+    participant.name
+  else
+    participant.to_s
+  end %>
+  <% normalized_identifier = I18n.transliterate(base_identifier.to_s).downcase.gsub(/[^a-z0-9_]+/, "_").gsub(/\A_+|_+\z/, "").squeeze("_") %>
+  <% normalized_identifier = "member_#{normalized_identifier}" if normalized_identifier.match?(/\A\d/) %>
+  <% fallback_identifier = participant.respond_to?(:id) && participant.id.present? ? "member_#{participant.id}" : "member" %>
+  <% mention_identifier = normalized_identifier.presence || fallback_identifier %>
+  <% mention_token = "@#{mention_identifier}" %>
+  <% if taken_mention_tokens[mention_token] %>
+    <% suffix = 2 %>
+    <% loop do %>
+      <% candidate = "@#{mention_identifier}_#{suffix}" %>
+      <% unless taken_mention_tokens[candidate] %>
+        <% mention_token = candidate %>
+        <% break %>
+      <% end %>
+      <% suffix += 1 %>
+    <% end %>
+  <% end %>
+  <% taken_mention_tokens[mention_token] = true %>
+  <% mention_lookup["#{membership.participant_type}:#{membership.participant_id}"] = mention_token %>
+<% end %>
 <% role_options = TurboChat.configuration.role_definitions.map do |role_key, definition|
   [definition[:name].presence || role_key.to_s.humanize, role_key.to_s, definition[:rank].to_i]
 end.sort_by { |(role_name, role_key, role_rank)| [role_rank, role_name.to_s.downcase, role_key] } %>
@@ -13,18 +45,37 @@ end.sort_by { |(role_name, role_key, role_rank)| [role_rank, role_name.to_s.down
     <% participant = membership.participant %>
     <% participant_type = membership.participant_type.to_s %>
     <% participant_id = membership.participant_id.to_s %>
-    <% mention_entry = mention_lookup["#{participant_type}:#{participant_id}"] || {} %>
-    <% participant_name = chat_participant_name(participant) %>
-    <% participant_email = chat_participant_email(participant).to_s %>
-    <% invite_label = chat_participant_invite_option_label(participant) %>
-    <% invite_search_value = chat_participant_search_text(participant).downcase %>
+    <% mention_token = mention_lookup["#{participant_type}:#{participant_id}"].to_s %>
+    <% participant_name = if participant.nil?
+      "Unknown"
+    elsif participant.respond_to?(:username) && participant.username.present?
+      participant.username
+    elsif participant.respond_to?(:name) && participant.name.present?
+      participant.name
+    elsif participant.respond_to?(:email) && participant.email.present?
+      participant.email
+    else
+      participant.to_s
+    end %>
+    <% participant_email = if participant.respond_to?(:email) && participant.email.present?
+      participant.email.to_s
+    else
+      ""
+    end %>
+    <% participant_id_label = participant_id.present? ? "##{participant_id}" : "unknown" %>
+    <% invite_label = if participant_email.present? && participant_email != participant_name
+      "#{participant_name} - #{participant_email} (#{participant_id_label})"
+    else
+      "#{participant_name} (#{participant_id_label})"
+    end %>
+    <% invite_search_value = [participant_name, participant_email, participant_id].reject(&:blank?).join(" ").downcase %>
     <li class="chat-members-item"
         data-chat-member-entry="true"
         data-chat-id="<%= chat.id %>"
         data-chat-member-membership-id="<%= membership.id %>"
         data-chat-member-participant-type="<%= participant_type %>"
         data-chat-member-participant-id="<%= participant_id %>"
-        data-chat-member-mention-token="<%= mention_entry[:token].to_s %>"
+        data-chat-member-mention-token="<%= mention_token %>"
         data-chat-member-name="<%= participant_name %>"
         data-chat-member-email="<%= participant_email %>"
         data-chat-member-invite-label="<%= invite_label %>"
