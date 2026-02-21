@@ -22,6 +22,7 @@ module TurboChat
         turbo_chat/shared.js
         turbo_chat/messages.js
         turbo_chat/realtime.js
+        turbo_chat/invite_picker.js
         turbo_chat/lifecycle_events.js
       ]
     end

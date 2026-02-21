@@ -145,10 +145,13 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
 
     get "/chat/chats/#{chat.id}"
     assert_response :success
+    assert_select "section.chat-members .chat-members-list > li.chat-members-item--invite", 1
     assert_select "form.chat-form--invite[data-chat-invite-form='true']", 1
-    assert_select "input.chat-invite-search[data-chat-invite-search-input='true']", 1
-    assert_select "select.chat-invite-select[data-chat-invite-select='true']", 1
-    assert_select "select.chat-invite-select option[data-chat-invite-search*='#{invitee.email}']", 1
+    assert_select "input.chat-invite-search[data-chat-invite-query-input='true']", 1
+    assert_select "input[type='hidden'][name='chat_membership[participant_id]'][data-chat-invite-participant-id-input='true']", 1
+    assert_select "div.chat-invite-menu[data-chat-invite-menu]", 1
+    assert_includes response.body, invitee.email
+    assert_select "select.chat-invite-select", 0
   end
 
   test "requires current_chat_participant to return an acts_as_chat_participant model" do

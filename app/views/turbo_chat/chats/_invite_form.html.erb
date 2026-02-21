@@ -1,0 +1,27 @@
+<% search_id = "chat_invite_search_#{chat.id}#{id_suffix.present? ? "_#{id_suffix}" : ""}" %>
+<% hint_id = "chat_invite_hint_#{chat.id}#{id_suffix.present? ? "_#{id_suffix}" : ""}" %>
+
+<%= form_with url: chat_chat_memberships_path(chat),
+              scope: :chat_membership,
+              class: "chat-form chat-form--invite",
+              data: {
+                chat_invite_form: true,
+                chat_invite_options: json_escape(invite_option_rows.to_json)
+              } do |f| %>
+  <%= f.hidden_field :participant_type, value: invite_participant_type %>
+  <%= f.hidden_field :participant_id, value: "", data: { chat_invite_participant_id_input: true } %>
+  <div class="chat-invite-picker">
+    <%= tag.input type: "search",
+                  id: search_id,
+                  class: "chat-invite-search",
+                  placeholder: "Find participant by email or name",
+                  autocomplete: "off",
+                  "aria-describedby": hint_id,
+                  data: { chat_invite_query_input: true } %>
+    <div class="chat-invite-menu" data-chat-invite-menu hidden></div>
+    <p id="<%= hint_id %>" class="chat-hint chat-hint--invite-search" data-chat-invite-empty hidden>
+      Type at least 2 characters.
+    </p>
+  </div>
+  <%= f.submit "Invite", class: "chat-btn chat-btn--small" %>
+<% end %>

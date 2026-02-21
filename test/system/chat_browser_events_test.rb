@@ -21,7 +21,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
 
     visit "/chat/chats/#{chat.id}"
 
-    find("select[name='chat_membership[participant_id]'] option[value='#{invitee.id}']").select_option
+    find("[data-chat-invite-query-input]").set(invitee.email)
     click_button "Invite"
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
@@ -42,17 +42,11 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
 
     visit "/chat/chats/#{chat.id}"
 
-    find("[data-chat-invite-search-input]").set("bravo")
-
-    within("select[name='chat_membership[participant_id]']") do
-      assert_selector "option[value='#{second_invitee.id}']", count: 1
-      assert_no_selector "option[value='#{first_invitee.id}']"
-    end
-
-    find("select[name='chat_membership[participant_id]'] option[value='#{second_invitee.id}']").select_option
+    find("[data-chat-invite-query-input]").set("bravo")
     click_button "Invite"
 
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
+    assert_not TurboChat::ChatMembership.exists?(chat: chat, participant: first_invitee)
     assert TurboChat::ChatMembership.exists?(chat: chat, participant: second_invitee)
   end
 
