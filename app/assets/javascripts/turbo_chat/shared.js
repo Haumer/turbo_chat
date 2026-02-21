@@ -186,15 +186,27 @@
     }
 
     var mentionOptions = Array.isArray(options && options.mentionOptions) ? options.mentionOptions : [];
+    var mentionOptionsResolver = options && typeof options.mentionOptionsResolver === "function"
+      ? options.mentionOptionsResolver
+      : null;
     var menuHost = options && options.menuHost ? options.menuHost : input.parentNode;
     var menuClassName = options && options.menuClassName ? options.menuClassName : "chat-mentions-menu";
-    if (!mentionOptions.length || !menuHost) {
+    if ((!mentionOptions.length && !mentionOptionsResolver) || !menuHost) {
       return emptyMentionAutocomplete();
     }
 
     var mentionMenu = null;
     var mentionMatches = [];
     var mentionActiveIndex = 0;
+
+    function availableMentionOptions() {
+      if (mentionOptionsResolver) {
+        var resolvedMentionOptions = mentionOptionsResolver();
+        return Array.isArray(resolvedMentionOptions) ? resolvedMentionOptions : [];
+      }
+
+      return mentionOptions;
+    }
 
     function ensureMentionMenu() {
       if (mentionMenu) {
@@ -266,7 +278,7 @@
 
     function matchingMentionOptions(query) {
       var normalizedQuery = String(query || "").toLowerCase();
-      return mentionOptions
+      return availableMentionOptions()
         .filter(function (option) {
           return option.token.slice(1).toLowerCase().indexOf(normalizedQuery) === 0;
         })
@@ -394,7 +406,11 @@
     return {
       hideMenu: hideMentionMenu,
       updateMenu: updateMentionMenu,
-      handleKeydown: handleMentionKeydown
+      handleKeydown: handleMentionKeydown,
+      setOptions: function (nextMentionOptions) {
+        mentionOptions = Array.isArray(nextMentionOptions) ? nextMentionOptions : [];
+        updateMentionMenu();
+      }
     };
   }
 

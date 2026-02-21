@@ -48,6 +48,16 @@ module TurboChat
       can_view_chat? && role_permission?(:invite_member)
     end
 
+    def can_grant_member_permissions?(target_membership = nil)
+      return false unless can_view_chat?
+      return false unless role_permission?(:grant_member_permissions)
+      return true if target_membership.nil?
+      return false unless membership_in_chat?(target_membership)
+      return false unless target_membership.active?
+
+      can_act_on_target_membership?(target_membership)
+    end
+
     def can_delete_message?(message = nil)
       return false unless can_view_chat?
       return false unless role_permission?(:delete_message)

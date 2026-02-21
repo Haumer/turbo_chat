@@ -20,6 +20,7 @@ module TurboChat
       assert_not moderator_permission.can_ban_member?(admin_membership)
       assert_not moderator_permission.can_close_chat?
       assert moderator_permission.can_invite_member?
+      assert_not moderator_permission.can_grant_member_permissions?(member_membership)
 
       admin_permission = TurboChat::Permission.new(admin, chat)
       assert admin_permission.can_mute_member?(moderator_membership)
@@ -28,6 +29,8 @@ module TurboChat
       assert admin_permission.can_close_chat?
       assert admin_permission.can_reopen_chat?
       assert admin_permission.can_invite_member?
+      assert admin_permission.can_grant_member_permissions?(moderator_membership)
+      assert_not admin_permission.can_grant_member_permissions?(admin_membership)
 
       member_permission = TurboChat::Permission.new(member, chat)
       assert_not member_permission.can_mute_member?(moderator_membership)
@@ -35,6 +38,7 @@ module TurboChat
       assert_not member_permission.can_ban_member?(moderator_membership)
       assert_not member_permission.can_close_chat?
       assert_not member_permission.can_invite_member?
+      assert_not member_permission.can_grant_member_permissions?(moderator_membership)
     end
 
     test "delete message permission follows role hierarchy in the chat" do

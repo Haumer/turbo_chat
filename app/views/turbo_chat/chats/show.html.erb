@@ -1,26 +1,22 @@
-<section class="chat-shell <%= "chat-shell--closed" if @chat.closed? %>"
+<% current_participant = current_chat_participant %>
+<% current_participant_type = current_participant.class.base_class.name %>
+<% current_participant_id = current_participant.id %>
+<% self_mention_tokens = chat_self_mention_tokens(chat: @chat, participant: current_participant) %>
+<% self_role_mention_token = chat_self_role_mention_token(chat: @chat, participant: current_participant) %>
+<% mention_container_style = chat_mentions_container_inline_style %>
+<section class="<%= ["chat-shell", ("chat-shell--closed" if @chat.closed?), ("chat-shell--can-manage-member-permissions" if @can_manage_member_permissions)].compact.join(" ") %>"
+         data-chat-id="<%= @chat.id %>"
+         data-chat-self-participant-type="<%= current_participant_type %>"
+         data-chat-self-participant-id="<%= current_participant_id %>"
+         data-chat-can-manage-member-permissions="<%= @can_manage_member_permissions %>"
          data-chat-emit-chat-lifecycle-events="<%= chat_emit_chat_lifecycle_events? %>"
          data-chat-lifecycle-event="<%= json_escape(@chat_lifecycle_event.to_json) if @chat_lifecycle_event.present? %>">
-  <% current_participant = current_chat_participant %>
-  <% current_participant_type = current_participant.class.base_class.name %>
-  <% current_participant_id = current_participant.id %>
-  <% self_mention_tokens = chat_self_mention_tokens(chat: @chat, participant: current_participant) %>
-  <% self_role_mention_token = chat_self_role_mention_token(chat: @chat, participant: current_participant) %>
-  <% mention_container_style = chat_mentions_container_inline_style %>
   <% invite_option_rows = if @can_invite_member && @invitable_participants.present?
     @invitable_participants.map do |participant|
-      participant_name = chat_participant_name(participant)
-      participant_email = participant.respond_to?(:email) ? participant.email.to_s : ""
-      option_label = if participant_email.present? && participant_email != participant_name
-        "#{participant_name} - #{participant_email} (##{participant.id})"
-      else
-        "#{participant_name} (##{participant.id})"
-      end
-      search_value = [participant_name, participant_email, participant.id].reject(&:blank?).join(" ").downcase
       {
-        label: option_label,
+        label: chat_participant_invite_option_label(participant),
         participant_id: participant.id,
-        search: search_value
+        search: chat_participant_search_text(participant).downcase
       }
     end
   else
@@ -64,23 +60,31 @@
 
   <% if @show_members %>
     <section class="chat-members">
-      <h2>Members</h2>
-      <% if @can_invite_member %>
-        <div class="chat-members-invite <%= invite_option_rows.present? ? "chat-members-invite--active" : "chat-members-invite--hint" %>">
-          <% if invite_option_rows.present? %>
-            <%= render "turbo_chat/chats/invite_form",
-                       chat: @chat,
-                       invite_participant_type: @invite_participant_type,
-                       invite_option_rows: invite_option_rows,
-                       id_suffix: "members" %>
-          <% else %>
-            <p class="chat-hint">No eligible participants to invite.</p>
+      <details class="chat-members-panel">
+        <summary class="chat-members-summary">
+          <span>Members</span>
+        </summary>
+        <div class="chat-members-content">
+          <% if @can_invite_member %>
+            <div class="chat-members-invite <%= invite_option_rows.present? ? "chat-members-invite--active" : "chat-members-invite--hint" %>">
+              <% if invite_option_rows.present? %>
+                <%= render "turbo_chat/chats/invite_form",
+                           chat: @chat,
+                           invite_participant_type: @invite_participant_type,
+                           invite_option_rows: invite_option_rows,
+                           id_suffix: "members" %>
+              <% else %>
+                <p class="chat-hint">No eligible participants to invite.</p>
+              <% end %>
+            </div>
           <% end %>
+          <div class="chat-members-list-shell">
+            <ul id="<%= dom_id(@chat, :member_entries) %>" class="chat-members-list" data-chat-member-list="true" data-chat-id="<%= @chat.id %>">
+              <%= render "turbo_chat/chats/member_entries", chat: @chat %>
+            </ul>
+          </div>
         </div>
-      <% end %>
-      <ul id="<%= dom_id(@chat, :member_entries) %>" class="chat-members-list">
-        <%= render "turbo_chat/chats/member_entries", chat: @chat %>
-      </ul>
+      </details>
     </section>
   <% elsif @can_invite_member %>
     <div class="chat-invite">
@@ -124,7 +128,11 @@
   </section>
 
   <% if @can_post_message %>
-    <%= render "turbo_chat/chat_messages/form", chat: @chat, chat_message: @chat_message, chat_permission: @chat_permission %>
+    <%= render "turbo_chat/chat_messages/form",
+               chat: @chat,
+               chat_message: @chat_message,
+               chat_permission: @chat_permission,
+               current_participant: current_participant %>
   <% elsif @chat.closed? %>
     <p class="chat-banner chat-banner--muted">This chat is closed.</p>
   <% end %>

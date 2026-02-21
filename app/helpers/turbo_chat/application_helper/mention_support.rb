@@ -65,6 +65,13 @@ module TurboChat
         "@#{role_key.upcase}"
       end
 
+      def chat_member_mention_lookup(chat:)
+        chat_member_mention_entries(chat).each_with_object({}) do |entry, lookup|
+          key = "#{entry[:participant_type]}:#{entry[:participant_id]}"
+          lookup[key] = entry
+        end
+      end
+
       def chat_mentions_enabled_for?(chat:, permission: nil)
         return false unless TurboChat.configuration.enable_mentions
 

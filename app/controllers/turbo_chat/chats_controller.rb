@@ -88,6 +88,11 @@ module TurboChat
       @can_post_message = @chat_permission.can_post_message?
       @show_members = show_members_enabled?
       @can_invite_member = @chat_permission.respond_to?(:can_invite_member?) && @chat_permission.can_invite_member?
+      @can_manage_member_permissions = if @chat_permission.respond_to?(:can_grant_member_permissions?)
+                                         @chat_permission.can_grant_member_permissions?
+                                       else
+                                         false
+                                       end
       @can_close_chat = @chat_permission.can_close_chat?
       @can_reopen_chat = @chat_permission.can_reopen_chat?
       @can_edit_own_messages = if @chat_permission.respond_to?(:can_edit_message?)

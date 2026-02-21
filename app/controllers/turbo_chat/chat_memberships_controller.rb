@@ -4,7 +4,9 @@ module TurboChat
 
     before_action :set_chat
     before_action -> { authorize_view_chat!(@chat) }
-    before_action :authorize_invite_member!
+    before_action :set_chat_membership, only: :update
+    before_action :authorize_invite_member!, only: :create
+    before_action :authorize_grant_member_permissions!, only: :update
 
     def create
       participant = invite_participant
@@ -40,10 +42,27 @@ module TurboChat
       redirect_to chat_path(@chat), alert: error.record.errors.full_messages.to_sentence
     end
 
+    def update
+      requested_role_key = update_params.fetch(:role_key).to_s.strip
+      return redirect_to(chat_path(@chat), alert: "Role is required") if requested_role_key.blank?
+      return redirect_to(chat_path(@chat), alert: "You cannot assign that role") unless role_assignment_allowed?(requested_role_key)
+
+      @chat_membership.update!(role_key: requested_role_key)
+      redirect_to chat_path(@chat), notice: "Member permissions updated"
+    rescue ActiveRecord::RecordNotFound
+      redirect_to chat_path(@chat), alert: "Membership not found"
+    rescue ActiveRecord::RecordInvalid => error
+      redirect_to chat_path(@chat), alert: error.record.errors.full_messages.to_sentence
+    end
+
     private
 
     def set_chat
       @chat = TurboChat::Chat.find(params[:chat_id])
+    end
+
+    def set_chat_membership
+      @chat_membership = @chat.chat_memberships.active.find(params[:id])
     end
 
     def authorize_invite_member!
@@ -53,8 +72,31 @@ module TurboChat
       head :forbidden
     end
 
+    def authorize_grant_member_permissions!
+      permission = permission_for(@chat)
+      return if permission.respond_to?(:can_grant_member_permissions?) && permission.can_grant_member_permissions?(@chat_membership)
+
+      head :forbidden
+    end
+
     def invite_params
       params.require(:chat_membership).permit(:participant_type, :participant_id)
+    end
+
+    def update_params
+      params.require(:chat_membership).permit(:role_key)
+    end
+
+    def role_assignment_allowed?(role_key)
+      definition = TurboChat.configuration.role_definition(role_key)
+      return false if definition.nil?
+
+      actor_membership = @chat.chat_memberships.active.find_by(participant: current_chat_participant)
+      return false if actor_membership.nil?
+
+      definition[:rank].to_i <= actor_membership.effective_role_rank
+    rescue StandardError
+      false
     end
 
     def invite_participant

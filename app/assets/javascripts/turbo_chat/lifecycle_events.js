@@ -74,6 +74,9 @@
     if (typeof namespace.setupAllInvitePickers === "function") {
       namespace.setupAllInvitePickers();
     }
+    if (typeof namespace.setupAllMemberListSync === "function") {
+      namespace.setupAllMemberListSync();
+    }
     if (typeof namespace.setupAllMessageAutoScroll === "function") {
       namespace.setupAllMessageAutoScroll();
     }
@@ -88,6 +91,13 @@
   document.addEventListener("turbo:load", setupTurboChatUi);
   document.addEventListener("DOMContentLoaded", setupTurboChatUi);
   document.addEventListener("turbo:render", setupTurboChatUi);
+  document.addEventListener("turbo:before-stream-render", function (event) {
+    var originalRender = event.detail.render;
+    event.detail.render = function (streamElement) {
+      originalRender(streamElement);
+      setupTurboChatUi();
+    };
+  });
   setInterval(function () {
     if (typeof namespace.pruneSignals === "function") {
       namespace.pruneSignals();

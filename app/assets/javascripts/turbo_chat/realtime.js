@@ -158,9 +158,24 @@
     var mentionOptions = mentionsEnabled ? parseMentionOptions(element.dataset.chatMentionOptions) : [];
     var mentionAutocomplete = setupMentionAutocomplete(messageInput, {
       mentionOptions: mentionOptions,
+      mentionOptionsResolver: function () {
+        return mentionOptions;
+      },
       menuHost: element
     });
     var typingEventEmitted = false;
+
+    function updateMentionOptions(nextMentionOptions) {
+      mentionOptions = Array.isArray(nextMentionOptions) ? nextMentionOptions : [];
+      if (typeof mentionAutocomplete.setOptions === "function") {
+        mentionAutocomplete.setOptions(mentionOptions);
+      }
+      element.dataset.chatMentionOptions = JSON.stringify(mentionOptions);
+    }
+
+    element.__chatComposerApi = {
+      setMentionOptions: updateMentionOptions
+    };
 
     function autoResizeComposerInput() {
       messageInput.style.height = "auto";

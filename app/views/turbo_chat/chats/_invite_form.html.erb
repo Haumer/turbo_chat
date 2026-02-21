@@ -5,6 +5,7 @@
               scope: :chat_membership,
               class: "chat-form chat-form--invite",
               data: {
+                chat_id: chat.id,
                 chat_invite_form: true,
                 chat_invite_options: json_escape(invite_option_rows.to_json)
               } do |f| %>

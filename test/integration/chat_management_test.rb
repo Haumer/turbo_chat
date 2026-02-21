@@ -77,6 +77,68 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_not TurboChat::ChatMembership.active.exists?(chat: chat, participant: invitee)
   end
 
+  test "admin can update another member role" do
+    admin = User.create!(email: "role-admin@example.com")
+    member = User.create!(email: "role-member@example.com")
+    chat = TurboChat::Chat.create!(title: "Role Management")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    member_membership = TurboChat::ChatMembership.create!(chat: chat, participant: member, role: :member)
+
+    with_current_chat_participant(admin) do
+      patch "/chat/chats/#{chat.id}/chat_memberships/#{member_membership.id}", params: {
+        chat_membership: {
+          role_key: "moderator"
+        }
+      }
+    end
+
+    assert_redirected_to "/chat/chats/#{chat.id}"
+    assert member_membership.reload.moderator?
+  end
+
+  test "member cannot update another member role" do
+    member = User.create!(email: "role-forbidden-member@example.com")
+    target = User.create!(email: "role-forbidden-target@example.com")
+    chat = TurboChat::Chat.create!(title: "Role Forbidden")
+    TurboChat::ChatMembership.create!(chat: chat, participant: member, role: :member)
+    target_membership = TurboChat::ChatMembership.create!(chat: chat, participant: target, role: :member)
+
+    with_current_chat_participant(member) do
+      patch "/chat/chats/#{chat.id}/chat_memberships/#{target_membership.id}", params: {
+        chat_membership: {
+          role_key: "moderator"
+        }
+      }
+    end
+
+    assert_response :forbidden
+    assert target_membership.reload.member?
+  end
+
+  test "admin cannot assign role with higher rank than self" do
+    config = TurboChat.configuration
+    config.add_role(:super_admin, name: "Super Admin", rank: 5, permissions: %i[view_chat post_message])
+
+    admin = User.create!(email: "role-rank-admin@example.com")
+    target = User.create!(email: "role-rank-target@example.com")
+    chat = TurboChat::Chat.create!(title: "Role Rank Guard")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    target_membership = TurboChat::ChatMembership.create!(chat: chat, participant: target, role: :member)
+
+    with_current_chat_participant(admin) do
+      patch "/chat/chats/#{chat.id}/chat_memberships/#{target_membership.id}", params: {
+        chat_membership: {
+          role_key: "super_admin"
+        }
+      }
+    end
+
+    assert_redirected_to "/chat/chats/#{chat.id}"
+    assert target_membership.reload.member?
+  ensure
+    config.remove_role(:super_admin)
+  end
+
   test "admin cannot invite participant with mismatched participant type" do
     admin = User.create!(email: "invite-admin-type-check@example.com")
     chat = TurboChat::Chat.create!(title: "Invite Type Check")

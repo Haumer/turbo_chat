@@ -131,9 +131,43 @@ body {
   background: rgba(247, 251, 255, 0.72);
 }
 
-.chat-members h2 {
-  margin: 0 0 8px;
+.chat-members-panel {
+  margin: 0;
+}
+
+.chat-members-summary {
+  list-style: none;
+  margin: 0;
+  padding: 2px 4px;
   font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #1c3a5f;
+}
+
+.chat-members-summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-members-summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid #4a678a;
+  border-bottom: 2px solid #4a678a;
+  transform: rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.chat-members-panel[open] .chat-members-summary::after {
+  transform: rotate(225deg);
+}
+
+.chat-members-content {
+  margin-top: 8px;
 }
 
 .chat-members-invite {
@@ -160,6 +194,12 @@ body {
   gap: 7px;
 }
 
+.chat-members-list-shell {
+  height: 216px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 .chat-members-item {
   display: flex;
   align-items: center;
@@ -176,8 +216,16 @@ body {
   justify-content: flex-start;
 }
 
+.chat-members-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .chat-members-name {
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .chat-members-role {
@@ -190,6 +238,33 @@ body {
   font-size: 12px;
   padding: 2px 8px;
   white-space: nowrap;
+}
+
+.chat-member-role-form {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+
+.chat-shell--can-manage-member-permissions .chat-member-role-form {
+  display: inline-flex;
+}
+
+.chat-member-role-select {
+  min-height: 32px;
+  border: 1px solid var(--chat-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1b324f;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.chat-member-role-submit.chat-btn--small {
+  min-height: 32px;
 }
 
 .chat-hint {
@@ -1086,6 +1161,24 @@ body {
 @media (max-width: 640px) {
   .chat-shell {
     padding: 14px;
+  }
+
+  .chat-members-list-shell {
+    height: 188px;
+  }
+
+  .chat-shell--can-manage-member-permissions .chat-members-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chat-shell--can-manage-member-permissions .chat-member-role-form {
+    width: 100%;
+  }
+
+  .chat-shell--can-manage-member-permissions .chat-member-role-select {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .chat-window {

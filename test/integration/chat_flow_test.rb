@@ -33,6 +33,21 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "invited teammate@example.com."
   end
 
+  test "chat members render in a collapsed panel with fixed-height list shell" do
+    user = User.create!(email: "members-panel-user@example.com")
+    teammate = User.create!(email: "members-panel-teammate@example.com")
+    chat = TurboChat::Chat.create!(title: "Members Panel Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+    TurboChat::ChatMembership.create!(chat: chat, participant: teammate)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-members details.chat-members-panel:not([open])", 1
+    assert_select ".chat-members .chat-members-list-shell", 1
+    assert_select ".chat-members [data-chat-member-list='true'][data-chat-id='#{chat.id}']", 1
+  end
+
   test "chat members can be hidden via configuration" do
     previous_show_members = TurboChat.configuration.show_members
     TurboChat.configuration.show_members = false
@@ -162,6 +177,8 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_select "input.chat-invite-search[data-chat-invite-query-input='true']", 1
     assert_select "input[type='hidden'][name='chat_membership[participant_id]'][data-chat-invite-participant-id-input='true']", 1
     assert_select "div.chat-invite-menu[data-chat-invite-menu]", 1
+    assert_select ".chat-shell.chat-shell--can-manage-member-permissions", 1
+    assert_select "form[data-chat-member-role-form='true']", 1
     assert_includes response.body, invitee.email
     assert_select "select.chat-invite-select", 0
   end

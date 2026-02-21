@@ -10,6 +10,34 @@ module TurboChat
         participant.to_s
       end
 
+      def chat_participant_email(participant)
+        return nil if participant.nil?
+        return nil unless participant.respond_to?(:email)
+
+        participant.email.to_s.presence
+      end
+
+      def chat_participant_invite_option_label(participant)
+        participant_name = chat_participant_name(participant)
+        participant_email = chat_participant_email(participant)
+        participant_id = participant.respond_to?(:id) ? participant.id : nil
+        participant_id_label = participant_id.present? ? "##{participant_id}" : "unknown"
+
+        if participant_email.present? && participant_email != participant_name
+          "#{participant_name} - #{participant_email} (#{participant_id_label})"
+        else
+          "#{participant_name} (#{participant_id_label})"
+        end
+      end
+
+      def chat_participant_search_text(participant)
+        participant_name = chat_participant_name(participant)
+        participant_email = chat_participant_email(participant)
+        participant_id = participant.respond_to?(:id) ? participant.id : nil
+
+        [participant_name, participant_email, participant_id].reject(&:blank?).join(" ")
+      end
+
       def own_chat_message?(chat_message, participant: nil)
         return false if chat_message.nil?
 
