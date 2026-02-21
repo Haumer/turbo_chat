@@ -39,8 +39,14 @@
     <h2>Your Chats</h2>
     <ul class="chat-list">
       <% @chats.each do |chat| %>
-        <li>
-          <%= link_to chat.title, chat_path(chat), class: "chat-list-link" %>
+        <% member_count = @chat_member_counts[chat.id].to_i %>
+        <li class="chat-list-item chat-list-item--chat">
+          <%= link_to chat_path(chat), class: "chat-list-link" do %>
+            <span class="chat-list-title"><%= chat.title %></span>
+            <% if @show_members %>
+              <span class="chat-list-meta"><%= pluralize(member_count, "member") %></span>
+            <% end %>
+          <% end %>
         </li>
       <% end %>
     </ul>

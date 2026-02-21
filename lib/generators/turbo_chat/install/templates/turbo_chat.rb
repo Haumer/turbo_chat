@@ -19,6 +19,7 @@ TurboChat.configure do |config|
   config.role_message_hex_colors = {}
   config.show_timestamp = true
   config.show_role = false
+  config.show_members = true
   config.active_chat_window = 5.minutes
   config.emit_typing_events = false
   config.emit_message_events = false

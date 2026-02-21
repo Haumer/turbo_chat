@@ -60,6 +60,7 @@ module TurboChat
                   :role_message_hex_colors,
                   :show_timestamp,
                   :show_role,
+                  :show_members,
                   :active_chat_window,
                   :emit_typing_events,
                   :emit_message_events,
@@ -98,6 +99,7 @@ module TurboChat
       @role_message_hex_colors = {}
       @show_timestamp = true
       @show_role = false
+      @show_members = true
       @active_chat_window = 5.minutes
       @emit_typing_events = false
       @emit_message_events = false

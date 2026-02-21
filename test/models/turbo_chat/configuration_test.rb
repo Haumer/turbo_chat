@@ -24,6 +24,7 @@ module TurboChat
       assert_equal({}, config.role_message_hex_colors)
       assert_equal true, config.show_timestamp
       assert_equal false, config.show_role
+      assert_equal true, config.show_members
       assert_equal 5.minutes, config.active_chat_window
       assert_equal false, config.emit_typing_events
       assert_equal false, config.emit_message_events

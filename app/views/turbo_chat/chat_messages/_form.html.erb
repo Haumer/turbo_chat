@@ -10,8 +10,23 @@
      data-chat-mention-options="<%= json_escape(mention_options.to_json) %>">
   <%= form_with model: [chat, chat_message], data: { chat_message_form: true }, class: "chat-form" do |f| %>
     <%= f.hidden_field :kind, value: :message %>
-    <%= f.text_area :body, rows: 3, required: true, placeholder: "Write a message...", data: { chat_message_input: true } %>
-    <%= f.submit "Send", class: "chat-btn chat-btn--send" %>
+    <div class="chat-composer-shell">
+      <button type="button" class="chat-composer-tool chat-composer-tool--add" aria-label="Add item">+</button>
+      <%= f.text_area :body,
+                      rows: 1,
+                      required: true,
+                      class: "chat-composer-input",
+                      placeholder: "Ask anything",
+                      data: { chat_message_input: true } %>
+      <button type="button" class="chat-composer-tool chat-composer-tool--voice" aria-label="Voice input">
+        <span class="chat-composer-mic" aria-hidden="true"></span>
+        <span class="chat-visually-hidden">Voice input</span>
+      </button>
+      <button type="submit" class="chat-btn chat-btn--send chat-composer-submit" aria-label="Send">
+        <span aria-hidden="true">↑</span>
+        <span class="chat-visually-hidden">Send</span>
+      </button>
+    </div>
   <% end %>
 
   <%= form_with url: chat_chat_messages_path(chat), method: :post, scope: :chat_message, data: { chat_signal_form: true }, class: "chat-form chat-form--hidden" do |f| %>

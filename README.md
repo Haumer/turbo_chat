@@ -135,6 +135,7 @@ TurboChat.configure do |config|
   config.render_message_html = false
   config.show_timestamp = true
   config.show_role = false
+  config.show_members = true
 
   config.emit_typing_events = false
   config.emit_message_events = false

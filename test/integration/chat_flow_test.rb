@@ -3,17 +3,43 @@ require_relative "../test_helper"
 class ChatFlowTest < ActionDispatch::IntegrationTest
   test "renders chats index and shows a chat" do
     user = User.create!(email: "integration@example.com")
+    teammate = User.create!(email: "integration-teammate@example.com")
     chat = TurboChat::Chat.create!(title: "Integration Chat")
     TurboChat::ChatMembership.create!(chat: chat, participant: user)
+    TurboChat::ChatMembership.create!(chat: chat, participant: teammate)
     TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "hello", kind: :message)
 
     get "/chat/chats"
     assert_response :success
     assert_includes response.body, "Integration Chat"
+    assert_includes response.body, "2 members"
 
     get "/chat/chats/#{chat.id}"
     assert_response :success
     assert_includes response.body, "hello"
+    assert_includes response.body, "Members"
+    assert_includes response.body, teammate.email
+  end
+
+  test "chat members can be hidden via configuration" do
+    previous_show_members = TurboChat.configuration.show_members
+    TurboChat.configuration.show_members = false
+
+    user = User.create!(email: "hidden-members@example.com")
+    teammate = User.create!(email: "hidden-members-teammate@example.com")
+    chat = TurboChat::Chat.create!(title: "Hidden Members Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+    TurboChat::ChatMembership.create!(chat: chat, participant: teammate)
+
+    get "/chat/chats"
+    assert_response :success
+    assert_select ".chat-list-meta", 0
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+    assert_select ".chat-members", 0
+  ensure
+    TurboChat.configuration.show_members = previous_show_members
   end
 
   test "chats index falls back when invitation migration is not yet applied" do

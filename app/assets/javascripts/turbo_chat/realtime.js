@@ -6,6 +6,7 @@
   var SIGNAL_HEARTBEAT_MS = constants.SIGNAL_HEARTBEAT_MS || 4000;
   var SIGNAL_RETREAT_MS = constants.SIGNAL_RETREAT_MS || 180;
   var MENTION_BLUR_HIDE_DELAY_MS = constants.MENTION_BLUR_HIDE_DELAY_MS || 120;
+  var COMPOSER_MAX_HEIGHT_PX = constants.COMPOSER_MAX_HEIGHT_PX || 210;
 
   var csrfToken = namespace.csrfToken;
   var renderTurboStreamResponse = namespace.renderTurboStreamResponse;
@@ -160,6 +161,16 @@
       menuHost: element
     });
     var typingEventEmitted = false;
+
+    function autoResizeComposerInput() {
+      messageInput.style.height = "auto";
+      var contentHeight = messageInput.scrollHeight;
+      var nextHeight = Math.min(contentHeight, COMPOSER_MAX_HEIGHT_PX);
+      messageInput.style.height = nextHeight + "px";
+      messageInput.style.overflowY = contentHeight > COMPOSER_MAX_HEIGHT_PX ? "auto" : "hidden";
+    }
+
+    autoResizeComposerInput();
 
     function emitTypingEvent(eventName) {
       if (!emitTypingEvents) {
@@ -355,6 +366,7 @@
     messageForm.addEventListener("turbo:submit-end", function (event) {
       if (event.detail && event.detail.success) {
         messageInput.value = "";
+        autoResizeComposerInput();
         mentionAutocomplete.hideMenu();
         emitMessageSentEvent();
       }
@@ -367,6 +379,7 @@
     });
 
     messageInput.addEventListener("input", function () {
+      autoResizeComposerInput();
       if (!messageInput.value.trim()) {
         stopSignalLoop();
         mentionAutocomplete.hideMenu();

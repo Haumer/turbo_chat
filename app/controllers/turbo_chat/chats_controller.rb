@@ -9,6 +9,13 @@ module TurboChat
     def index
       participant = current_chat_participant
       @chats = TurboChat::Chat.for_participant(participant).order(created_at: :desc, id: :desc)
+      @show_members = show_members_enabled?
+      @chat_member_counts = if @show_members
+                              chat_ids = @chats.except(:order).select(:id)
+                              TurboChat::ChatMembership.active.where(chat_id: chat_ids).group(:chat_id).count
+                            else
+                              {}
+                            end
       @pending_invitations = pending_invitations_for(participant)
       @invitation_accepted_event = invitation_accepted_payload
       @chat_lifecycle_event = chat_lifecycle_event_payload
@@ -69,6 +76,8 @@ module TurboChat
       @chat_permission = permission_for(@chat)
       @chat_messages = @chat.visible_messages
       @can_post_message = @chat_permission.can_post_message?
+      @show_members = show_members_enabled?
+      @chat_members = @show_members ? @chat.chat_memberships.active.includes(:participant).order(:id) : []
       @can_invite_member = @chat_permission.respond_to?(:can_invite_member?) && @chat_permission.can_invite_member?
       @can_close_chat = @chat_permission.can_close_chat?
       @can_reopen_chat = @chat_permission.can_reopen_chat?
@@ -120,6 +129,14 @@ module TurboChat
 
     def chat_params
       params.require(:chat).permit(:title)
+    end
+
+    def show_members_enabled?
+      configuration = TurboChat.configuration
+      value = configuration.respond_to?(:show_members) ? configuration.show_members : true
+      ActiveModel::Type::Boolean.new.cast(value)
+    rescue StandardError
+      true
     end
   end
 end

@@ -18,6 +18,7 @@ module TurboChat
       @original_mention_highlight_hex_color = config.mention_highlight_hex_color
       @original_emit_invitation_events = config.emit_invitation_events
       @original_emit_chat_lifecycle_events = config.emit_chat_lifecycle_events
+      @original_show_members = config.show_members
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -35,6 +36,7 @@ module TurboChat
       config.mention_highlight_hex_color = @original_mention_highlight_hex_color
       config.emit_invitation_events = @original_emit_invitation_events
       config.emit_chat_lifecycle_events = @original_emit_chat_lifecycle_events
+      config.show_members = @original_show_members
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -121,6 +123,7 @@ module TurboChat
         assert_equal false, chat_emit_mention_events?
         assert_equal false, chat_emit_invitation_events?
         assert_equal false, chat_emit_chat_lifecycle_events?
+        assert_equal true, chat_show_members?
       end
     end
 
@@ -134,6 +137,12 @@ module TurboChat
       TurboChat.configuration.emit_chat_lifecycle_events = true
 
       assert_equal true, chat_emit_chat_lifecycle_events?
+    end
+
+    test "chat_show_members? follows configuration" do
+      TurboChat.configuration.show_members = false
+
+      assert_equal false, chat_show_members?
     end
 
     test "chat_message_mention_tokens extracts unique mention tokens" do

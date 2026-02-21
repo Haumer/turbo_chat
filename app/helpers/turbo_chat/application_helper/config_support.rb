@@ -21,6 +21,10 @@ module TurboChat
         chat_config_boolean(:emit_chat_lifecycle_events, default: false)
       end
 
+      def chat_show_members?
+        chat_config_boolean(:show_members, default: true)
+      end
+
       private
 
       def chat_config_value(method_name, default: nil)

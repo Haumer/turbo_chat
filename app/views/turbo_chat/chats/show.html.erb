@@ -60,6 +60,20 @@
     </div>
   <% end %>
 
+  <% if @show_members %>
+    <section class="chat-members">
+      <h2>Members</h2>
+      <ul class="chat-members-list">
+        <% @chat_members.each do |membership| %>
+          <li class="chat-members-item">
+            <span class="chat-members-name"><%= chat_participant_name(membership.participant) %></span>
+            <span class="chat-members-role"><%= membership.effective_role_name %></span>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
   <%= turbo_stream_from @chat, :messages %>
 
   <section class="chat-window">

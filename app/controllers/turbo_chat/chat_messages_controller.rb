@@ -84,6 +84,13 @@ module TurboChat
       @chat_messages = @chat.visible_messages
       @chat_permission = permission_for(@chat)
       @can_post_message = @chat_permission.can_post_message?
+      show_members = if TurboChat.configuration.respond_to?(:show_members)
+                       TurboChat.configuration.show_members
+                     else
+                       true
+                     end
+      @show_members = ActiveModel::Type::Boolean.new.cast(show_members)
+      @chat_members = @show_members ? @chat.chat_memberships.active.includes(:participant).order(:id) : []
       respond_to do |format|
         format.turbo_stream { render "turbo_chat/chats/show", status: :unprocessable_entity }
         format.html { render "turbo_chat/chats/show", status: :unprocessable_entity }
