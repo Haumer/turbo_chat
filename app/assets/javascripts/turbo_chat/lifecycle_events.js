@@ -71,6 +71,9 @@
     if (typeof namespace.setupAllComposers === "function") {
       namespace.setupAllComposers();
     }
+    if (typeof namespace.setupAllInvitePickers === "function") {
+      namespace.setupAllInvitePickers();
+    }
     if (typeof namespace.setupAllMessageAutoScroll === "function") {
       namespace.setupAllMessageAutoScroll();
     }

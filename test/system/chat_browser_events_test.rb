@@ -33,6 +33,29 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     assert_equal chat.id.to_s, event.fetch("detail").fetch("chatId")
   end
 
+  test "invite search filters participants by email before selecting" do
+    admin = User.create!(email: "system-invite-filter-admin@example.com")
+    first_invitee = User.create!(email: "system-invite-filter-alpha@example.com")
+    second_invitee = User.create!(email: "system-invite-filter-bravo@example.com")
+    chat = TurboChat::Chat.create!(title: "System Invite Filter")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    visit "/chat/chats/#{chat.id}"
+
+    find("[data-chat-invite-search-input]").set("bravo")
+
+    within("select[name='chat_membership[participant_id]']") do
+      assert_selector "option[value='#{second_invitee.id}']", count: 1
+      assert_no_selector "option[value='#{first_invitee.id}']"
+    end
+
+    find("select[name='chat_membership[participant_id]'] option[value='#{second_invitee.id}']").select_option
+    click_button "Invite"
+
+    assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
+    assert TurboChat::ChatMembership.exists?(chat: chat, participant: second_invitee)
+  end
+
   test "declining an invitation emits turbo-chat:chat-declined in browser" do
     TurboChat.configuration.emit_chat_lifecycle_events = true
 

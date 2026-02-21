@@ -473,6 +473,7 @@ body {
 
 .chat-form textarea,
 .chat-form select,
+.chat-form input[type="search"],
 .chat-field input,
 .chat-inline-edit-form textarea {
   width: 100%;
@@ -487,6 +488,7 @@ body {
 
 .chat-form textarea:focus,
 .chat-form select:focus,
+.chat-form input[type="search"]:focus,
 .chat-field input:focus,
 .chat-inline-edit-form textarea:focus {
   border-color: #87b6f7;
@@ -664,6 +666,26 @@ body {
 
 .chat-form--invite {
   align-items: center;
+  gap: 11px;
+}
+
+.chat-invite-picker {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.chat-invite-search {
+  width: 100%;
+}
+
+.chat-invite-select {
+  width: 100%;
+}
+
+.chat-hint--invite-search {
+  font-size: 12px;
 }
 
 .chat-form--hidden {

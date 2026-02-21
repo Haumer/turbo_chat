@@ -133,7 +133,22 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_match %r{/(?:assets|javascripts)/turbo_chat/shared(?:-[0-9a-f]+)?\.js}, response.body
     assert_match %r{/(?:assets|javascripts)/turbo_chat/messages(?:-[0-9a-f]+)?\.js}, response.body
     assert_match %r{/(?:assets|javascripts)/turbo_chat/realtime(?:-[0-9a-f]+)?\.js}, response.body
+    assert_match %r{/(?:assets|javascripts)/turbo_chat/invite_picker(?:-[0-9a-f]+)?\.js}, response.body
     assert_match %r{/(?:assets|javascripts)/turbo_chat/lifecycle_events(?:-[0-9a-f]+)?\.js}, response.body
+  end
+
+  test "admin chat show renders searchable invite controls" do
+    admin = User.create!(email: "invite-controls-admin@example.com")
+    invitee = User.create!(email: "invite-controls-target@example.com")
+    chat = TurboChat::Chat.create!(title: "Invite Controls Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+    assert_select "form.chat-form--invite[data-chat-invite-form='true']", 1
+    assert_select "input.chat-invite-search[data-chat-invite-search-input='true']", 1
+    assert_select "select.chat-invite-select[data-chat-invite-select='true']", 1
+    assert_select "select.chat-invite-select option[data-chat-invite-search*='#{invitee.email}']", 1
   end
 
   test "requires current_chat_participant to return an acts_as_chat_participant model" do
