@@ -13,6 +13,12 @@ module TurboChat
         )
 
         emit_moderation_event("turbo_chat.moderation.member_muted", actor: actor, membership: updated_membership)
+        TurboChat::ChatMessage.create_membership_system_message!(
+          chat: updated_membership.chat,
+          actor: actor,
+          event: :muted,
+          subject: updated_membership.participant
+        )
         updated_membership
       end
 
@@ -25,6 +31,12 @@ module TurboChat
         )
 
         emit_moderation_event("turbo_chat.moderation.member_unmuted", actor: actor, membership: updated_membership)
+        TurboChat::ChatMessage.create_membership_system_message!(
+          chat: updated_membership.chat,
+          actor: actor,
+          event: :unmuted,
+          subject: updated_membership.participant
+        )
         updated_membership
       end
 
@@ -39,6 +51,12 @@ module TurboChat
           membership: membership,
           extra: { timed_out_until: membership.timed_out_until }
         )
+        TurboChat::ChatMessage.create_membership_system_message!(
+          chat: membership.chat,
+          actor: actor,
+          event: :timed_out,
+          subject: membership.participant
+        )
         membership
       end
 
@@ -51,6 +69,12 @@ module TurboChat
         )
 
         emit_moderation_event("turbo_chat.moderation.member_timeout_cleared", actor: actor, membership: updated_membership)
+        TurboChat::ChatMessage.create_membership_system_message!(
+          chat: updated_membership.chat,
+          actor: actor,
+          event: :timeout_cleared,
+          subject: updated_membership.participant
+        )
         updated_membership
       end
 
@@ -67,6 +91,12 @@ module TurboChat
         )
 
         emit_moderation_event("turbo_chat.moderation.member_banned", actor: actor, membership: updated_membership)
+        TurboChat::ChatMessage.create_membership_system_message!(
+          chat: updated_membership.chat,
+          actor: actor,
+          event: :banned,
+          subject: updated_membership.participant
+        )
         updated_membership
       end
 

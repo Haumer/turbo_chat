@@ -109,10 +109,16 @@ module TurboChat
       authorize_view_chat!(@chat)
       return if performed?
 
-      membership = @chat.chat_memberships.active.find_by(participant: current_chat_participant)
+      participant = current_chat_participant
+      membership = @chat.chat_memberships.active.find_by(participant: participant)
       return redirect_to(chats_path, alert: "You are no longer a participant in this chat", status: :see_other) if membership.nil?
 
       membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil)
+      TurboChat::ChatMessage.create_membership_system_message!(
+        chat: @chat,
+        actor: participant,
+        event: :left
+      )
       set_chat_lifecycle_event(action: :left, chat: @chat, membership: membership)
       redirect_to chats_path, notice: "You left the chat", status: :see_other
     end

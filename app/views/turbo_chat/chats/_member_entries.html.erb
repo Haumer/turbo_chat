@@ -88,20 +88,33 @@ end.sort_by { |(role_name, role_key, role_rank)| [role_rank, role_name.to_s.down
         <span class="chat-members-role"><%= membership.effective_role_name %></span>
       </div>
 
-      <%= form_with url: TurboChat::Engine.routes.url_helpers.chat_chat_membership_path(chat_id: chat.id, id: membership.id),
-                    method: :patch,
-                    scope: :chat_membership,
-                    class: "chat-member-role-form",
-                    data: { chat_member_role_form: true } do |f| %>
-        <%= f.select :role_key,
-                     options_for_select(role_options.map { |(role_name, role_key, _role_rank)| [role_name, role_key] }, membership.effective_role_key),
-                     {},
-                     class: "chat-member-role-select",
-                     data: { chat_member_role_input: true } %>
-        <%= f.submit "Save",
-                     class: "chat-btn chat-btn--small chat-member-role-submit",
-                     data: { chat_member_role_submit: true } %>
-      <% end %>
+      <div class="chat-member-actions">
+        <button type="button"
+                class="chat-member-manage-toggle"
+                aria-expanded="false"
+                aria-controls="<%= "chat_member_manage_#{membership.id}" %>"
+                data-chat-member-manage-toggle>
+          <span aria-hidden="true">&#9881;</span>
+          <span class="chat-visually-hidden">Manage member permissions</span>
+        </button>
+
+        <%= form_with url: TurboChat::Engine.routes.url_helpers.chat_chat_membership_path(chat_id: chat.id, id: membership.id),
+                      method: :patch,
+                      scope: :chat_membership,
+                      id: "chat_member_manage_#{membership.id}",
+                      class: "chat-member-role-form",
+                      data: { chat_member_role_form: true, chat_member_manage_panel: true },
+                      html: { hidden: true } do |f| %>
+          <%= f.select :role_key,
+                       options_for_select(role_options.map { |(role_name, role_key, _role_rank)| [role_name, role_key] }, membership.effective_role_key),
+                       {},
+                       class: "chat-member-role-select",
+                       data: { chat_member_role_input: true } %>
+          <%= f.submit "Save",
+                       class: "chat-btn chat-btn--small chat-member-role-submit",
+                       data: { chat_member_role_submit: true } %>
+        <% end %>
+      </div>
     </li>
   <% end %>
 <% end %>

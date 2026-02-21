@@ -6,7 +6,7 @@ module TurboChat
     MESSAGE_PARTIAL = "turbo_chat/chat_messages/message"
     CHAT_MESSAGE_PARTIAL = "turbo_chat/chat_messages/chat_message"
     SIGNALS_PARTIAL = "turbo_chat/chat_messages/signals"
-    MEMBERSHIP_SYSTEM_EVENT_TYPES = %i[invited accepted declined].freeze
+    MEMBERSHIP_SYSTEM_EVENT_TYPES = %i[invited accepted declined left muted unmuted timed_out timeout_cleared banned].freeze
 
     include TurboChat::ChatMessage::BodyLengthValidation
     include TurboChat::ChatMessage::Formatting
@@ -81,6 +81,30 @@ module TurboChat
           return nil if actor_name.blank?
 
           "#{actor_name} declined the invitation."
+        when :left
+          return nil if actor_name.blank?
+
+          "#{actor_name} left the chat."
+        when :muted
+          return nil if actor_name.blank? || subject_name.blank?
+
+          "#{actor_name} muted #{subject_name}."
+        when :unmuted
+          return nil if actor_name.blank? || subject_name.blank?
+
+          "#{actor_name} unmuted #{subject_name}."
+        when :timed_out
+          return nil if actor_name.blank? || subject_name.blank?
+
+          "#{actor_name} timed out #{subject_name}."
+        when :timeout_cleared
+          return nil if actor_name.blank? || subject_name.blank?
+
+          "#{actor_name} cleared timeout for #{subject_name}."
+        when :banned
+          return nil if actor_name.blank? || subject_name.blank?
+
+          "#{actor_name} removed #{subject_name} from the chat."
         end
       end
 

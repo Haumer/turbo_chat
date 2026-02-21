@@ -622,6 +622,59 @@
     });
   }
 
+  function setupMemberManageControlsForChat(chatId) {
+    var memberList = memberListForChat(chatId);
+    if (!memberList) {
+      return;
+    }
+
+    memberList.querySelectorAll("[data-chat-member-entry='true']").forEach(function (memberNode) {
+      if (!memberNode || memberNode.dataset.chatMemberManageBound === "true") {
+        return;
+      }
+
+      var toggle = memberNode.querySelector("[data-chat-member-manage-toggle]");
+      var panel = memberNode.querySelector("[data-chat-member-manage-panel]");
+      if (!toggle || !panel) {
+        return;
+      }
+
+      memberNode.dataset.chatMemberManageBound = "true";
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+
+      toggle.addEventListener("click", function () {
+        if (toggle.disabled) {
+          return;
+        }
+
+        var expanded = toggle.getAttribute("aria-expanded") === "true";
+        var parentList = memberNode.closest("[data-chat-member-list]");
+        if (parentList) {
+          parentList.querySelectorAll("[data-chat-member-manage-toggle]").forEach(function (otherToggle) {
+            otherToggle.setAttribute("aria-expanded", "false");
+          });
+          parentList.querySelectorAll("[data-chat-member-manage-panel]").forEach(function (otherPanel) {
+            otherPanel.hidden = true;
+          });
+        }
+
+        if (expanded) {
+          panel.hidden = true;
+          toggle.setAttribute("aria-expanded", "false");
+          return;
+        }
+
+        panel.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        var roleInput = panel.querySelector("[data-chat-member-role-input]");
+        if (roleInput && !roleInput.disabled) {
+          roleInput.focus();
+        }
+      });
+    });
+  }
+
   function syncRoleFormAccessForChat(chatId) {
     var memberList = memberListForChat(chatId);
     var shell = shellForChat(chatId);
@@ -655,10 +708,23 @@
       var isSelf = targetType === selfType && targetId === selfId;
       var targetManageableByRank = selfRoleRank < 0 || targetRoleRank < selfRoleRank;
       var controlsEnabled = canManage && !isSelf && targetManageableByRank;
+      var toggle = memberNode.querySelector("[data-chat-member-manage-toggle]");
+      var panel = memberNode.querySelector("[data-chat-member-manage-panel]");
 
       memberNode.querySelectorAll("[data-chat-member-role-input], [data-chat-member-role-submit]").forEach(function (control) {
         control.disabled = !controlsEnabled;
       });
+
+      if (toggle) {
+        toggle.disabled = !controlsEnabled;
+        if (!controlsEnabled) {
+          toggle.setAttribute("aria-expanded", "false");
+        }
+      }
+
+      if (panel && !controlsEnabled) {
+        panel.hidden = true;
+      }
     });
   }
 
@@ -673,11 +739,13 @@
     }
 
     memberList.dataset.chatMemberSyncBound = "true";
+    setupMemberManageControlsForChat(chatId);
     syncComposerMentionOptionsForChat(chatId);
     syncRoleFormAccessForChat(chatId);
 
     var observer = new MutationObserver(function (mutationRecords) {
       syncInviteOptionsFromMemberMutations(chatId, mutationRecords);
+      setupMemberManageControlsForChat(chatId);
       syncComposerMentionOptionsForChat(chatId);
       syncRoleFormAccessForChat(chatId);
     });

@@ -178,6 +178,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_select "input[type='hidden'][name='chat_membership[participant_id]'][data-chat-invite-participant-id-input='true']", 1
     assert_select "div.chat-invite-menu[data-chat-invite-menu]", 1
     assert_select ".chat-shell.chat-shell--can-manage-member-permissions", 1
+    assert_select "button[data-chat-member-manage-toggle]", 1
     assert_select "form[data-chat-member-role-form='true']", 1
     assert_includes response.body, invitee.email
     assert_select "select.chat-invite-select", 0

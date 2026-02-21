@@ -66,6 +66,38 @@ module TurboChat
       assert_equal "#{inviter.email} invited #{invitee.email}.", message.body
     end
 
+    test "membership system message helper creates leave event copy" do
+      participant = User.create!(email: "leave-copy-user@example.com")
+      chat = TurboChat::Chat.create!(title: "System Leave Copy")
+
+      message = TurboChat::ChatMessage.create_membership_system_message!(
+        chat: chat,
+        actor: participant,
+        event: :left
+      )
+
+      assert message.present?
+      assert message.system?
+      assert_equal "#{participant.email} left the chat.", message.body
+    end
+
+    test "membership system message helper creates moderation event copy" do
+      moderator = User.create!(email: "moderation-copy-moderator@example.com")
+      member = User.create!(email: "moderation-copy-member@example.com")
+      chat = TurboChat::Chat.create!(title: "System Moderation Copy")
+
+      message = TurboChat::ChatMessage.create_membership_system_message!(
+        chat: chat,
+        actor: moderator,
+        event: :muted,
+        subject: member
+      )
+
+      assert message.present?
+      assert message.system?
+      assert_equal "#{moderator.email} muted #{member.email}.", message.body
+    end
+
     test "membership system messages can be disabled via configuration" do
       inviter = User.create!(email: "system-copy-off-inviter@example.com")
       invitee = User.create!(email: "system-copy-off-invitee@example.com")

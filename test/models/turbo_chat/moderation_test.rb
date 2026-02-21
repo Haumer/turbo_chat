@@ -4,6 +4,7 @@ module TurboChat
   class ModerationTest < ActiveSupport::TestCase
     test "moderator can mute timeout and ban a member" do
       context = build_chat_with_roles("moderation-flow")
+      chat = context[:chat]
       moderator = context[:moderator]
       member_membership = context[:member_membership]
 
@@ -22,6 +23,12 @@ module TurboChat
       assert member_membership.removed_at.present?
       assert_not member_membership.muted?
       assert_nil member_membership.timed_out_until
+
+      system_message_bodies = chat.chat_messages.system.order(:id).pluck(:body)
+      assert_includes system_message_bodies, "#{moderator.email} muted #{context[:member].email}."
+      assert_includes system_message_bodies, "#{moderator.email} timed out #{context[:member].email}."
+      assert_includes system_message_bodies, "#{moderator.email} cleared timeout for #{context[:member].email}."
+      assert_includes system_message_bodies, "#{moderator.email} removed #{context[:member].email} from the chat."
     end
 
     test "moderator cannot ban admin" do

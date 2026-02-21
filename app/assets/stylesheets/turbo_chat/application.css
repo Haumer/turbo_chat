@@ -124,6 +124,7 @@ body {
 }
 
 .chat-members {
+  --chat-members-expanded-max-height: 420px;
   margin: 0 0 14px;
   padding: 10px 12px;
   border-radius: 14px;
@@ -167,7 +168,34 @@ body {
 }
 
 .chat-members-content {
+  display: block;
   margin-top: 8px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-3px);
+  visibility: hidden;
+  transition:
+    max-height 240ms ease,
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 0s linear 240ms;
+}
+
+.chat-members-panel:not([open]) > .chat-members-content {
+  display: block;
+}
+
+.chat-members-panel[open] > .chat-members-content {
+  max-height: var(--chat-members-expanded-max-height);
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition:
+    max-height 280ms ease,
+    opacity 220ms ease,
+    transform 220ms ease,
+    visibility 0s linear 0s;
 }
 
 .chat-members-invite {
@@ -195,7 +223,7 @@ body {
 }
 
 .chat-members-list-shell {
-  height: 216px;
+  max-height: 216px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -241,15 +269,62 @@ body {
 }
 
 .chat-member-role-form {
-  display: none;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   margin: 0;
   min-width: 0;
 }
 
-.chat-shell--can-manage-member-permissions .chat-member-role-form {
+.chat-member-role-form[hidden] {
+  display: none;
+}
+
+.chat-member-actions {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.chat-shell--can-manage-member-permissions .chat-member-actions {
   display: inline-flex;
+}
+
+.chat-member-manage-toggle {
+  appearance: none;
+  border: 1px solid #d2deed;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  color: #32537f;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.chat-member-manage-toggle:hover,
+.chat-member-manage-toggle:focus-visible,
+.chat-member-manage-toggle[aria-expanded="true"] {
+  border-color: #9bb9df;
+  background: #edf4ff;
+}
+
+.chat-member-manage-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-members-content,
+  .chat-members-panel[open] > .chat-members-content,
+  .chat-members-summary::after {
+    transition: none;
+  }
 }
 
 .chat-member-role-select {
@@ -1164,12 +1239,16 @@ body {
   }
 
   .chat-members-list-shell {
-    height: 188px;
+    max-height: 188px;
   }
 
   .chat-shell--can-manage-member-permissions .chat-members-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .chat-shell--can-manage-member-permissions .chat-member-actions {
+    width: 100%;
   }
 
   .chat-shell--can-manage-member-permissions .chat-member-role-form {

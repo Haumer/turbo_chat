@@ -184,6 +184,8 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to "/chat/chats"
     assert membership.reload.removed_at.present?
+    system_message = TurboChat::ChatMessage.where(chat: chat, kind: :system).order(id: :desc).first
+    assert_equal "#{participant.email} left the chat.", system_message&.body
   end
 
   test "leaving chat includes lifecycle event payload when enabled" do
