@@ -25,15 +25,62 @@ module TurboChat
       assert_includes message.errors[:signal_type], "can't be blank"
     end
 
-    test "messages_only excludes signal rows" do
+    test "messages_only excludes signal and system rows" do
       user = User.create!(email: "kindfilter@example.com")
       chat = TurboChat::Chat.create!(title: "Kinds")
       TurboChat::ChatMembership.create!(chat: chat, participant: user)
 
       visible = TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "visible", kind: :message)
       TurboChat::ChatMessage.create!(chat: chat, participant: user, kind: :signal, signal_type: :typing)
+      TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "system", kind: :system)
 
       assert_equal [visible.id], chat.chat_messages.messages_only.ordered.pluck(:id)
+    end
+
+    test "timeline includes message and system rows but excludes signals" do
+      user = User.create!(email: "timeline-kindfilter@example.com")
+      chat = TurboChat::Chat.create!(title: "Timeline Kinds")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      message = TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "visible", kind: :message)
+      system = TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "joined", kind: :system)
+      TurboChat::ChatMessage.create!(chat: chat, participant: user, kind: :signal, signal_type: :typing)
+
+      assert_equal [message.id, system.id], chat.chat_messages.timeline.ordered.pluck(:id)
+    end
+
+    test "membership system message helper creates invite event copy" do
+      inviter = User.create!(email: "invite-copy-inviter@example.com")
+      invitee = User.create!(email: "invite-copy-invitee@example.com")
+      chat = TurboChat::Chat.create!(title: "System Invite Copy")
+
+      message = TurboChat::ChatMessage.create_membership_system_message!(
+        chat: chat,
+        actor: inviter,
+        event: :invited,
+        subject: invitee
+      )
+
+      assert message.present?
+      assert message.system?
+      assert_equal "#{inviter.email} invited #{invitee.email}.", message.body
+    end
+
+    test "membership system messages can be disabled via configuration" do
+      inviter = User.create!(email: "system-copy-off-inviter@example.com")
+      invitee = User.create!(email: "system-copy-off-invitee@example.com")
+      chat = TurboChat::Chat.create!(title: "System Copy Disabled")
+
+      with_chat_configuration(system_messages: false) do
+        message = TurboChat::ChatMessage.create_membership_system_message!(
+          chat: chat,
+          actor: inviter,
+          event: :invited,
+          subject: invitee
+        )
+
+        assert_nil message
+      end
     end
 
     test "participant_display_name prefers username when present" do
@@ -501,6 +548,7 @@ module TurboChat
         blocked_words: config.blocked_words,
         blocked_words_action: config.blocked_words_action,
         emit_blocked_words_events: config.emit_blocked_words_events,
+        system_messages: config.system_messages,
         replace_signals_on_message_submit: config.replace_signals_on_message_submit,
         timestamp_formatter: config.timestamp_formatter,
         role_formatter: config.role_formatter

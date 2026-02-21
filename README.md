@@ -138,6 +138,7 @@ TurboChat.configure do |config|
   config.show_timestamp = true
   config.show_role = false
   config.show_members = true
+  config.system_messages = true
   config.composer_placeholder_text = "start chatting"
   config.composer_add_files_display = false
   config.composer_add_files_active = false
@@ -200,11 +201,14 @@ Important constraints:
 - Invite type must match inviter participant base class.
 - Participant limits apply to active memberships.
 - Re-invite reactivates existing memberships.
+- Invite, accept, and decline actions append system messages in the chat timeline by default.
+- Member list updates are streamed over Turbo (no page reload).
 
 ## Messages, Mentions, Signals
 
 ### Messages
 - Realtime append/update/remove via Turbo Streams.
+- System timeline messages (`kind: :system`) render in a compact system style.
 - Inline edit for your own messages (permission-gated).
 - History capped by `message_history_limit`.
 
@@ -298,6 +302,7 @@ Do this in order:
 
 Primary partial override point:
 - `app/views/turbo_chat/chat_messages/_message.html.erb`
+- `app/views/turbo_chat/chat_messages/_system.html.erb` (system timeline events)
 
 Keep `id="<%= dom_id(chat_message) %>"` on the message wrapper or Turbo replacements break.
 

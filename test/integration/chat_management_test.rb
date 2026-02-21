@@ -27,6 +27,8 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     invited_membership = TurboChat::ChatMembership.find_by!(chat: chat, participant: invitee)
     assert invited_membership.pending?
     assert_not invited_membership.active?
+    system_message = TurboChat::ChatMessage.where(chat: chat, kind: :system).order(id: :desc).first
+    assert_equal "#{admin.email} invited #{invitee.email}.", system_message&.body
   end
 
   test "inviting participant includes lifecycle event payload when enabled" do
@@ -168,6 +170,8 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
 
     assert invited_membership.reload.active?
     assert invited_membership.invitation_accepted?
+    system_message = TurboChat::ChatMessage.where(chat: chat, kind: :system).order(id: :desc).first
+    assert_equal "#{invitee.email} accepted the invitation.", system_message&.body
   end
 
   test "accepting invitation includes frontend event payload when enabled" do
@@ -260,6 +264,8 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     invited_membership.reload
     assert invited_membership.removed_at.present?
     assert_not invited_membership.active?
+    system_message = TurboChat::ChatMessage.where(chat: chat, kind: :system).order(id: :desc).first
+    assert_equal "#{invitee.email} declined the invitation.", system_message&.body
   end
 
   test "declining invitation includes lifecycle event payload when enabled" do
@@ -308,6 +314,26 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     invited_membership.reload
     assert invited_membership.removed_at.nil?
     assert_not invited_membership.invitation_accepted?
+  end
+
+  test "chat message create does not allow user-submitted system kind" do
+    participant = User.create!(email: "system-kind-guard@example.com")
+    chat = TurboChat::Chat.create!(title: "System Kind Guard")
+    TurboChat::ChatMembership.create!(chat: chat, participant: participant, role: :member)
+
+    with_current_chat_participant(participant) do
+      post "/chat/chats/#{chat.id}/chat_messages", params: {
+        chat_message: {
+          kind: :system,
+          body: "forged system event"
+        }
+      }
+    end
+
+    assert_redirected_to "/chat/chats/#{chat.id}"
+    created_message = chat.chat_messages.order(:id).last
+    assert_equal "message", created_message.kind
+    assert_equal "forged system event", created_message.body
   end
 
   test "admin can close and reopen chat" do

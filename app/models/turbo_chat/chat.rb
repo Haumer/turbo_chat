@@ -62,7 +62,7 @@ module TurboChat
     end
 
     def visible_messages(limit: TurboChat.configuration.message_history_limit)
-      relation = chat_messages.messages_only
+      relation = chat_messages.timeline
       normalized_limit = normalize_message_limit(limit)
       limited_relation = if normalized_limit.nil?
                            relation

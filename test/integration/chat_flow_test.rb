@@ -21,6 +21,18 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, teammate.email
   end
 
+  test "chat show renders system messages in dedicated system style" do
+    user = User.create!(email: "system-style@example.com")
+    chat = TurboChat::Chat.create!(title: "System Style Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+    TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "#{user.email} invited teammate@example.com.", kind: :system)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+    assert_select ".chat-system-message", 1
+    assert_includes response.body, "invited teammate@example.com."
+  end
+
   test "chat members can be hidden via configuration" do
     previous_show_members = TurboChat.configuration.show_members
     TurboChat.configuration.show_members = false
@@ -145,7 +157,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
 
     get "/chat/chats/#{chat.id}"
     assert_response :success
-    assert_select "section.chat-members .chat-members-list > li.chat-members-item--invite", 1
+    assert_select "section.chat-members .chat-members-invite", 1
     assert_select "form.chat-form--invite[data-chat-invite-form='true']", 1
     assert_select "input.chat-invite-search[data-chat-invite-query-input='true']", 1
     assert_select "input[type='hidden'][name='chat_membership[participant_id]'][data-chat-invite-participant-id-input='true']", 1

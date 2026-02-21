@@ -21,6 +21,7 @@ module TurboChat
     validate :custom_role_must_exist, if: -> { custom_role_key.present? }
 
     before_validation :normalize_custom_role_key
+    after_commit :broadcast_member_entries_refresh, on: %i[create update]
 
     class << self
       def invitation_tracking_supported?
@@ -131,6 +132,18 @@ module TurboChat
       return if active_count_without_self < limit
 
       errors.add(:chat, "has reached the participant limit (#{limit})")
+    end
+
+    def broadcast_member_entries_refresh
+      return if chat.nil?
+      return unless defined?(Turbo::StreamsChannel)
+
+      Turbo::StreamsChannel.broadcast_update_to(
+        [chat, TurboChat::ChatMessage::STREAM_NAME],
+        target: ActionView::RecordIdentifier.dom_id(chat, :member_entries),
+        partial: "turbo_chat/chats/member_entries",
+        locals: { chat: chat }
+      )
     end
   end
 end

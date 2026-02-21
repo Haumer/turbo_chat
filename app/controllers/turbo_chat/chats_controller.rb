@@ -30,6 +30,11 @@ module TurboChat
       return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
 
       membership.accept_invitation!
+      TurboChat::ChatMessage.create_membership_system_message!(
+        chat: @chat,
+        actor: participant,
+        event: :accepted
+      )
       flash[:turbo_chat_invitation_accepted] = {
         chatId: @chat.id,
         chatTitle: @chat.title,
@@ -48,6 +53,11 @@ module TurboChat
       return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
 
       membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil, invitation_accepted: false)
+      TurboChat::ChatMessage.create_membership_system_message!(
+        chat: @chat,
+        actor: participant,
+        event: :declined
+      )
       set_chat_lifecycle_event(action: :declined, chat: @chat, membership: membership)
       redirect_to chats_path, notice: "Invitation declined", status: :see_other
     end
@@ -77,7 +87,6 @@ module TurboChat
       @chat_messages = @chat.visible_messages
       @can_post_message = @chat_permission.can_post_message?
       @show_members = show_members_enabled?
-      @chat_members = @show_members ? @chat.chat_memberships.active.includes(:participant).order(:id) : []
       @can_invite_member = @chat_permission.respond_to?(:can_invite_member?) && @chat_permission.can_invite_member?
       @can_close_chat = @chat_permission.can_close_chat?
       @can_reopen_chat = @chat_permission.can_reopen_chat?

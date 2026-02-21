@@ -10,7 +10,7 @@ module TurboChat
 
         stream = stream_name
 
-        if message? && respond_to?(:broadcast_append_to)
+        if appendable_timeline_message? && respond_to?(:broadcast_append_to)
           broadcast_append_to(
             stream,
             target: ActionView::RecordIdentifier.dom_id(chat, :messages),
@@ -43,7 +43,7 @@ module TurboChat
       def broadcast_destroy
         stream = stream_name
 
-        if message? && respond_to?(:broadcast_remove_to)
+        if appendable_timeline_message? && respond_to?(:broadcast_remove_to)
           broadcast_remove_to(
             stream,
             target: ActionView::RecordIdentifier.dom_id(self)
@@ -55,6 +55,10 @@ module TurboChat
 
       def stream_name
         [chat, STREAM_NAME]
+      end
+
+      def appendable_timeline_message?
+        message? || system?
       end
     end
   end

@@ -1,0 +1,7 @@
+<% chat_members = chat.chat_memberships.active.includes(:participant).order(:id) %>
+<% chat_members.each do |membership| %>
+  <li class="chat-members-item">
+    <span class="chat-members-name"><%= chat_participant_name(membership.participant) %></span>
+    <span class="chat-members-role"><%= membership.effective_role_name %></span>
+  </li>
+<% end %>

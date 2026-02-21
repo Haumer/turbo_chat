@@ -108,6 +108,23 @@ module TurboChat
       assert_includes membership.errors[:custom_role_key], "is not configured"
     end
 
+    test "broadcasts member list refresh on create and update" do
+      user = User.create!(email: "member-refresh@example.com")
+      chat = TurboChat::Chat.create!(title: "Member Refresh")
+
+      broadcasts = []
+      Turbo::StreamsChannel.stub(:broadcast_update_to, lambda { |stream, **options| broadcasts << [stream, options] }) do
+        membership = TurboChat::ChatMembership.create!(chat: chat, participant: user, role: :member)
+        membership.update!(muted: true)
+      end
+
+      assert broadcasts.size >= 2
+      stream, options = broadcasts.last
+      assert_equal [chat, TurboChat::ChatMessage::STREAM_NAME], stream
+      assert_equal ActionView::RecordIdentifier.dom_id(chat, :member_entries), options[:target]
+      assert_equal "turbo_chat/chats/member_entries", options[:partial]
+    end
+
     private
 
     def with_max_chat_participants(limit)

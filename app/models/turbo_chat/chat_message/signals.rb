@@ -41,7 +41,7 @@ module TurboChat
       private
 
       def normalize_signal_fields
-        self.signal_type = nil if message?
+        self.signal_type = nil if message? || system?
         self.body = "" if signal?
       end
 

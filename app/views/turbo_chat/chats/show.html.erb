@@ -65,26 +65,21 @@
   <% if @show_members %>
     <section class="chat-members">
       <h2>Members</h2>
-      <ul class="chat-members-list">
-        <% if @can_invite_member %>
-          <li class="chat-members-item <%= invite_option_rows.present? ? "chat-members-item--invite" : "chat-members-item--hint" %>">
-            <% if invite_option_rows.present? %>
-              <%= render "turbo_chat/chats/invite_form",
-                         chat: @chat,
-                         invite_participant_type: @invite_participant_type,
-                         invite_option_rows: invite_option_rows,
-                         id_suffix: "members" %>
-            <% else %>
-              <p class="chat-hint">No eligible participants to invite.</p>
-            <% end %>
-          </li>
-        <% end %>
-        <% @chat_members.each do |membership| %>
-          <li class="chat-members-item">
-            <span class="chat-members-name"><%= chat_participant_name(membership.participant) %></span>
-            <span class="chat-members-role"><%= membership.effective_role_name %></span>
-          </li>
-        <% end %>
+      <% if @can_invite_member %>
+        <div class="chat-members-invite <%= invite_option_rows.present? ? "chat-members-invite--active" : "chat-members-invite--hint" %>">
+          <% if invite_option_rows.present? %>
+            <%= render "turbo_chat/chats/invite_form",
+                       chat: @chat,
+                       invite_participant_type: @invite_participant_type,
+                       invite_option_rows: invite_option_rows,
+                       id_suffix: "members" %>
+          <% else %>
+            <p class="chat-hint">No eligible participants to invite.</p>
+          <% end %>
+        </div>
+      <% end %>
+      <ul id="<%= dom_id(@chat, :member_entries) %>" class="chat-members-list">
+        <%= render "turbo_chat/chats/member_entries", chat: @chat %>
       </ul>
     </section>
   <% elsif @can_invite_member %>

@@ -24,6 +24,12 @@ module TurboChat
       end
 
       membership.save!
+      TurboChat::ChatMessage.create_membership_system_message!(
+        chat: @chat,
+        actor: current_chat_participant,
+        event: :invited,
+        subject: participant
+      )
       set_chat_lifecycle_event(action: :invited, chat: @chat, membership: membership)
       redirect_to chat_path(@chat), notice: "Participant invited"
     rescue ActiveRecord::RecordNotFound

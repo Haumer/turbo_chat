@@ -61,6 +61,7 @@ module TurboChat
                   :show_timestamp,
                   :show_role,
                   :show_members,
+                  :system_messages,
                   :composer_placeholder_text,
                   :composer_add_files_display,
                   :composer_add_files_active,
@@ -105,6 +106,7 @@ module TurboChat
       @show_timestamp = true
       @show_role = false
       @show_members = true
+      @system_messages = true
       @composer_placeholder_text = "start chatting"
       @composer_add_files_display = false
       @composer_add_files_active = false

@@ -1,0 +1,8 @@
+<article id="<%= dom_id(chat_message) %>" class="chat-system-message">
+  <p class="chat-system-message__body"><%= chat_message.body %></p>
+  <% if TurboChat.configuration.show_timestamp %>
+    <time class="chat-system-message__timestamp" datetime="<%= chat_message.created_at.iso8601 %>">
+      <%= chat_message.formatted_timestamp %>
+    </time>
+  <% end %>
+</article>

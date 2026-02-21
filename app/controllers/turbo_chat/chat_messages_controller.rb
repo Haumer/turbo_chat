@@ -41,7 +41,11 @@ module TurboChat
     end
 
     def chat_message_params
-      params.require(:chat_message).permit(:body, :kind, :signal_type)
+      permitted = params.require(:chat_message).permit(:body, :kind, :signal_type)
+      normalized_kind = normalize_submittable_message_kind(permitted[:kind])
+      permitted[:kind] = normalized_kind
+      permitted[:signal_type] = nil unless normalized_kind == "signal"
+      permitted
     end
 
     def edit_chat_message_params
@@ -90,7 +94,6 @@ module TurboChat
                        true
                      end
       @show_members = ActiveModel::Type::Boolean.new.cast(show_members)
-      @chat_members = @show_members ? @chat.chat_memberships.active.includes(:participant).order(:id) : []
       respond_to do |format|
         format.turbo_stream { render "turbo_chat/chats/show", status: :unprocessable_entity }
         format.html { render "turbo_chat/chats/show", status: :unprocessable_entity }
@@ -146,6 +149,13 @@ module TurboChat
 
     def turbo_stream_request?
       request.headers["Accept"].to_s.include?("turbo-stream")
+    end
+
+    def normalize_submittable_message_kind(kind)
+      kind_value = kind.to_s
+      return "signal" if kind_value == "signal"
+
+      "message"
     end
   end
 end

@@ -120,6 +120,35 @@ module TurboChat
       assert_equal [oldest.id, middle.id, newest.id], chat.visible_messages(limit: nil).pluck(:id)
     end
 
+    test "visible_messages includes system messages and excludes signals" do
+      user = User.create!(email: "visible-system-message@example.com")
+      chat = TurboChat::Chat.create!(title: "Visible System Messages")
+
+      regular = TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "regular",
+        kind: :message,
+        created_at: 2.minutes.ago
+      )
+      system = TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "system update",
+        kind: :system,
+        created_at: 1.minute.ago
+      )
+      TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        kind: :signal,
+        signal_type: :typing,
+        created_at: Time.current
+      )
+
+      assert_equal [regular.id, system.id], chat.visible_messages(limit: nil).pluck(:id)
+    end
+
     test "chat can be closed and reopened with scopes" do
       open_chat = TurboChat::Chat.create!(title: "Open Chat")
       closed_chat = TurboChat::Chat.create!(title: "Closed Chat")
