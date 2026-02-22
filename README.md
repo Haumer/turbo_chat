@@ -2,7 +2,7 @@
 
 TurboChat is a mountable Rails chat engine for server-rendered applications.
 
-Status: pre-release.
+Status: actively maintained.
 
 ## What You Get
 

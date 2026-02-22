@@ -12,6 +12,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir.chdir(__dir__) do
     Dir[
       "{app,config,db,lib}/**/*",
+      "CHANGELOG.md",
       "MIT-LICENSE",
       "README.md",
       "turbo_chat.gemspec"
@@ -24,8 +25,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "turbo-rails", ">= 1.4", "< 3.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "#{spec.homepage}/tree/main"
+  spec.metadata["source_code_uri"] = "#{spec.homepage}/tree/master"
   spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
-  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/README.md"
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/master/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
 end

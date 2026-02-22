@@ -8,6 +8,11 @@ group :development, :test do
   gem "sprockets-rails", "~> 3.5"
 end
 
+group :development do
+  gem "brakeman", require: false
+  gem "bundler-audit", require: false
+end
+
 group :test do
   gem "capybara", "~> 3.40"
   gem "selenium-webdriver", "~> 4.29"

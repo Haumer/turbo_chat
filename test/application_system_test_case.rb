@@ -24,7 +24,10 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   def skip_unless_chrome_webdriver_available!
     return if self.class.chrome_webdriver_available?
 
-    skip "Chrome WebDriver unavailable: #{self.class.chrome_webdriver_error}"
+    message = "Chrome WebDriver unavailable: #{self.class.chrome_webdriver_error}"
+    raise Minitest::Assertion, message if ENV["CI"].to_s == "true"
+
+    skip message
   end
 
   def skip_unless_safari_webdriver_available!
