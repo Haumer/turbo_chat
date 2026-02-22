@@ -35,7 +35,19 @@ Mount the engine:
 mount TurboChat::Engine => "/", as: "turbo_chat"
 ```
 
-This gives you chat routes like `/` (chat index), `/chats`, and `/chats/:id`.
+This mounts TurboChat at your app root.
+
+Because the engine defines `root` as `chats#index`, both of these resolve to chat index:
+
+- `/`
+- `/chats`
+
+Route helpers:
+
+- `turbo_chat.root_path` -> `/`
+- `turbo_chat.chats_path` -> `/chats`
+- `turbo_chat.chat_path(chat)` -> `/chats/:id`
+- `turbo_chat_path` -> the mount point (`/`)
 
 ## Host App Requirements
 
@@ -49,7 +61,8 @@ end
 
 ### 2. Resolve the current participant
 
-Define `current_chat_participant` in your host `ApplicationController`.
+You can define `current_chat_participant` in your host `ApplicationController`.
+If you already expose `current_user` and it returns a model using `acts_as_chat_participant`, TurboChat works without adding this method.
 
 Recommended hook:
 
@@ -61,10 +74,12 @@ class ApplicationController < ActionController::Base
 end
 ```
 
-Fallback behavior (only if you do not define `current_chat_participant`):
+Resolution order:
 
-1. `config.current_participant_resolver`
-2. `current_user`
+1. Host `ApplicationController#current_chat_participant` (if defined)
+2. `config.current_participant_resolver` (if configured)
+3. `current_user` (if available)
+4. Raise `NotImplementedError`
 
 Optional resolver for non-`current_user` auth:
 
