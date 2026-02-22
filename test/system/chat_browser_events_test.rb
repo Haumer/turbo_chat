@@ -20,6 +20,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
 
     visit "/chat/chats/#{chat.id}"
+    open_members_panel!
 
     find("[data-chat-invite-query-input]").set(invitee.email)
     click_button "Invite"
@@ -41,6 +42,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
 
     visit "/chat/chats/#{chat.id}"
+    open_members_panel!
 
     find("[data-chat-invite-query-input]").set("bravo")
     click_button "Invite"
@@ -223,6 +225,15 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     config.emit_message_events = false
     config.emit_invitation_events = false
     config.emit_chat_lifecycle_events = false
+    config.show_members = true
+  end
+
+  def open_members_panel!
+    panel = find("details.chat-members-panel", visible: :all)
+    return if panel[:open].present?
+
+    panel.find("summary.chat-members-summary").click
+    assert_selector("details.chat-members-panel[open]")
   end
 
   def install_event_capture(event_names)
