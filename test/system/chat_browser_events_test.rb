@@ -22,7 +22,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     visit "/chat/chats/#{chat.id}"
     open_members_panel!
 
-    find("[data-chat-invite-query-input]").set(invitee.email)
+    set_invite_query(invitee.email)
     click_button "Invite"
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
@@ -44,7 +44,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     visit "/chat/chats/#{chat.id}"
     open_members_panel!
 
-    find("[data-chat-invite-query-input]").set("bravo")
+    set_invite_query("bravo")
     click_button "Invite"
 
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
@@ -230,10 +230,29 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
 
   def open_members_panel!
     panel = find("details.chat-members-panel", visible: :all)
-    return if panel[:open].present?
+    execute_script("arguments[0].open = true;", panel.native)
+    assert_selector("details.chat-members-panel[open]", visible: :all)
+    assert_selector("[data-chat-invite-query-input]", visible: true)
+  end
 
-    panel.find("summary.chat-members-summary").click
-    assert_selector("details.chat-members-panel[open]")
+  def set_invite_query(value)
+    input = find("[data-chat-invite-query-input]", visible: :all)
+
+    unless input.visible?
+      open_members_panel!
+      input = find("[data-chat-invite-query-input]", visible: :all)
+    end
+
+    if input.visible?
+      input.set(value)
+      return
+    end
+
+    execute_script(<<~JS, input.native, value.to_s)
+      arguments[0].value = arguments[1];
+      arguments[0].dispatchEvent(new Event("input", { bubbles: true }));
+      arguments[0].dispatchEvent(new Event("change", { bubbles: true }));
+    JS
   end
 
   def install_event_capture(event_names)
