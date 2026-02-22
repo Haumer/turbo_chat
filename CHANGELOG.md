@@ -2,6 +2,12 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.6] - 2026-02-22
+
+### Fixed
+- System invite browser-event tests now open the members panel before interacting with invite search inputs.
+- Test event configuration reset now restores `show_members` to avoid cross-test config leakage.
+
 ## [0.1.5] - 2026-02-22
 
 ### Added
