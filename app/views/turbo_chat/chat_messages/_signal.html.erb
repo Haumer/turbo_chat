@@ -1,3 +1,7 @@
 <article id="<%= dom_id(chat_message) %>" class="chat-signal-entry">
-  <span><%= chat_message.participant_display_name %> is <%= chat_message.signal_type %>...</span>
+  <% if chat_message.signal_type_custom? && chat_message.signal_text.present? %>
+    <span><%= chat_message.participant_display_name %>: <%= chat_message.signal_text %></span>
+  <% else %>
+    <span><%= chat_message.participant_display_name %> is <%= chat_message.signal_type %>...</span>
+  <% end %>
 </article>

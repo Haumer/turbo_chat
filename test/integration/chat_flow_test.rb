@@ -326,6 +326,27 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     TurboChat.configuration.show_self_signals = previous_value
   end
 
+  test "chat show renders custom signal text" do
+    current_user = User.create!(email: "custom-signal-self@example.com")
+    other_user = User.create!(email: "custom-signal-other@example.com")
+    chat = TurboChat::Chat.create!(title: "Custom Signal Chat")
+
+    TurboChat::ChatMembership.create!(chat: chat, participant: current_user)
+    TurboChat::ChatMembership.create!(chat: chat, participant: other_user)
+    TurboChat::Signals.start!(
+      chat: chat,
+      participant: other_user,
+      signal_type: :custom,
+      signal_text: "Reviewing your request"
+    )
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text", text: "Reviewing your request", count: 1
+  end
+
   test "chat show applies custom message css classes from resolver" do
     previous_resolver = TurboChat.configuration.message_css_class_resolver
     TurboChat.configuration.message_css_class_resolver = lambda { |_chat_message, own_message|

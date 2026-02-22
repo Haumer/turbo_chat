@@ -19,7 +19,7 @@ module TurboChat
     belongs_to :participant, polymorphic: true
 
     enum :kind, { message: 0, signal: 1, system: 2 }, default: :message
-    enum :signal_type, { typing: 0, thinking: 1, planning: 2 }, prefix: true
+    enum :signal_type, { typing: 0, thinking: 1, planning: 2, custom: 3 }, prefix: true
 
     scope :ordered, -> { order(created_at: :asc, id: :asc) }
     scope :messages_only, -> { where(kind: kinds[:message]) }
@@ -28,6 +28,7 @@ module TurboChat
     validates :participant_type, :participant_id, presence: true
     validates :body, presence: true, if: -> { message? || system? }
     validates :signal_type, presence: true, if: :signal?
+    validates :signal_text, presence: true, if: :custom_signal?
     validate :body_within_max_length, if: :message?
     validate :mentions_allowed_for_participant, if: :message?
     validate :apply_blocked_words_moderation, if: :message?
@@ -38,6 +39,16 @@ module TurboChat
     after_create_commit :broadcast_create
     after_update_commit :broadcast_update
     after_destroy_commit :broadcast_destroy
+
+    def signal_text
+      return nil unless signal?
+
+      body.presence
+    end
+
+    def signal_text=(value)
+      self.body = value
+    end
 
     class << self
       def create_membership_system_message!(chat:, actor:, event:, subject: nil)
@@ -116,6 +127,12 @@ module TurboChat
 
         participant.to_s
       end
+    end
+
+    private
+
+    def custom_signal?
+      signal? && signal_type_custom?
     end
   end
 end

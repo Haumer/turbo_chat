@@ -25,6 +25,23 @@ module TurboChat
       assert_includes message.errors[:signal_type], "can't be blank"
     end
 
+    test "requires signal_text for custom signals" do
+      user = User.create!(email: "custom-signal@example.com")
+      chat = TurboChat::Chat.create!(title: "Custom Signals")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      message = TurboChat::ChatMessage.new(
+        chat: chat,
+        participant: user,
+        kind: :signal,
+        signal_type: :custom,
+        body: "   "
+      )
+
+      assert_not message.valid?
+      assert_includes message.errors[:signal_text], "can't be blank"
+    end
+
     test "messages_only excludes signal and system rows" do
       user = User.create!(email: "kindfilter@example.com")
       chat = TurboChat::Chat.create!(title: "Kinds")
@@ -399,6 +416,40 @@ module TurboChat
       signals = chat.chat_messages.signal.where(participant: user).ordered
       assert_equal [replaced.id], signals.pluck(:id)
       assert_equal "planning", replaced.signal_type
+    end
+
+    test "replace_signal supports custom signal text" do
+      user = User.create!(email: "replace-custom-signal@example.com")
+      chat = TurboChat::Chat.create!(title: "Replace Custom Signal")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      replaced = TurboChat::ChatMessage.replace_signal!(
+        chat: chat,
+        participant: user,
+        signal_type: :custom,
+        signal_text: "Hello"
+      )
+
+      assert_equal "custom", replaced.signal_type
+      assert_equal "Hello", replaced.signal_text
+      assert_equal "Hello", replaced.body
+    end
+
+    test "start_signal ignores signal_text for non-custom signal types" do
+      user = User.create!(email: "non-custom-signal-text@example.com")
+      chat = TurboChat::Chat.create!(title: "Non Custom Signal Text")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      signal = TurboChat::ChatMessage.start_signal!(
+        chat: chat,
+        participant: user,
+        signal_type: :typing,
+        signal_text: "Should be ignored"
+      )
+
+      assert_equal "typing", signal.signal_type
+      assert_nil signal.signal_text
+      assert_equal "", signal.body
     end
 
     test "with_signal clears participant signal after block" do

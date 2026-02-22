@@ -627,6 +627,13 @@ body {
   gap: 3px;
 }
 
+.chat-signal-text {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chat-dots i {
   width: 6px;
   height: 6px;

@@ -17,8 +17,12 @@
        data-chat-signal-participant-type="<%= signal_message.participant_type %>"
        data-chat-signal-participant-id="<%= signal_message.participant_id %>">
     <strong><%= signal_message.participant_display_name %></strong>
-    <span class="chat-dots">
-      <i></i><i></i><i></i>
-    </span>
+    <% if signal_message.signal_type_custom? && signal_message.signal_text.present? %>
+      <span class="chat-signal-text"><%= signal_message.signal_text %></span>
+    <% else %>
+      <span class="chat-dots">
+        <i></i><i></i><i></i>
+      </span>
+    <% end %>
   </div>
 <% end %>

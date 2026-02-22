@@ -179,6 +179,8 @@ Raises:
 
 ```ruby
 TurboChat::Signals.start!(chat: chat, participant: current_user, signal_type: :typing)
+TurboChat::Signals.start!(chat: chat, participant: current_user, signal_type: :custom, signal_text: "Hello")
+TurboChat::Signals.custom!(chat: chat, participant: current_user, signal_text: "Reviewing your request")
 TurboChat::Signals.clear!(chat: chat, participant: current_user)
 ```
 

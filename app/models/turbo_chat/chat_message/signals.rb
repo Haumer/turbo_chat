@@ -4,13 +4,19 @@ module TurboChat
       extend ActiveSupport::Concern
 
       class_methods do
-        def start_signal!(chat:, participant:, signal_type: :typing)
-          create!(chat: chat, participant: participant, kind: :signal, signal_type: signal_type)
+        def start_signal!(chat:, participant:, signal_type: :typing, signal_text: nil)
+          create!(
+            chat: chat,
+            participant: participant,
+            kind: :signal,
+            signal_type: signal_type,
+            body: signal_text
+          )
         end
 
-        def replace_signal!(chat:, participant:, signal_type: :typing)
+        def replace_signal!(chat:, participant:, signal_type: :typing, signal_text: nil)
           clear_signals!(chat: chat, participant: participant)
-          start_signal!(chat: chat, participant: participant, signal_type: signal_type)
+          start_signal!(chat: chat, participant: participant, signal_type: signal_type, signal_text: signal_text)
         end
 
         def clear_signals!(chat:, participant:)
@@ -19,8 +25,13 @@ module TurboChat
           true
         end
 
-        def with_signal(chat:, participant:, signal_type: :typing)
-          replace_signal!(chat: chat, participant: participant, signal_type: signal_type)
+        def with_signal(chat:, participant:, signal_type: :typing, signal_text: nil)
+          replace_signal!(
+            chat: chat,
+            participant: participant,
+            signal_type: signal_type,
+            signal_text: signal_text
+          )
           yield
         ensure
           clear_signals!(chat: chat, participant: participant)
@@ -42,7 +53,9 @@ module TurboChat
 
       def normalize_signal_fields
         self.signal_type = nil if message? || system?
-        self.body = "" if signal?
+        return unless signal?
+
+        self.body = signal_type_custom? ? body.to_s.strip : ""
       end
 
       def replace_participant_signals_on_submit

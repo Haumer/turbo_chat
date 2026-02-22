@@ -41,10 +41,15 @@ module TurboChat
     end
 
     def chat_message_params
-      permitted = params.require(:chat_message).permit(:body, :kind, :signal_type)
+      permitted = params.require(:chat_message).permit(:body, :kind, :signal_type, :signal_text)
       normalized_kind = normalize_submittable_message_kind(permitted[:kind])
       permitted[:kind] = normalized_kind
-      permitted[:signal_type] = nil unless normalized_kind == "signal"
+      signal_text = permitted.delete(:signal_text)
+      if normalized_kind == "signal"
+        permitted[:body] = signal_text unless signal_text.nil?
+      else
+        permitted[:signal_type] = nil
+      end
       permitted
     end
 
