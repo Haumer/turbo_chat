@@ -1,6 +1,10 @@
 require_relative "test_helper"
 
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
+  # System tests run app and assertions across separate threads/processes.
+  # Transactional fixtures can hide writes between those connections.
+  self.use_transactional_tests = false
+
   if ENV["CI"].to_s == "true" || ENV["CHAT_GEM_SYSTEM_TEST_CHROME"] == "1"
     driven_by :selenium, using: :headless_chrome, screen_size: [1400, 900]
   else

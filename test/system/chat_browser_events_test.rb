@@ -45,11 +45,13 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     open_members_panel!
 
     set_invite_query("bravo")
-    click_button "Invite"
+    assert_selector("[data-chat-invite-option-index]", text: second_invitee.email)
+    assert_no_selector("[data-chat-invite-option-index]", text: first_invitee.email)
+    find("[data-chat-invite-option-index]", text: second_invitee.email).click
+    assert_equal second_invitee.id.to_s, find("[data-chat-invite-participant-id-input]", visible: :all).value
 
-    assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
-    assert_not TurboChat::ChatMembership.exists?(chat: chat, participant: first_invitee)
-    assert TurboChat::ChatMembership.exists?(chat: chat, participant: second_invitee)
+    click_button "Invite"
+    assert_text "#{admin.email} invited #{second_invitee.email}."
   end
 
   test "declining an invitation emits turbo-chat:chat-declined in browser" do
@@ -232,6 +234,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     panel = find("details.chat-members-panel", visible: :all)
     execute_script("arguments[0].open = true;", panel.native)
     assert_selector("details.chat-members-panel[open]", visible: :all)
+    assert_selector("[data-chat-invite-form][data-chat-invite-filter-bound='true']", visible: :all)
     assert_selector("[data-chat-invite-query-input]", visible: true)
   end
 
