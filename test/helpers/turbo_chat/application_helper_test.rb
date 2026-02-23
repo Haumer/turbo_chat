@@ -5,6 +5,7 @@ module TurboChat
     MessageStub = Struct.new(:participant_membership_role)
     BodyMessageStub = Struct.new(:body, :participant_membership_role)
     OwnedMessageStub = Struct.new(:participant_type, :participant_id)
+    SourceMessageStub = Struct.new(:source)
     MentionPermissionStub = Struct.new(:can_mention_members?, :can_mention_all?, :can_mention_roles?)
 
     setup do
@@ -28,6 +29,7 @@ module TurboChat
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
       @original_role_message_hex_colors = config.role_message_hex_colors
+      @original_message_source_labels = config.message_source_labels.deep_dup
     end
 
     teardown do
@@ -51,6 +53,7 @@ module TurboChat
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
       config.role_message_hex_colors = @original_role_message_hex_colors
+      config.message_source_labels = @original_message_source_labels
     end
 
     test "supports custom own and other message hex colors" do
@@ -182,6 +185,33 @@ module TurboChat
 
       assert_equal true, chat_composer_microphone_display?
       assert_equal false, chat_composer_microphone_active?
+    end
+
+    test "chat_message_source_badge_label hides default app source and labels external sources" do
+      TurboChat.configuration.message_source_labels = {
+        "app" => "In App",
+        "whatsapp" => "WhatsApp"
+      }
+
+      assert_nil chat_message_source_badge_label(SourceMessageStub.new("app"))
+      assert_equal "WhatsApp", chat_message_source_badge_label(SourceMessageStub.new("whatsapp"))
+      assert_equal "Sms Gateway", chat_message_source_badge_label(SourceMessageStub.new("sms_gateway"))
+    end
+
+    test "chat_message_source_labels normalizes keys and strips blank labels" do
+      TurboChat.configuration.message_source_labels = {
+        " WhatsApp " => " WhatsApp ",
+        "email" => "",
+        "sms_gateway" => "SMS"
+      }
+
+      assert_equal(
+        {
+          "whatsapp" => "WhatsApp",
+          "sms_gateway" => "SMS"
+        },
+        chat_message_source_labels
+      )
     end
 
     test "chat_message_mention_tokens extracts unique mention tokens" do

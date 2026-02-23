@@ -125,10 +125,52 @@ TurboChat.configure do |config|
   config.render_message_html = false
   config.show_timestamp = true
   config.show_role = false
+  config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
+  config.signal_text_sheen = true
 
   config.emit_moderation_events = false
   config.emit_blocked_words_events = false
   config.emit_mention_events = false
+end
+```
+
+## Message Ingest API
+
+Post messages as a specific participant, including external sources like WhatsApp:
+
+```ruby
+TurboChat::Messages.send_message_as(
+  current_user,
+  chat,
+  body: "Internal note",
+  source: :app
+)
+```
+
+External ingest with idempotency (`chat_id + source + external_id`):
+
+```ruby
+TurboChat::Messages.ingest_external!(
+  chat: chat,
+  participant: current_user,
+  body: "Hello from WhatsApp",
+  source: :whatsapp,
+  external_id: webhook_payload.fetch("message_id"),
+  sent_at: webhook_payload["sent_at"]
+)
+```
+
+`external_id` is required for `ingest_external!` so duplicate webhook deliveries can resolve to the same stored message.
+
+Source labels shown in message badges are configurable:
+
+```ruby
+TurboChat.configure do |config|
+  config.message_source_labels = {
+    "app" => "In App",
+    "whatsapp" => "WhatsApp",
+    "sms_gateway" => "SMS"
+  }
 end
 ```
 

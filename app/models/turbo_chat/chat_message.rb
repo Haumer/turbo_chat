@@ -2,11 +2,13 @@ module TurboChat
   class ChatMessage < ApplicationRecord
     MENTION_PATTERN = /(?<![[:alnum:]_])@[[:alpha:]][[:alnum:]_]{0,31}/.freeze
     ROLE_MENTION_PATTERN = /\A@[A-Z][A-Z0-9_]{0,31}\z/.freeze
+    SOURCE_KEY_PATTERN = /\A[a-z0-9][a-z0-9_-]{0,31}\z/.freeze
     STREAM_NAME = :messages
     MESSAGE_PARTIAL = "turbo_chat/chat_messages/message"
     CHAT_MESSAGE_PARTIAL = "turbo_chat/chat_messages/chat_message"
     SIGNALS_PARTIAL = "turbo_chat/chat_messages/signals"
     MEMBERSHIP_SYSTEM_EVENT_TYPES = %i[invited accepted declined left muted unmuted timed_out timeout_cleared banned].freeze
+    DEFAULT_SOURCE = "app".freeze
 
     include TurboChat::ChatMessage::BodyLengthValidation
     include TurboChat::ChatMessage::Formatting
@@ -26,13 +28,17 @@ module TurboChat
     scope :timeline, -> { where(kind: [kinds[:message], kinds[:system]].compact) }
 
     validates :participant_type, :participant_id, presence: true
+    validates :source, presence: true, format: { with: SOURCE_KEY_PATTERN }
     validates :body, presence: true, if: -> { message? || system? }
     validates :signal_type, presence: true, if: :signal?
     validates :signal_text, presence: true, if: :custom_signal?
+    validates :external_id, uniqueness: { scope: %i[chat_id source] }, allow_nil: true
     validate :body_within_max_length, if: :message?
     validate :mentions_allowed_for_participant, if: :message?
     validate :apply_blocked_words_moderation, if: :message?
 
+    before_validation :normalize_source
+    before_validation :normalize_external_id
     before_validation :normalize_signal_fields
     before_create :replace_participant_signals_on_submit, if: :message?
 
@@ -51,6 +57,17 @@ module TurboChat
     end
 
     class << self
+      def normalize_source_key(value)
+        normalized = value.to_s.strip.downcase
+        return DEFAULT_SOURCE if normalized.blank?
+
+        normalized
+      end
+
+      def normalize_external_id(value)
+        value.to_s.strip.presence
+      end
+
       def create_membership_system_message!(chat:, actor:, event:, subject: nil)
         return nil unless system_messages_enabled?
         return nil if chat.nil? || actor.nil?
@@ -120,12 +137,7 @@ module TurboChat
       end
 
       def display_name_for_participant(participant)
-        return nil if participant.nil?
-        return participant.username if participant.respond_to?(:username) && participant.username.present?
-        return participant.name if participant.respond_to?(:name) && participant.name.present?
-        return participant.email if participant.respond_to?(:email) && participant.email.present?
-
-        participant.to_s
+        TurboChat::ParticipantIdentity.display_name(participant, unknown: nil)
       end
     end
 
@@ -133,6 +145,14 @@ module TurboChat
 
     def custom_signal?
       signal? && signal_type_custom?
+    end
+
+    def normalize_source
+      self.source = self.class.normalize_source_key(source)
+    end
+
+    def normalize_external_id
+      self.external_id = self.class.normalize_external_id(external_id)
     end
   end
 end

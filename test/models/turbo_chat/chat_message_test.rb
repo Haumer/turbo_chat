@@ -25,6 +25,90 @@ module TurboChat
       assert_includes message.errors[:signal_type], "can't be blank"
     end
 
+    test "defaults source to app and normalizes external_id" do
+      user = User.create!(email: "source-default@example.com")
+      chat = TurboChat::Chat.create!(title: "Source Default")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      message = TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "hello",
+        kind: :message,
+        source: "  ",
+        external_id: "  provider-123  "
+      )
+
+      assert_equal "app", message.source
+      assert_equal "provider-123", message.external_id
+    end
+
+    test "source must use a normalized key format" do
+      user = User.create!(email: "source-format@example.com")
+      chat = TurboChat::Chat.create!(title: "Source Format")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      message = TurboChat::ChatMessage.new(
+        chat: chat,
+        participant: user,
+        body: "hello",
+        kind: :message,
+        source: "whatsapp+api"
+      )
+
+      assert_not message.valid?
+      assert_includes message.errors[:source], "is invalid"
+    end
+
+    test "external_id uniqueness is scoped by chat and source" do
+      user = User.create!(email: "source-uniq@example.com")
+      other_chat = TurboChat::Chat.create!(title: "Source Other Chat")
+      chat = TurboChat::Chat.create!(title: "Source Uniqueness")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+      TurboChat::ChatMembership.create!(chat: other_chat, participant: user)
+
+      TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: user,
+        body: "first",
+        kind: :message,
+        source: "whatsapp",
+        external_id: "abc-1"
+      )
+
+      duplicate = TurboChat::ChatMessage.new(
+        chat: chat,
+        participant: user,
+        body: "duplicate",
+        kind: :message,
+        source: "whatsapp",
+        external_id: "abc-1"
+      )
+
+      same_external_other_source = TurboChat::ChatMessage.new(
+        chat: chat,
+        participant: user,
+        body: "other source",
+        kind: :message,
+        source: "sms_gateway",
+        external_id: "abc-1"
+      )
+
+      same_external_other_chat = TurboChat::ChatMessage.new(
+        chat: other_chat,
+        participant: user,
+        body: "other chat",
+        kind: :message,
+        source: "whatsapp",
+        external_id: "abc-1"
+      )
+
+      assert_not duplicate.valid?
+      assert_includes duplicate.errors[:external_id], "has already been taken"
+      assert same_external_other_source.valid?
+      assert same_external_other_chat.valid?
+    end
+
     test "requires signal_text for custom signals" do
       user = User.create!(email: "custom-signal@example.com")
       chat = TurboChat::Chat.create!(title: "Custom Signals")

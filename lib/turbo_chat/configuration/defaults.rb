@@ -46,6 +46,10 @@ class TurboChat::Configuration
   }.freeze
   DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS = %w[# * / ( = ) ! 8].freeze
   DEFAULT_BLOCKED_WORDS_ACTION = "reject".freeze
+  DEFAULT_MESSAGE_SOURCE_LABELS = {
+    "app" => "App",
+    "whatsapp" => "WhatsApp"
+  }.freeze
 
   DEFAULTS = {
     permission_adapter: -> { TurboChat::Permission },
@@ -83,9 +87,11 @@ class TurboChat::Configuration
     emit_chat_lifecycle_events: false,
     emit_moderation_events: false,
     emit_blocked_words_events: false,
+    signal_text_sheen: true,
     show_self_signals: false,
     replace_signals_on_message_submit: false,
     message_css_class_resolver: nil,
+    message_source_labels: -> { DEFAULT_MESSAGE_SOURCE_LABELS.dup },
     render_message_html: false,
     message_html_tags: -> { DEFAULT_MESSAGE_HTML_TAGS.dup },
     message_html_attributes: -> { DEFAULT_MESSAGE_HTML_ATTRIBUTES.dup },

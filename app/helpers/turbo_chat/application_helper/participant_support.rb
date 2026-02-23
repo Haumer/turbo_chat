@@ -2,19 +2,11 @@ module TurboChat
   module ApplicationHelper
     module ParticipantSupport
       def chat_participant_name(participant)
-        return "Unknown" if participant.nil?
-        return participant.username if participant.respond_to?(:username) && participant.username.present?
-        return participant.name if participant.respond_to?(:name) && participant.name.present?
-        return participant.email if participant.respond_to?(:email) && participant.email.present?
-
-        participant.to_s
+        TurboChat::ParticipantIdentity.display_name(participant)
       end
 
       def chat_participant_email(participant)
-        return nil if participant.nil?
-        return nil unless participant.respond_to?(:email)
-
-        participant.email.to_s.presence
+        TurboChat::ParticipantIdentity.email(participant)
       end
 
       def chat_participant_invite_option_label(participant)

@@ -39,9 +39,11 @@ module TurboChat
       assert_equal false, config.emit_chat_lifecycle_events
       assert_equal false, config.emit_moderation_events
       assert_equal false, config.emit_blocked_words_events
+      assert_equal true, config.signal_text_sheen
       assert_equal false, config.show_self_signals
       assert_equal false, config.replace_signals_on_message_submit
       assert_nil config.message_css_class_resolver
+      assert_equal TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS, config.message_source_labels
       assert_equal false, config.render_message_html
       assert_equal %w[a b br code em i li ol p pre strong ul], config.message_html_tags
       assert_equal %w[href target rel class], config.message_html_attributes

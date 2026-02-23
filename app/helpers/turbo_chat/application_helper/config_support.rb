@@ -47,6 +47,39 @@ module TurboChat
         chat_config_boolean(:composer_microphone_active, default: false)
       end
 
+      def chat_message_source_labels
+        configured = chat_config_value(:message_source_labels, default: {})
+        return {} unless configured.respond_to?(:each_pair)
+
+        configured.each_with_object({}) do |(source_key, label), normalized|
+          source = normalize_config_source_key(source_key)
+          next if source.blank?
+
+          rendered_label = label.to_s.strip
+          next if rendered_label.blank?
+
+          normalized[source] = rendered_label
+        end
+      end
+
+      def chat_message_source_label(source)
+        source_key = TurboChat::ChatMessage.normalize_source_key(source)
+        labels = chat_message_source_labels
+        label = labels[source_key]
+        return label if label.present?
+
+        source_key.tr("_-", " ").split.map(&:capitalize).join(" ")
+      end
+
+      def chat_message_source_badge_label(chat_message)
+        return nil unless chat_message.respond_to?(:source)
+
+        source_key = TurboChat::ChatMessage.normalize_source_key(chat_message.source)
+        return nil if source_key == TurboChat::ChatMessage::DEFAULT_SOURCE
+
+        chat_message_source_label(source_key)
+      end
+
       private
 
       def chat_config_value(method_name, default: nil)
@@ -61,6 +94,10 @@ module TurboChat
       def chat_config_boolean(method_name, default:)
         value = chat_config_value(method_name, default: default)
         ActiveModel::Type::Boolean.new.cast(value)
+      end
+
+      def normalize_config_source_key(value)
+        value.to_s.strip.downcase.presence
       end
     end
   end

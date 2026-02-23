@@ -46,7 +46,11 @@ class TurboChat::Permission
 
     def chat_present? = !chat.nil?
 
-    def actor_identity = [participant.class.base_class.name, participant.id]
+    def actor_identity
+      return [nil, nil] unless participant_present?
+
+      [participant.class.base_class.name, participant.id]
+    end
 
     def actor_membership_active? = actor_membership&.active?
 

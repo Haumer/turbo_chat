@@ -5,13 +5,7 @@ module TurboChat
         private
 
         def participant_mention_base_identifier(participant)
-          return participant.username if participant.respond_to?(:username) && participant.username.present?
-          if participant.respond_to?(:email) && participant.email.present?
-            return participant.email.to_s.split("@").first
-          end
-          return participant.name if participant.respond_to?(:name) && participant.name.present?
-
-          participant.to_s
+          TurboChat::ParticipantIdentity.mention_base_identifier(participant)
         end
 
         def fallback_mention_identifier(participant)

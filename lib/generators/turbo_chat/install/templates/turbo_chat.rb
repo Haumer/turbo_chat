@@ -56,6 +56,8 @@ TurboChat.configure do |config|
   # Shows member list panel in chat UI.
   config.system_messages = true
   # Shows system timeline messages (joins, invites, moderation).
+  config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
+  # Maps message source keys to labels shown on non-default source badges.
   config.composer_placeholder_text = "start chatting"
   # Placeholder text for the message composer input.
 
@@ -87,7 +89,10 @@ TurboChat.configure do |config|
   # config.emit_blocked_words_events = true
   # Emits `turbo_chat.blocked_words.*` notifications.
 
-  # Optional signal behavior (disabled by default)
+  # Signal behavior
+  config.signal_text_sheen = true
+  # Adds bracketed sheen styling to custom signal text.
+  # Optional toggles (disabled by default)
   # config.show_self_signals = true
   # Shows your own active typing/signal indicators.
   # config.replace_signals_on_message_submit = true

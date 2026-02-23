@@ -2,6 +2,26 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.8] - 2026-02-23
+
+### Added
+- `TurboChat::Messages.send_message_as` and `TurboChat::Messages.ingest_external!` for permission-aware message ingest as a participant.
+- Message source persistence (`source`, `external_id`, `sent_at`) with idempotency support for external providers.
+- Configurable source label badges in chat UI via `config.message_source_labels`.
+- Shared `TurboChat::ParticipantIdentity` utility for participant display and mention identity resolution.
+
+### Changed
+- Refactored member entries rendering to reuse helper-driven mention token generation and participant labeling.
+- Internal participant naming/identifier logic now uses a centralized identity module across helpers and models.
+
+## [0.1.7] - 2026-02-23
+
+### Added
+- Configurable custom signal-text sheen rendering via `config.signal_text_sheen` (default `true`).
+
+### Changed
+- Custom signal text now renders with bracketed sheen styling by default.
+
 ## [0.1.6] - 2026-02-22
 
 ### Fixed
