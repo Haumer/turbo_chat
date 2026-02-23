@@ -4,12 +4,7 @@ module TurboChat
       extend ActiveSupport::Concern
 
       def participant_display_name
-        return "Unknown" if participant.nil?
-        return participant.username if participant.respond_to?(:username) && participant.username.present?
-        return participant.name if participant.respond_to?(:name) && participant.name.present?
-        return participant.email if participant.respond_to?(:email) && participant.email.present?
-
-        participant.to_s
+        TurboChat::ParticipantIdentity.display_name(participant)
       end
 
       def formatted_timestamp

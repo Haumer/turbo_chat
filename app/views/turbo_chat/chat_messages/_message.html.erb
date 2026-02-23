@@ -2,6 +2,7 @@
 <% show_timestamp = TurboChat.configuration.show_timestamp %>
 <% show_role = TurboChat.configuration.show_role %>
 <% role_label = show_role ? chat_message.formatted_participant_role : nil %>
+<% source_badge_label = chat_message_source_badge_label(chat_message) %>
 <% edited_message = chat_message.respond_to?(:edited?) && chat_message.edited? %>
 <% bubble_style = chat_message_inline_style(chat_message: chat_message, own_message: own_message) %>
 <% mention_tokens = if respond_to?(:chat_message_mention_tokens)
@@ -25,6 +26,9 @@
     <span class="chat-meta__author"><%= chat_message.participant_display_name %></span>
     <% if role_label.present? %>
       <span class="chat-meta__role"><%= role_label %></span>
+    <% end %>
+    <% if source_badge_label.present? %>
+      <span class="chat-meta__source" data-chat-message-source="<%= chat_message.source %>"><%= source_badge_label %></span>
     <% end %>
     <% if show_timestamp %>
       <time class="chat-meta__timestamp" datetime="<%= chat_message.created_at.iso8601 %>"><%= chat_message.formatted_timestamp %></time>

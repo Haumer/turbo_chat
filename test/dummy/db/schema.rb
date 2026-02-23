@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_23_000014) do
   create_table "turbo_chat_chat_memberships", force: :cascade do |t|
     t.integer "chat_id", null: false
     t.string "participant_type", null: false
@@ -38,7 +38,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_18_000013) do
     t.integer "signal_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "source", default: "app", null: false
+    t.string "external_id"
+    t.datetime "sent_at"
     t.index ["chat_id", "created_at", "id"], name: "index_turbo_chat_messages_order"
+    t.index ["chat_id", "source", "external_id"], name: "index_turbo_chat_messages_external_id", unique: true, where: "external_id IS NOT NULL"
     t.index ["chat_id"], name: "index_turbo_chat_chat_messages_on_chat_id"
     t.index ["participant_type", "participant_id"], name: "index_turbo_chat_chat_messages_on_participant"
   end

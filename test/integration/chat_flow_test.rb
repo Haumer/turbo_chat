@@ -33,6 +33,27 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "invited teammate@example.com."
   end
 
+  test "chat show renders external source badge labels for non-default sources" do
+    user = User.create!(email: "source-badge@example.com")
+    chat = TurboChat::Chat.create!(title: "Source Badge Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+    TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "app message", kind: :message)
+    TurboChat::ChatMessage.create!(
+      chat: chat,
+      participant: user,
+      body: "external message",
+      kind: :message,
+      source: "whatsapp"
+    )
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-meta__source[data-chat-message-source='whatsapp']", text: "WhatsApp", count: 1
+    assert_select ".chat-meta__source", count: 1
+  end
+
   test "chat members render in a collapsed panel with fixed-height list shell" do
     user = User.create!(email: "members-panel-user@example.com")
     teammate = User.create!(email: "members-panel-teammate@example.com")
@@ -344,7 +365,35 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen", text: "Reviewing your request", count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen .chat-signal-text-sheen", text: "Reviewing your request", count: 1
+  end
+
+  test "chat show can disable custom signal text sheen styling" do
+    previous_value = TurboChat.configuration.signal_text_sheen
+    TurboChat.configuration.signal_text_sheen = false
+
+    current_user = User.create!(email: "custom-signal-no-sheen-self@example.com")
+    other_user = User.create!(email: "custom-signal-no-sheen-other@example.com")
+    chat = TurboChat::Chat.create!(title: "Custom Signal No Sheen Chat")
+
+    TurboChat::ChatMembership.create!(chat: chat, participant: current_user)
+    TurboChat::ChatMembership.create!(chat: chat, participant: other_user)
+    TurboChat::Signals.start!(
+      chat: chat,
+      participant: other_user,
+      signal_type: :custom,
+      signal_text: "Reviewing your request"
+    )
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
     assert_select "#signals_chat_#{chat.id} .chat-signal-text", text: "Reviewing your request", count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text--sheen", count: 0
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text-sheen", count: 0
+  ensure
+    TurboChat.configuration.signal_text_sheen = previous_value
   end
 
   test "chat show applies custom message css classes from resolver" do

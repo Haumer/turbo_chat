@@ -1,4 +1,5 @@
 <% show_self_signals = TurboChat.configuration.show_self_signals %>
+<% signal_text_sheen_enabled = TurboChat.configuration.signal_text_sheen %>
 <% current_participant = respond_to?(:current_chat_participant, true) ? current_chat_participant : nil %>
 <% current_participant_type = current_participant&.class&.base_class&.name %>
 <% current_participant_id = current_participant&.id %>
@@ -18,7 +19,13 @@
        data-chat-signal-participant-id="<%= signal_message.participant_id %>">
     <strong><%= signal_message.participant_display_name %></strong>
     <% if signal_message.signal_type_custom? && signal_message.signal_text.present? %>
-      <span class="chat-signal-text"><%= signal_message.signal_text %></span>
+      <span class="chat-signal-text<%= " chat-signal-text--sheen" if signal_text_sheen_enabled %>">
+        <% if signal_text_sheen_enabled %>
+          <span class="chat-signal-text-sheen"><%= signal_message.signal_text %></span>
+        <% else %>
+          <%= signal_message.signal_text %>
+        <% end %>
+      </span>
     <% else %>
       <span class="chat-dots">
         <i></i><i></i><i></i>
