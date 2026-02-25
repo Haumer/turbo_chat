@@ -25,6 +25,7 @@ module TurboChat
       @original_composer_add_files_active = config.composer_add_files_active
       @original_composer_microphone_display = config.composer_microphone_display
       @original_composer_microphone_active = config.composer_microphone_active
+      @original_chat_style = config.chat_style
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -49,6 +50,7 @@ module TurboChat
       config.composer_add_files_active = @original_composer_add_files_active
       config.composer_microphone_display = @original_composer_microphone_display
       config.composer_microphone_active = @original_composer_microphone_active
+      config.chat_style = @original_chat_style
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -142,6 +144,9 @@ module TurboChat
         assert_equal false, chat_composer_add_files_active?
         assert_equal false, chat_composer_microphone_display?
         assert_equal false, chat_composer_microphone_active?
+        assert_equal "chat_style_bounded", chat_style_key
+        assert_equal false, chat_unbounded_style?
+        assert_equal "chat-shell--style-bounded", chat_shell_style_class
       end
     end
 
@@ -185,6 +190,18 @@ module TurboChat
 
       assert_equal true, chat_composer_microphone_display?
       assert_equal false, chat_composer_microphone_active?
+    end
+
+    test "chat style helpers normalize configuration to bounded and unbounded classes" do
+      TurboChat.configuration.chat_style = "chat_style_unbounded"
+      assert_equal "chat_style_unbounded", chat_style_key
+      assert_equal true, chat_unbounded_style?
+      assert_equal "chat-shell--style-unbounded", chat_shell_style_class
+
+      TurboChat.configuration.chat_style = "chat_style_dounded"
+      assert_equal "chat_style_bounded", chat_style_key
+      assert_equal false, chat_unbounded_style?
+      assert_equal "chat-shell--style-bounded", chat_shell_style_class
     end
 
     test "chat_message_source_badge_label hides default app source and labels external sources" do

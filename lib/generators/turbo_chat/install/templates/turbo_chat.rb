@@ -58,6 +58,8 @@ TurboChat.configure do |config|
   # Shows system timeline messages (joins, invites, moderation).
   config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
   # Maps message source keys to labels shown on non-default source badges.
+  config.chat_style = "chat_style_bounded"
+  # Chat layout style: `chat_style_bounded` or `chat_style_unbounded`.
   config.composer_placeholder_text = "start chatting"
   # Placeholder text for the message composer input.
 

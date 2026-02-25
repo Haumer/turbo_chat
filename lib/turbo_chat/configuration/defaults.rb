@@ -92,6 +92,7 @@ class TurboChat::Configuration
     replace_signals_on_message_submit: false,
     message_css_class_resolver: nil,
     message_source_labels: -> { DEFAULT_MESSAGE_SOURCE_LABELS.dup },
+    chat_style: "chat_style_bounded",
     render_message_html: false,
     message_html_tags: -> { DEFAULT_MESSAGE_HTML_TAGS.dup },
     message_html_attributes: -> { DEFAULT_MESSAGE_HTML_ATTRIBUTES.dup },

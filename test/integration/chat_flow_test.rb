@@ -21,6 +21,31 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, teammate.email
   end
 
+  test "chat show uses bounded style class by default" do
+    user = User.create!(email: "bounded-style@example.com")
+    chat = TurboChat::Chat.create!(title: "Bounded Style Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+    assert_select ".chat-shell.chat-shell--style-bounded[data-chat-style='chat_style_bounded']", 1
+  end
+
+  test "chat show supports unbounded style class from configuration" do
+    previous_chat_style = TurboChat.configuration.chat_style
+    TurboChat.configuration.chat_style = "chat_style_unbounded"
+
+    user = User.create!(email: "unbounded-style@example.com")
+    chat = TurboChat::Chat.create!(title: "Unbounded Style Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+    assert_select ".chat-shell.chat-shell--style-unbounded[data-chat-style='chat_style_unbounded']", 1
+  ensure
+    TurboChat.configuration.chat_style = previous_chat_style
+  end
+
   test "chat show renders system messages in dedicated system style" do
     user = User.create!(email: "system-style@example.com")
     chat = TurboChat::Chat.create!(title: "System Style Chat")

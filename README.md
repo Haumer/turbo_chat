@@ -126,6 +126,7 @@ TurboChat.configure do |config|
   config.show_timestamp = true
   config.show_role = false
   config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
+  config.chat_style = "chat_style_bounded"
   config.signal_text_sheen = true
 
   config.emit_moderation_events = false
@@ -171,6 +172,14 @@ TurboChat.configure do |config|
     "whatsapp" => "WhatsApp",
     "sms_gateway" => "SMS"
   }
+end
+```
+
+Chat UI layout style is configurable:
+
+```ruby
+TurboChat.configure do |config|
+  config.chat_style = "chat_style_unbounded" # or "chat_style_bounded"
 end
 ```
 

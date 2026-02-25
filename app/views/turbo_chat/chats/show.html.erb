@@ -4,8 +4,15 @@
 <% self_mention_tokens = chat_self_mention_tokens(chat: @chat, participant: current_participant) %>
 <% self_role_mention_token = chat_self_role_mention_token(chat: @chat, participant: current_participant) %>
 <% mention_container_style = chat_mentions_container_inline_style %>
-<section class="<%= ["chat-shell", ("chat-shell--closed" if @chat.closed?), ("chat-shell--can-manage-member-permissions" if @can_manage_member_permissions)].compact.join(" ") %>"
+<% chat_shell_classes = [
+  "chat-shell",
+  chat_shell_style_class,
+  ("chat-shell--closed" if @chat.closed?),
+  ("chat-shell--can-manage-member-permissions" if @can_manage_member_permissions)
+].compact.join(" ") %>
+<section class="<%= chat_shell_classes %>"
          data-chat-id="<%= @chat.id %>"
+         data-chat-style="<%= chat_style_key %>"
          data-chat-self-participant-type="<%= current_participant_type %>"
          data-chat-self-participant-id="<%= current_participant_id %>"
          data-chat-can-manage-member-permissions="<%= @can_manage_member_permissions %>"

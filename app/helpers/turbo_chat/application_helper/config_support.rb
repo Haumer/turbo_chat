@@ -80,6 +80,26 @@ module TurboChat
         chat_message_source_label(source_key)
       end
 
+      def chat_style_key
+        raw_style = chat_config_value(:chat_style, default: "chat_style_bounded")
+        normalized = raw_style.to_s.strip.downcase
+
+        case normalized
+        when "chat_style_unbounded", "unbounded"
+          "chat_style_unbounded"
+        else
+          "chat_style_bounded"
+        end
+      end
+
+      def chat_unbounded_style?
+        chat_style_key == "chat_style_unbounded"
+      end
+
+      def chat_shell_style_class
+        chat_unbounded_style? ? "chat-shell--style-unbounded" : "chat-shell--style-bounded"
+      end
+
       private
 
       def chat_config_value(method_name, default: nil)
