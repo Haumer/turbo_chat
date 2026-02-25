@@ -44,11 +44,14 @@ body {
 }
 
 .chat-shell--style-unbounded {
+  --chat-unbounded-side-padding: clamp(12px, 4vw, 56px);
+  --chat-floating-composer-clearance: clamp(84px, 11vh, 120px);
   width: 100%;
   max-width: none;
   min-height: 100dvh;
   margin: 0;
-  padding: clamp(14px, 2.5vw, 28px) clamp(12px, 4vw, 56px) calc(14px + env(safe-area-inset-bottom));
+  padding: clamp(14px, 2.5vw, 28px) var(--chat-unbounded-side-padding)
+    calc(var(--chat-floating-composer-clearance) + 18px + env(safe-area-inset-bottom));
   border: none;
   border-radius: 0;
   background: transparent;
@@ -60,7 +63,8 @@ body {
 .chat-shell--style-unbounded .chat-members,
 .chat-shell--style-unbounded .chat-invite,
 .chat-shell--style-unbounded .chat-banner {
-  width: min(980px, 100%);
+  width: 100%;
+  max-width: 980px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -80,18 +84,20 @@ body {
 }
 
 .chat-shell--style-unbounded .chat-messages {
-  width: min(980px, 100%);
+  width: 100%;
+  max-width: 980px;
   margin: 0 auto;
   min-height: clamp(280px, 50dvh, 640px);
   max-height: calc(100dvh - clamp(260px, 33dvh, 360px));
-  padding: 6px 2px calc(8px + var(--chat-signal-offset));
+  padding: 6px 2px calc(8px + var(--chat-signal-offset) + var(--chat-floating-composer-clearance));
 }
 
 .chat-shell--style-unbounded .chat-signals {
   left: 50%;
   right: auto;
-  width: min(980px, 100%);
-  bottom: 12px;
+  width: 100%;
+  max-width: 980px;
+  bottom: calc(var(--chat-floating-composer-clearance) + 4px);
   transform: translate(-50%, 6px);
 }
 
@@ -100,11 +106,14 @@ body {
 }
 
 .chat-shell--style-unbounded .chat-composer {
-  position: sticky;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 7;
-  margin: 16px auto 0;
-  width: min(980px, 100%);
+  margin: 0;
+  width: calc(100% - (var(--chat-unbounded-side-padding) * 2));
+  max-width: 980px;
 }
 
 .chat-shell--style-unbounded .chat-composer-shell {
@@ -1395,7 +1404,9 @@ body {
   }
 
   .chat-shell--style-unbounded {
-    padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+    --chat-unbounded-side-padding: 10px;
+    --chat-floating-composer-clearance: clamp(74px, 10vh, 108px);
+    padding: 12px 10px calc(var(--chat-floating-composer-clearance) + 12px + env(safe-area-inset-bottom));
   }
 
   .chat-members-list-shell {
@@ -1452,7 +1463,6 @@ body {
 
   .chat-shell--style-unbounded .chat-composer {
     bottom: max(8px, env(safe-area-inset-bottom));
-    margin-top: 12px;
   }
 
   .chat-shell--style-unbounded .chat-composer-shell {
