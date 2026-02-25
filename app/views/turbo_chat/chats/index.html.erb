@@ -1,5 +1,10 @@
-<section class="chat-shell"
+<% chat_shell_classes = [
+  "chat-shell",
+  chat_shell_style_class
+].join(" ") %>
+<section class="<%= chat_shell_classes %>"
          data-chat-index
+         data-chat-style="<%= chat_style_key %>"
          data-chat-emit-invitation-events="<%= chat_emit_invitation_events? %>"
          data-chat-emit-chat-lifecycle-events="<%= chat_emit_chat_lifecycle_events? %>"
          data-chat-invitation-accepted="<%= json_escape(@invitation_accepted_event.to_json) if @invitation_accepted_event.present? %>"
