@@ -519,6 +519,21 @@ module TurboChat
       assert_equal "Hello", replaced.body
     end
 
+    test "replace_signal broadcasts a single signal refresh" do
+      user = User.create!(email: "replace_signal_broadcast@example.com")
+      chat = TurboChat::Chat.create!(title: "Replace Signal Broadcast")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      TurboChat::ChatMessage.start_signal!(chat: chat, participant: user, signal_type: :typing)
+
+      broadcast_count = 0
+      Turbo::StreamsChannel.stub(:broadcast_update_to, lambda { |_stream, **_opts| broadcast_count += 1 }) do
+        TurboChat::ChatMessage.replace_signal!(chat: chat, participant: user, signal_type: :planning)
+      end
+
+      assert_equal 1, broadcast_count
+    end
+
     test "start_signal ignores signal_text for non-custom signal types" do
       user = User.create!(email: "non-custom-signal-text@example.com")
       chat = TurboChat::Chat.create!(title: "Non Custom Signal Text")

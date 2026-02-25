@@ -15,13 +15,15 @@ module TurboChat
         end
 
         def replace_signal!(chat:, participant:, signal_type: :typing, signal_text: nil)
-          clear_signals!(chat: chat, participant: participant)
-          start_signal!(chat: chat, participant: participant, signal_type: signal_type, signal_text: signal_text)
+          transaction do
+            clear_signals!(chat: chat, participant: participant, broadcast: false)
+            start_signal!(chat: chat, participant: participant, signal_type: signal_type, signal_text: signal_text)
+          end
         end
 
-        def clear_signals!(chat:, participant:)
+        def clear_signals!(chat:, participant:, broadcast: true)
           where(chat: chat, participant: participant, kind: kinds[:signal]).delete_all
-          broadcast_signal_refresh(chat)
+          broadcast_signal_refresh(chat) if broadcast
           true
         end
 
