@@ -2,6 +2,14 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.9] - 2026-02-25
+
+### Added
+- Support improved mobile chat behavior to keep the composer pinned and visible on iOS-class viewports, with safer full-screen height handling.
+
+### Changed
+- Updated RubyGems metadata links to the `main` branch.
+
 ## [0.1.8] - 2026-02-23
 
 ### Added
