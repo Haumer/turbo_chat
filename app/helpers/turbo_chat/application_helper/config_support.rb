@@ -1,50 +1,29 @@
 module TurboChat
   module ApplicationHelper
     module ConfigSupport
-      def chat_mention_filter_exclude_self?
-        chat_config_boolean(:mention_filter_exclude_self, default: true)
-      end
+      BOOLEAN_CHAT_SETTINGS = {
+        mention_filter_exclude_self: true,
+        mention_filter_hide_roles: true,
+        emit_mention_events: false,
+        emit_invitation_events: false,
+        emit_chat_lifecycle_events: false,
+        show_members: true,
+        composer_add_files_display: false,
+        composer_add_files_active: false,
+        composer_microphone_display: false,
+        composer_microphone_active: false
+      }.freeze
 
-      def chat_mention_filter_hide_roles?
-        chat_config_boolean(:mention_filter_hide_roles, default: true)
-      end
-
-      def chat_emit_mention_events?
-        chat_config_boolean(:emit_mention_events, default: false)
-      end
-
-      def chat_emit_invitation_events?
-        chat_config_boolean(:emit_invitation_events, default: false)
-      end
-
-      def chat_emit_chat_lifecycle_events?
-        chat_config_boolean(:emit_chat_lifecycle_events, default: false)
-      end
-
-      def chat_show_members?
-        chat_config_boolean(:show_members, default: true)
+      BOOLEAN_CHAT_SETTINGS.each do |setting, default|
+        define_method("chat_#{setting}?") do
+          chat_config_boolean(setting, default: default)
+        end
       end
 
       def chat_composer_placeholder_text
         value = chat_config_value(:composer_placeholder_text, default: "start chatting")
         normalized = value.to_s.strip
         normalized.present? ? normalized : "start chatting"
-      end
-
-      def chat_composer_add_files_display?
-        chat_config_boolean(:composer_add_files_display, default: false)
-      end
-
-      def chat_composer_add_files_active?
-        chat_config_boolean(:composer_add_files_active, default: false)
-      end
-
-      def chat_composer_microphone_display?
-        chat_config_boolean(:composer_microphone_display, default: false)
-      end
-
-      def chat_composer_microphone_active?
-        chat_config_boolean(:composer_microphone_active, default: false)
       end
 
       def chat_message_source_labels

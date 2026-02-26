@@ -2,10 +2,11 @@ module TurboChat
   module ApplicationHelper
     module MessageRendering
       def chat_message_css_classes(chat_message:, own_message:)
-        classes = ["chat-bubble"]
-        classes << "chat-bubble--own" if own_message
-        classes.concat(resolve_custom_message_css_classes(chat_message: chat_message, own_message: own_message))
-        classes.uniq.join(" ")
+        [
+          "chat-bubble",
+          (own_message ? "chat-bubble--own" : nil),
+          *resolve_custom_message_css_classes(chat_message: chat_message, own_message: own_message)
+        ].compact.uniq.join(" ")
       end
 
       def chat_message_inline_style(chat_message:, own_message:)
@@ -16,8 +17,8 @@ module TurboChat
       end
 
       def chat_mentions_container_inline_style
-        hex_color = normalize_hex_color(chat_config_value(:mention_mark_hex_color))
-        hex_color ||= normalize_hex_color(chat_config_value(:mention_highlight_hex_color))
+        hex_color = normalize_hex_color(chat_config_value(:mention_mark_hex_color)) ||
+                    normalize_hex_color(chat_config_value(:mention_highlight_hex_color))
         return nil if hex_color.blank?
 
         mention_mark_background = hex_color_with_alpha(hex_color, alpha: 0.22)
@@ -37,8 +38,7 @@ module TurboChat
       end
 
       def chat_message_mention_tokens(chat_message)
-        return [] unless TurboChat.configuration.enable_mentions
-        return [] if chat_message.nil?
+        return [] unless TurboChat.configuration.enable_mentions && chat_message.present?
 
         chat_message.body.to_s.scan(MENTION_PATTERN).uniq
       end
@@ -49,17 +49,7 @@ module TurboChat
         resolver = TurboChat.configuration.message_css_class_resolver
         return [] unless resolver.respond_to?(:call)
 
-        classes = case resolver.arity
-        when 0
-          resolver.call
-        when 1
-          resolver.call(chat_message)
-        when 2
-          resolver.call(chat_message, own_message)
-        else
-          resolver.call(chat_message, own_message, self)
-        end
-
+        classes = call_message_css_class_resolver(resolver, chat_message: chat_message, own_message: own_message)
         Array(classes).flat_map { |value| value.to_s.split(/\s+/) }.reject(&:blank?)
       rescue ArgumentError
         []
@@ -83,14 +73,7 @@ module TurboChat
         role_config = role_colors[role_key] || role_colors[role_key.to_sym]
         return normalize_hex_color(role_config) unless role_config.is_a?(Hash)
 
-        variant = if own_message
-                    role_config[:own] || role_config["own"]
-                  else
-                    role_config[:other] || role_config["other"]
-                  end
-
-        variant ||= role_config[:default] || role_config["default"]
-        normalize_hex_color(variant)
+        normalize_hex_color(role_variant_color(role_config, own_message: own_message))
       end
 
       def chat_message_role_key(chat_message)
@@ -113,28 +96,10 @@ module TurboChat
         normalized_hex = normalize_hex_color(hex_color)
         return nil if normalized_hex.blank?
 
-        red, green, blue = case normalized_hex.length
-                           when 4
-                             [
-                               normalized_hex[1] * 2,
-                               normalized_hex[2] * 2,
-                               normalized_hex[3] * 2
-                             ]
-                           when 7, 9
-                             [
-                               normalized_hex[1, 2],
-                               normalized_hex[3, 2],
-                               normalized_hex[5, 2]
-                             ]
-                           else
-                             return nil
-                           end
+        red, green, blue = hex_rgb_components(normalized_hex)
+        return nil if red.nil?
 
-        alpha_value = alpha.to_f
-        alpha_value = 0.0 if alpha_value.negative?
-        alpha_value = 1.0 if alpha_value > 1.0
-
-        alpha_hex = (alpha_value * 255).round.to_s(16).rjust(2, "0")
+        alpha_hex = (alpha.to_f.clamp(0.0, 1.0) * 255).round.to_s(16).rjust(2, "0")
         "##{red}#{green}#{blue}#{alpha_hex}".downcase
       end
 
@@ -158,6 +123,29 @@ module TurboChat
       def apply_mention_highlights(text)
         text.gsub(MENTION_PATTERN) do |mention|
           %(<span class="chat-mention">#{mention}</span>)
+        end
+      end
+
+      def call_message_css_class_resolver(resolver, chat_message:, own_message:)
+        case resolver.arity
+        when 0 then resolver.call
+        when 1 then resolver.call(chat_message)
+        when 2 then resolver.call(chat_message, own_message)
+        else resolver.call(chat_message, own_message, self)
+        end
+      end
+
+      def role_variant_color(role_config, own_message:)
+        variant_key = own_message ? "own" : "other"
+        role_config[variant_key.to_sym] || role_config[variant_key] || role_config[:default] || role_config["default"]
+      end
+
+      def hex_rgb_components(normalized_hex)
+        case normalized_hex.length
+        when 4
+          normalized_hex[1, 3].chars.map { |char| char * 2 }
+        when 7, 9
+          [normalized_hex[1, 2], normalized_hex[3, 2], normalized_hex[5, 2]]
         end
       end
     end

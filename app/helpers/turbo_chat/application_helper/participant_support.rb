@@ -12,14 +12,10 @@ module TurboChat
       def chat_participant_invite_option_label(participant)
         participant_name = chat_participant_name(participant)
         participant_email = chat_participant_email(participant)
-        participant_id = participant.respond_to?(:id) ? participant.id : nil
-        participant_id_label = participant_id.present? ? "##{participant_id}" : "unknown"
+        participant_id_label = participant.respond_to?(:id) && participant.id.present? ? "##{participant.id}" : "unknown"
+        return "#{participant_name} (#{participant_id_label})" unless participant_email.present? && participant_email != participant_name
 
-        if participant_email.present? && participant_email != participant_name
-          "#{participant_name} - #{participant_email} (#{participant_id_label})"
-        else
-          "#{participant_name} (#{participant_id_label})"
-        end
+        "#{participant_name} - #{participant_email} (#{participant_id_label})"
       end
 
       def chat_participant_search_text(participant)
@@ -27,21 +23,17 @@ module TurboChat
         participant_email = chat_participant_email(participant)
         participant_id = participant.respond_to?(:id) ? participant.id : nil
 
-        [participant_name, participant_email, participant_id].reject(&:blank?).join(" ")
+        [participant_name, participant_email, participant_id].compact_blank.join(" ")
       end
 
       def own_chat_message?(chat_message, participant: nil)
         return false if chat_message.nil?
 
         participant ||= current_chat_participant_for_view
-        return false if participant.nil?
+        participant_identity = participant_identity_for(participant)
+        return false if participant_identity.nil?
 
-        participant_type = participant.class.base_class.name
-        participant_id = participant.id
-        return false if participant_type.blank? || participant_id.blank?
-
-        chat_message.participant_type.to_s == participant_type &&
-          chat_message.participant_id.to_s == participant_id.to_s
+        [chat_message.participant_type.to_s, chat_message.participant_id.to_s] == participant_identity
       end
 
       def can_edit_chat_message?(chat_message, participant: nil)
@@ -86,15 +78,19 @@ module TurboChat
       end
 
       def same_chat_participant?(first, second)
-        return false if first.nil? || second.nil?
-        return false unless first.respond_to?(:id) && second.respond_to?(:id)
+        first_identity = participant_identity_for(first)
+        second_identity = participant_identity_for(second)
+        first_identity.present? && first_identity == second_identity
+      end
 
-        first_type = first.class.base_class.name
-        second_type = second.class.base_class.name
-        return false if first_type.blank? || second_type.blank?
-        return false if first.id.blank? || second.id.blank?
+      def participant_identity_for(participant)
+        return nil unless participant.respond_to?(:id)
 
-        first_type == second_type && first.id.to_s == second.id.to_s
+        participant_type = participant.class.base_class.name
+        participant_id = participant.id
+        return nil if participant_type.blank? || participant_id.blank?
+
+        [participant_type, participant_id.to_s]
       end
     end
   end

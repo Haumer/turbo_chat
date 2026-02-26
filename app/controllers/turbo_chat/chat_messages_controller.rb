@@ -18,43 +18,38 @@ module TurboChat
     end
 
     def update
-      if @chat_message.update(edit_chat_message_params)
-        return render_chat_message_update if turbo_stream_request?
+      updated = @chat_message.update(edit_chat_message_params)
+      if turbo_stream_request?
+        return render_chat_message_update(force_edit_open: !updated, status: updated ? :ok : :unprocessable_entity)
+      end
 
+      if updated
         redirect_to chat_path(@chat), notice: "Message updated"
       else
-        return render_chat_message_update(force_edit_open: true, status: :unprocessable_entity) if turbo_stream_request?
-
         redirect_to chat_path(@chat), alert: @chat_message.errors.full_messages.to_sentence
       end
     end
 
     private
 
-    def set_chat
-      @chat = TurboChat::Chat.find(params[:chat_id])
-    end
+    def set_chat = @chat = TurboChat::Chat.find(params[:chat_id])
 
     def chat_message_params
       permitted = params.require(:chat_message).permit(:body, :kind, :signal_type, :signal_text)
       normalized_kind = normalize_submittable_message_kind(permitted[:kind])
       permitted[:kind] = normalized_kind
       signal_text = permitted.delete(:signal_text)
-      if normalized_kind == "signal"
-        permitted[:body] = signal_text unless signal_text.nil?
-      else
+      if normalized_kind == "signal" && !signal_text.nil?
+        permitted[:body] = signal_text
+      elsif normalized_kind != "signal"
         permitted[:signal_type] = nil
       end
       permitted
     end
 
-    def edit_chat_message_params
-      params.require(:chat_message).permit(:body)
-    end
+    def edit_chat_message_params = params.require(:chat_message).permit(:body)
 
-    def signal_request?
-      params.dig(:chat_message, :kind).to_s == "signal"
-    end
+    def signal_request? = params.dig(:chat_message, :kind).to_s == "signal"
 
     def clear_signal_request?
       return false unless signal_request?
@@ -103,9 +98,7 @@ module TurboChat
       )
     end
 
-    def set_chat_message
-      @chat_message = @chat.chat_messages.messages_only.find(params[:id])
-    end
+    def set_chat_message = @chat_message = @chat.chat_messages.messages_only.find(params[:id])
 
     def authorize_edit_chat_message!
       return if can_edit_chat_message?(permission_for(@chat))
@@ -147,16 +140,9 @@ module TurboChat
       ), status: status
     end
 
-    def turbo_stream_request?
-      request.headers["Accept"].to_s.include?("turbo-stream")
-    end
+    def turbo_stream_request? = request.headers["Accept"].to_s.include?("turbo-stream")
 
-    def normalize_submittable_message_kind(kind)
-      kind_value = kind.to_s
-      return "signal" if kind_value == "signal"
-
-      "message"
-    end
+    def normalize_submittable_message_kind(kind) = kind.to_s == "signal" ? "signal" : "message"
 
     def chat_config_boolean(method_name, default:)
       configuration = TurboChat.configuration

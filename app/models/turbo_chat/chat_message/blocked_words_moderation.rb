@@ -13,30 +13,10 @@ module TurboChat
         return if matches.empty?
 
         action = blocked_words_action_from_configuration
-        emit_blocked_words_event(
-          "turbo_chat.blocked_words.detected",
-          blocked_words: matches,
-          action: action
-        )
-        if action == "scramble"
-          original_body = body.to_s.dup
-          scramble_blocked_words!(blocked_words)
-          emit_blocked_words_event(
-            "turbo_chat.blocked_words.scrambled",
-            blocked_words: matches,
-            action: action,
-            original_body: original_body,
-            moderated_body: body.to_s
-          )
-          return
-        end
+        emit_blocked_words_event("turbo_chat.blocked_words.detected", blocked_words: matches, action: action)
+        return scramble_blocked_words_with_event!(blocked_words, matches: matches, action: action) if action == "scramble"
 
-        errors.add(:body, "contains blocked language")
-        emit_blocked_words_event(
-          "turbo_chat.blocked_words.rejected",
-          blocked_words: matches,
-          action: action
-        )
+        reject_blocked_words!(matches, action: action)
       end
 
       def blocked_words_in_body(blocked_words)
@@ -114,6 +94,23 @@ module TurboChat
         ActiveModel::Type::Boolean.new.cast(configuration.emit_blocked_words_events)
       rescue StandardError
         false
+      end
+
+      def scramble_blocked_words_with_event!(blocked_words, matches:, action:)
+        original_body = body.to_s.dup
+        scramble_blocked_words!(blocked_words)
+        emit_blocked_words_event(
+          "turbo_chat.blocked_words.scrambled",
+          blocked_words: matches,
+          action: action,
+          original_body: original_body,
+          moderated_body: body.to_s
+        )
+      end
+
+      def reject_blocked_words!(matches, action:)
+        errors.add(:body, "contains blocked language")
+        emit_blocked_words_event("turbo_chat.blocked_words.rejected", blocked_words: matches, action: action)
       end
     end
   end
