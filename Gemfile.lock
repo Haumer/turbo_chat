@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    turbo_chat (0.1.9)
+    turbo_chat (0.1.10)
       rails (>= 7.0, < 8.0)
       turbo-rails (>= 1.4, < 3.0)
 

@@ -2,6 +2,15 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.10] - 2026-02-26
+
+### Added
+- Unbounded chat now supports a viewport-edge scrollbar proxy on the far right side of the screen while preserving inner chat layout.
+
+### Changed
+- Improved unbounded chat scrolling smoothness for wheel input and maintained synchronization between the edge scrollbar and message list position.
+- Hardened page scroll locking for unbounded chat so the document does not scroll while chat remains scrollable.
+
 ## [0.1.9] - 2026-02-25
 
 ### Added
