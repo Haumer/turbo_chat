@@ -2,6 +2,12 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.11] - 2026-02-26
+
+### Changed
+- Smoothed signal-state transitions (for example: thinking to planning to typing) to reduce flicker during rapid updates.
+- Updated signal Turbo Stream updates to use morphing so signal entries transition in place more smoothly.
+
 ## [0.1.10] - 2026-02-26
 
 ### Added

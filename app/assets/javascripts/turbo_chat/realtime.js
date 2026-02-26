@@ -5,6 +5,7 @@
   var SIGNAL_IDLE_GRACE_MS = constants.SIGNAL_IDLE_GRACE_MS || 2500;
   var SIGNAL_HEARTBEAT_MS = constants.SIGNAL_HEARTBEAT_MS || 4000;
   var SIGNAL_RETREAT_MS = constants.SIGNAL_RETREAT_MS || 180;
+  var SIGNAL_EMPTY_GRACE_MS = constants.SIGNAL_EMPTY_GRACE_MS || 180;
   var MENTION_BLUR_HIDE_DELAY_MS = constants.MENTION_BLUR_HIDE_DELAY_MS || 120;
   var COMPOSER_MAX_HEIGHT_PX = constants.COMPOSER_MAX_HEIGHT_PX || 210;
 
@@ -54,16 +55,33 @@
     return parsedPadding;
   }
 
-  function syncSignalContainerState(container) {
+  function syncSignalContainerState(container, options) {
     if (!container) {
       return;
     }
 
+    options = options || {};
     hideOwnSignals(container);
 
     var hasVisibleSignals = container.querySelector(
       ".chat-typing-indicator:not(.chat-typing-indicator--leaving)"
     );
+
+    if (!hasVisibleSignals && !options.forceInactive && container.classList.contains("chat-signals--active")) {
+      if (!container.__chatSignalDeactivateTimeoutId) {
+        container.__chatSignalDeactivateTimeoutId = setTimeout(function () {
+          container.__chatSignalDeactivateTimeoutId = null;
+          syncSignalContainerState(container, { forceInactive: true });
+        }, SIGNAL_EMPTY_GRACE_MS);
+      }
+      return;
+    }
+
+    if (hasVisibleSignals && container.__chatSignalDeactivateTimeoutId) {
+      clearTimeout(container.__chatSignalDeactivateTimeoutId);
+      container.__chatSignalDeactivateTimeoutId = null;
+    }
+
     container.classList.toggle("chat-signals--active", Boolean(hasVisibleSignals));
 
     var chatWindow = container.closest(".chat-window");
@@ -101,11 +119,28 @@
     container.dataset.chatSignalsBound = "true";
     syncSignalContainerState(container);
 
+    var syncRafId = null;
+    function queueSignalContainerSync() {
+      if (syncRafId) {
+        return;
+      }
+
+      if (typeof window === "undefined" || typeof window.requestAnimationFrame !== "function") {
+        syncSignalContainerState(container);
+        return;
+      }
+
+      syncRafId = window.requestAnimationFrame(function () {
+        syncRafId = null;
+        syncSignalContainerState(container);
+      });
+    }
+
     var observer = new MutationObserver(function () {
-      syncSignalContainerState(container);
+      queueSignalContainerSync();
     });
 
-    observer.observe(container, { childList: true });
+    observer.observe(container, { childList: true, subtree: true, characterData: true });
   }
 
   function setupAllSignalContainers() {

@@ -44,6 +44,7 @@ module TurboChat
 
           Turbo::StreamsChannel.broadcast_update_to(
             [chat, STREAM_NAME],
+            attributes: { method: :morph },
             target: ActionView::RecordIdentifier.dom_id(chat, :signals),
             partial: SIGNALS_PARTIAL,
             locals: { chat: chat }

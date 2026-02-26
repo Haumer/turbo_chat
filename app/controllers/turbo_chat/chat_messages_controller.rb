@@ -93,6 +93,7 @@ module TurboChat
     def render_signals_update
       render turbo_stream: turbo_stream.update(
         view_context.dom_id(@chat, :signals),
+        method: :morph,
         partial: "turbo_chat/chat_messages/signals",
         locals: { chat: @chat }
       )
