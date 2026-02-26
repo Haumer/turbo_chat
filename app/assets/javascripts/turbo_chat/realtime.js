@@ -55,6 +55,50 @@
     return parsedPadding;
   }
 
+  function visibleSignalNode(container) {
+    if (!container) {
+      return null;
+    }
+
+    return container.querySelector(".chat-typing-indicator:not(.chat-typing-indicator--leaving)");
+  }
+
+  function clearSignalDeactivateTimer(container) {
+    if (!container || !container.__chatSignalDeactivateTimeoutId) {
+      return;
+    }
+
+    clearTimeout(container.__chatSignalDeactivateTimeoutId);
+    container.__chatSignalDeactivateTimeoutId = null;
+  }
+
+  function queueSignalDeactivate(container) {
+    if (!container || container.__chatSignalDeactivateTimeoutId) {
+      return;
+    }
+
+    container.__chatSignalDeactivateTimeoutId = setTimeout(function () {
+      container.__chatSignalDeactivateTimeoutId = null;
+      if (!container.isConnected) {
+        return;
+      }
+
+      syncSignalContainerState(container, { forceInactive: true });
+    }, SIGNAL_EMPTY_GRACE_MS);
+  }
+
+  function shouldStickMessagesToBottom(messagesContainer) {
+    if (!messagesContainer) {
+      return false;
+    }
+
+    var reservedBottomPadding = containerBottomPadding(messagesContainer);
+    var distanceFromBottom = messagesContainer.scrollHeight -
+      (messagesContainer.scrollTop + messagesContainer.clientHeight) -
+      reservedBottomPadding;
+    return distanceFromBottom <= 24;
+  }
+
   function syncSignalContainerState(container, options) {
     if (!container) {
       return;
@@ -63,36 +107,23 @@
     options = options || {};
     hideOwnSignals(container);
 
-    var hasVisibleSignals = container.querySelector(
-      ".chat-typing-indicator:not(.chat-typing-indicator--leaving)"
-    );
+    var hasVisibleSignals = Boolean(visibleSignalNode(container));
 
     if (!hasVisibleSignals && !options.forceInactive && container.classList.contains("chat-signals--active")) {
-      if (!container.__chatSignalDeactivateTimeoutId) {
-        container.__chatSignalDeactivateTimeoutId = setTimeout(function () {
-          container.__chatSignalDeactivateTimeoutId = null;
-          syncSignalContainerState(container, { forceInactive: true });
-        }, SIGNAL_EMPTY_GRACE_MS);
-      }
+      queueSignalDeactivate(container);
       return;
     }
 
-    if (hasVisibleSignals && container.__chatSignalDeactivateTimeoutId) {
-      clearTimeout(container.__chatSignalDeactivateTimeoutId);
-      container.__chatSignalDeactivateTimeoutId = null;
+    if (hasVisibleSignals) {
+      clearSignalDeactivateTimer(container);
     }
 
-    container.classList.toggle("chat-signals--active", Boolean(hasVisibleSignals));
+    container.classList.toggle("chat-signals--active", hasVisibleSignals);
 
     var chatWindow = container.closest(".chat-window");
     if (chatWindow) {
       var messagesContainer = chatWindow.querySelector(".chat-messages");
-      var shouldStickToBottom = false;
-      if (messagesContainer) {
-        var reservedBottomPadding = containerBottomPadding(messagesContainer);
-        var distanceFromBottom = messagesContainer.scrollHeight - (messagesContainer.scrollTop + messagesContainer.clientHeight) - reservedBottomPadding;
-        shouldStickToBottom = distanceFromBottom <= 24;
-      }
+      var shouldStickToBottom = shouldStickMessagesToBottom(messagesContainer);
 
       var signalOffset = hasVisibleSignals ? Math.ceil(container.scrollHeight) + 8 : 0;
       chatWindow.style.setProperty("--chat-signal-offset", signalOffset + "px");
@@ -132,6 +163,9 @@
 
       syncRafId = window.requestAnimationFrame(function () {
         syncRafId = null;
+        if (!container.isConnected) {
+          return;
+        }
         syncSignalContainerState(container);
       });
     }
