@@ -128,6 +128,7 @@
     <div id="<%= dom_id(@chat, :signals) %>"
          class="chat-signals"
          data-chat-show-self-signals="<%= TurboChat.configuration.show_self_signals %>"
+         data-chat-signal-ttl-seconds="<%= TurboChat.configuration.signal_ttl_seconds %>"
          data-chat-self-participant-type="<%= current_participant_type %>"
          data-chat-self-participant-id="<%= current_participant_id %>">
       <%= render "turbo_chat/chat_messages/signals", chat: @chat %>

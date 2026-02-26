@@ -90,6 +90,43 @@ module TurboChat
       assert_includes error.message, "active chat window"
     end
 
+    test "active_signals uses configured signal ttl window" do
+      previous_ttl = TurboChat.configuration.signal_ttl_seconds
+      TurboChat.configuration.signal_ttl_seconds = 60
+
+      chat = TurboChat::Chat.create!(title: "Signal TTL")
+      recent_user = User.create!(email: "signal-ttl-recent@example.com")
+      stale_user = User.create!(email: "signal-ttl-stale@example.com")
+
+      stale_signal = TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: stale_user,
+        kind: :signal,
+        signal_type: :typing,
+        created_at: 70.seconds.ago
+      )
+      recent_signal = TurboChat::ChatMessage.create!(
+        chat: chat,
+        participant: recent_user,
+        kind: :signal,
+        signal_type: :typing,
+        created_at: 40.seconds.ago
+      )
+
+      assert_equal [recent_signal.id], chat.active_signals.map(&:id)
+      assert_not_includes chat.active_signals.map(&:id), stale_signal.id
+    ensure
+      TurboChat.configuration.signal_ttl_seconds = previous_ttl
+    end
+
+    test "signal_window_seconds requires a positive value" do
+      error = assert_raises(ArgumentError) do
+        TurboChat::Chat.signal_window_seconds(0)
+      end
+
+      assert_includes error.message, "signal ttl"
+    end
+
     test "visible_messages returns only latest messages in ascending order when limited" do
       user = User.create!(email: "visible-messages-limit@example.com")
       chat = TurboChat::Chat.create!(title: "Visible Messages")

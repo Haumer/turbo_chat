@@ -33,8 +33,8 @@ module TurboChat
       where.not(id: active(window: window).select(:id))
     }
 
-    def active_signals(window: 12.seconds)
-      cutoff = Time.current - window
+    def active_signals(window: nil)
+      cutoff = Time.current - self.class.signal_window_seconds(window)
       latest_message_at = chat_messages
                           .message
                           .where("created_at >= ?", cutoff)
@@ -102,6 +102,14 @@ module TurboChat
       return seconds if seconds.positive?
 
       raise ArgumentError, "active chat window must be a positive duration"
+    end
+
+    def self.signal_window_seconds(window = nil)
+      value = window.nil? ? TurboChat.configuration.signal_ttl_seconds : window
+      seconds = value.to_i
+      return seconds if seconds.positive?
+
+      raise ArgumentError, "signal ttl must be a positive duration"
     end
 
     private

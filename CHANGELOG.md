@@ -2,6 +2,15 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.12] - 2026-02-26
+
+### Added
+- Configurable signal lifetime via `config.signal_ttl_seconds` (default `60`) so applications can keep typing/status indicators active longer.
+
+### Changed
+- Signal visibility/pruning now use the configured signal TTL consistently on both server-rendered active signals and client-side signal cleanup.
+- Chat show renders signal TTL metadata for frontend pruning coordination.
+
 ## [0.1.11] - 2026-02-26
 
 ### Changed

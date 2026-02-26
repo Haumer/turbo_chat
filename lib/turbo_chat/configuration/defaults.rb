@@ -87,6 +87,7 @@ class TurboChat::Configuration
     emit_chat_lifecycle_events: false,
     emit_moderation_events: false,
     emit_blocked_words_events: false,
+    signal_ttl_seconds: 60,
     signal_text_sheen: true,
     show_self_signals: false,
     replace_signals_on_message_submit: false,

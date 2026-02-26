@@ -15,7 +15,7 @@ TurboChat.configure do |config|
   config.message_history_limit = 200
   # Number of recent messages loaded in chat history.
   config.active_chat_window = 5.minutes
-  # Duration a typing signal stays active without refresh.
+  # Duration used to classify chats as active.
 
   # Mentions and emoji
   config.enable_mentions = true
@@ -92,6 +92,8 @@ TurboChat.configure do |config|
   # Emits `turbo_chat.blocked_words.*` notifications.
 
   # Signal behavior
+  config.signal_ttl_seconds = 60
+  # Maximum age (in seconds) for active typing/signal indicators.
   config.signal_text_sheen = true
   # Adds bracketed sheen styling to custom signal text.
   # Optional toggles (disabled by default)

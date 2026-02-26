@@ -127,6 +127,7 @@ TurboChat.configure do |config|
   config.show_role = false
   config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
   config.chat_style = "chat_style_bounded"
+  config.signal_ttl_seconds = 60
   config.signal_text_sheen = true
 
   config.emit_moderation_events = false

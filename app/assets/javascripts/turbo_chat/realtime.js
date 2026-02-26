@@ -1,6 +1,6 @@
 (function (namespace) {
   var constants = namespace.constants || {};
-  var SIGNAL_TTL_SECONDS = constants.SIGNAL_TTL_SECONDS || 12;
+  var SIGNAL_TTL_SECONDS = constants.SIGNAL_TTL_SECONDS || 60;
   var SIGNAL_START_DELAY_MS = constants.SIGNAL_START_DELAY_MS || 750;
   var SIGNAL_IDLE_GRACE_MS = constants.SIGNAL_IDLE_GRACE_MS || 2500;
   var SIGNAL_HEARTBEAT_MS = constants.SIGNAL_HEARTBEAT_MS || 4000;
@@ -70,6 +70,24 @@
 
     clearTimeout(container.__chatSignalDeactivateTimeoutId);
     container.__chatSignalDeactivateTimeoutId = null;
+  }
+
+  function signalTtlSecondsForNode(node) {
+    if (!node || typeof node.closest !== "function") {
+      return SIGNAL_TTL_SECONDS;
+    }
+
+    var container = node.closest(".chat-signals");
+    if (!container || !container.dataset) {
+      return SIGNAL_TTL_SECONDS;
+    }
+
+    var parsedTtl = parseInt(container.dataset.chatSignalTtlSeconds || "", 10);
+    if (isNaN(parsedTtl) || parsedTtl <= 0) {
+      return SIGNAL_TTL_SECONDS;
+    }
+
+    return parsedTtl;
   }
 
   function queueSignalDeactivate(container) {
@@ -210,7 +228,7 @@
         return;
       }
 
-      if (now - at > SIGNAL_TTL_SECONDS) {
+      if (now - at > signalTtlSecondsForNode(node)) {
         collapseSignalNode(node);
       }
     });

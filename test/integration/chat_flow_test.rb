@@ -372,6 +372,22 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     TurboChat.configuration.show_self_signals = previous_value
   end
 
+  test "chat show exposes configured signal ttl seconds" do
+    previous_ttl = TurboChat.configuration.signal_ttl_seconds
+    TurboChat.configuration.signal_ttl_seconds = 90
+
+    current_user = User.create!(email: "signal-ttl-viewer@example.com")
+    chat = TurboChat::Chat.create!(title: "Signal TTL Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: current_user)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_includes response.body, %(data-chat-signal-ttl-seconds="90")
+  ensure
+    TurboChat.configuration.signal_ttl_seconds = previous_ttl
+  end
+
   test "chat show renders custom signal text" do
     current_user = User.create!(email: "custom-signal-self@example.com")
     other_user = User.create!(email: "custom-signal-other@example.com")

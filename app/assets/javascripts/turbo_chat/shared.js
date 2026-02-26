@@ -1,6 +1,6 @@
 (function (namespace) {
   var constants = {
-    SIGNAL_TTL_SECONDS: 12,
+    SIGNAL_TTL_SECONDS: 60,
     SIGNAL_START_DELAY_MS: 750,
     SIGNAL_IDLE_GRACE_MS: 2500,
     SIGNAL_HEARTBEAT_MS: 4000,
