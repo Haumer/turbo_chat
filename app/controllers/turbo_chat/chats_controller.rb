@@ -23,11 +23,8 @@ module TurboChat
 
     def accept
       participant = current_chat_participant
-      return head :forbidden if participant.nil?
-      return redirect_to(chats_path, alert: "Run latest turbo_chat migrations to accept invitations", status: :see_other) unless TurboChat::ChatMembership.invitation_tracking_supported?
-
-      membership = @chat.chat_memberships.pending.find_by(participant: participant)
-      return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
+      membership = pending_invitation_membership_for(participant, action: "accept")
+      return if membership.nil?
 
       membership.accept_invitation!
       TurboChat::ChatMessage.create_membership_system_message!(
@@ -46,13 +43,10 @@ module TurboChat
 
     def decline
       participant = current_chat_participant
-      return head :forbidden if participant.nil?
-      return redirect_to(chats_path, alert: "Run latest turbo_chat migrations to decline invitations", status: :see_other) unless TurboChat::ChatMembership.invitation_tracking_supported?
+      membership = pending_invitation_membership_for(participant, action: "decline")
+      return if membership.nil?
 
-      membership = @chat.chat_memberships.pending.find_by(participant: participant)
-      return redirect_to(chats_path, alert: "Invitation not found", status: :see_other) if membership.nil?
-
-      membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil, invitation_accepted: false)
+      remove_membership!(membership, invitation_accepted: false)
       TurboChat::ChatMessage.create_membership_system_message!(
         chat: @chat,
         actor: participant,
@@ -88,17 +82,13 @@ module TurboChat
       @can_post_message = @chat_permission.can_post_message?
       @show_members = show_members_enabled?
       @can_invite_member = @chat_permission.respond_to?(:can_invite_member?) && @chat_permission.can_invite_member?
-      @can_manage_member_permissions = if @chat_permission.respond_to?(:can_grant_member_permissions?)
-                                         @chat_permission.can_grant_member_permissions?
-                                       else
-                                         false
-                                       end
+      @can_manage_member_permissions = @chat_permission.respond_to?(:can_grant_member_permissions?) && @chat_permission.can_grant_member_permissions?
       @can_close_chat = @chat_permission.can_close_chat?
       @can_reopen_chat = @chat_permission.can_reopen_chat?
       @can_edit_own_messages = if @chat_permission.respond_to?(:can_edit_message?)
                                  @chat_permission.can_edit_message?
                                else
-                                 @chat_permission.can_post_message?
+                                 @can_post_message
                                end
       @chat_message = @chat.chat_messages.build if @can_post_message
       @invitable_participants = build_invitable_participants if @can_invite_member
@@ -113,7 +103,7 @@ module TurboChat
       membership = @chat.chat_memberships.active.find_by(participant: participant)
       return redirect_to(chats_path, alert: "You are no longer a participant in this chat", status: :see_other) if membership.nil?
 
-      membership.update!(removed_at: Time.current, muted: false, timed_out_until: nil)
+      remove_membership!(membership)
       TurboChat::ChatMessage.create_membership_system_message!(
         chat: @chat,
         actor: participant,
@@ -124,21 +114,21 @@ module TurboChat
     end
 
     def close
-      chat_permission = permission_for(@chat)
-      return head :forbidden unless chat_permission.can_close_chat?
-
-      @chat.close!
-      set_chat_lifecycle_event(action: :closed, chat: @chat)
-      redirect_to chat_path(@chat), notice: "Chat closed", status: :see_other
+      transition_chat_state!(
+        permission_method: :can_close_chat?,
+        mutation: :close!,
+        action: :closed,
+        notice: "Chat closed"
+      )
     end
 
     def reopen
-      chat_permission = permission_for(@chat)
-      return head :forbidden unless chat_permission.can_reopen_chat?
-
-      @chat.reopen!
-      set_chat_lifecycle_event(action: :reopened, chat: @chat)
-      redirect_to chat_path(@chat), notice: "Chat reopened", status: :see_other
+      transition_chat_state!(
+        permission_method: :can_reopen_chat?,
+        mutation: :reopen!,
+        action: :reopened,
+        notice: "Chat reopened"
+      )
     end
 
     private
@@ -157,6 +147,38 @@ module TurboChat
       ActiveModel::Type::Boolean.new.cast(value)
     rescue StandardError
       true
+    end
+
+    def pending_invitation_membership_for(participant, action:)
+      if participant.nil?
+        head :forbidden
+        return nil
+      end
+      unless TurboChat::ChatMembership.invitation_tracking_supported?
+        redirect_to chats_path, alert: "Run latest turbo_chat migrations to #{action} invitations", status: :see_other
+        return nil
+      end
+
+      membership = @chat.chat_memberships.pending.find_by(participant: participant)
+      return membership if membership.present?
+
+      redirect_to chats_path, alert: "Invitation not found", status: :see_other
+      nil
+    end
+
+    def remove_membership!(membership, invitation_accepted: nil)
+      attributes = { removed_at: Time.current, muted: false, timed_out_until: nil }
+      attributes[:invitation_accepted] = invitation_accepted unless invitation_accepted.nil?
+      membership.update!(attributes)
+    end
+
+    def transition_chat_state!(permission_method:, mutation:, action:, notice:)
+      chat_permission = permission_for(@chat)
+      return head :forbidden unless chat_permission.public_send(permission_method)
+
+      @chat.public_send(mutation)
+      set_chat_lifecycle_event(action: action, chat: @chat)
+      redirect_to chat_path(@chat), notice: notice, status: :see_other
     end
   end
 end

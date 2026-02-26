@@ -7,7 +7,19 @@ module TurboChat
     MESSAGE_PARTIAL = "turbo_chat/chat_messages/message"
     CHAT_MESSAGE_PARTIAL = "turbo_chat/chat_messages/chat_message"
     SIGNALS_PARTIAL = "turbo_chat/chat_messages/signals"
-    MEMBERSHIP_SYSTEM_EVENT_TYPES = %i[invited accepted declined left muted unmuted timed_out timeout_cleared banned].freeze
+    MEMBERSHIP_SYSTEM_MESSAGE_TEMPLATES = {
+      invited: "%{actor} invited %{subject}.",
+      accepted: "%{actor} accepted the invitation.",
+      declined: "%{actor} declined the invitation.",
+      left: "%{actor} left the chat.",
+      muted: "%{actor} muted %{subject}.",
+      unmuted: "%{actor} unmuted %{subject}.",
+      timed_out: "%{actor} timed out %{subject}.",
+      timeout_cleared: "%{actor} cleared timeout for %{subject}.",
+      banned: "%{actor} removed %{subject} from the chat."
+    }.freeze
+    MEMBERSHIP_SYSTEM_EVENTS_WITH_SUBJECT = %i[invited muted unmuted timed_out timeout_cleared banned].freeze
+    MEMBERSHIP_SYSTEM_EVENT_TYPES = MEMBERSHIP_SYSTEM_MESSAGE_TEMPLATES.keys.freeze
     DEFAULT_SOURCE = "app".freeze
 
     include TurboChat::ChatMessage::BodyLengthValidation
@@ -93,47 +105,16 @@ module TurboChat
       private
 
       def membership_system_message_body(actor:, event:, subject:)
+        template = MEMBERSHIP_SYSTEM_MESSAGE_TEMPLATES[event]
+        return nil if template.nil?
+
         actor_name = display_name_for_participant(actor)
+        return nil if actor_name.blank?
+
         subject_name = display_name_for_participant(subject)
+        return nil if MEMBERSHIP_SYSTEM_EVENTS_WITH_SUBJECT.include?(event) && subject_name.blank?
 
-        case event
-        when :invited
-          return nil if actor_name.blank? || subject_name.blank?
-
-          "#{actor_name} invited #{subject_name}."
-        when :accepted
-          return nil if actor_name.blank?
-
-          "#{actor_name} accepted the invitation."
-        when :declined
-          return nil if actor_name.blank?
-
-          "#{actor_name} declined the invitation."
-        when :left
-          return nil if actor_name.blank?
-
-          "#{actor_name} left the chat."
-        when :muted
-          return nil if actor_name.blank? || subject_name.blank?
-
-          "#{actor_name} muted #{subject_name}."
-        when :unmuted
-          return nil if actor_name.blank? || subject_name.blank?
-
-          "#{actor_name} unmuted #{subject_name}."
-        when :timed_out
-          return nil if actor_name.blank? || subject_name.blank?
-
-          "#{actor_name} timed out #{subject_name}."
-        when :timeout_cleared
-          return nil if actor_name.blank? || subject_name.blank?
-
-          "#{actor_name} cleared timeout for #{subject_name}."
-        when :banned
-          return nil if actor_name.blank? || subject_name.blank?
-
-          "#{actor_name} removed #{subject_name} from the chat."
-        end
+        format(template, actor: actor_name, subject: subject_name)
       end
 
       def display_name_for_participant(participant)

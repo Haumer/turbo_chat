@@ -14,12 +14,7 @@ module TurboChat
       return respond_to_clear_signal_request if clear_signal_request?
 
       build_chat_message
-
-      if @chat_message.save
-        respond_to_chat_message_create_success
-      else
-        respond_to_chat_message_create_failure
-      end
+      @chat_message.save ? respond_to_chat_message_create_success : respond_to_chat_message_create_failure
     end
 
     def update
@@ -93,12 +88,7 @@ module TurboChat
       @chat_messages = @chat.visible_messages
       @chat_permission = permission_for(@chat)
       @can_post_message = @chat_permission.can_post_message?
-      show_members = if TurboChat.configuration.respond_to?(:show_members)
-                       TurboChat.configuration.show_members
-                     else
-                       true
-                     end
-      @show_members = ActiveModel::Type::Boolean.new.cast(show_members)
+      @show_members = chat_config_boolean(:show_members, default: true)
       respond_to do |format|
         format.turbo_stream { render "turbo_chat/chats/show", status: :unprocessable_entity }
         format.html { render "turbo_chat/chats/show", status: :unprocessable_entity }
@@ -118,28 +108,33 @@ module TurboChat
     end
 
     def authorize_edit_chat_message!
-      chat_permission = permission_for(@chat)
-      can_edit = if chat_permission.respond_to?(:can_edit_message?)
-                   chat_permission.can_edit_message?(@chat_message)
-                 else
-                   can_post = if chat_permission.respond_to?(:can_post_message?)
-                                chat_permission.can_post_message?
-                              elsif chat_permission.respond_to?(:can_view_chat?)
-                                chat_permission.can_view_chat?
-                              else
-                                false
-                              end
-
-                   can_post &&
-                     @chat_message.participant_type.to_s == current_chat_participant.class.base_class.name &&
-                     @chat_message.participant_id.to_s == current_chat_participant.id.to_s
-                 end
-      return if can_edit
+      return if can_edit_chat_message?(permission_for(@chat))
 
       respond_to do |format|
         format.html { redirect_to chat_path(@chat), alert: "Not allowed to edit this message" }
         format.any { head :forbidden }
       end
+    end
+
+    def can_edit_chat_message?(chat_permission)
+      return chat_permission.can_edit_message?(@chat_message) if chat_permission.respond_to?(:can_edit_message?)
+
+      fallback_edit_allowed?(chat_permission) && message_owned_by_current_participant?
+    end
+
+    def fallback_edit_allowed?(chat_permission)
+      return chat_permission.can_post_message? if chat_permission.respond_to?(:can_post_message?)
+      return chat_permission.can_view_chat? if chat_permission.respond_to?(:can_view_chat?)
+
+      false
+    end
+
+    def message_owned_by_current_participant?
+      participant = current_chat_participant
+      return false if participant.nil?
+
+      @chat_message.participant_type.to_s == participant.class.base_class.name &&
+        @chat_message.participant_id.to_s == participant.id.to_s
     end
 
     def render_chat_message_update(force_edit_open: false, status: :ok)
@@ -161,6 +156,14 @@ module TurboChat
       return "signal" if kind_value == "signal"
 
       "message"
+    end
+
+    def chat_config_boolean(method_name, default:)
+      configuration = TurboChat.configuration
+      value = configuration.respond_to?(method_name) ? configuration.public_send(method_name) : default
+      ActiveModel::Type::Boolean.new.cast(value)
+    rescue StandardError
+      default
     end
   end
 end

@@ -3,6 +3,7 @@ module TurboChat
     class AuthorizationError < StandardError; end
     class InvalidMessageError < StandardError; end
     SEND_MESSAGE_KIND = :message
+    VALID_SENT_AT_TYPES = [String, Numeric, Date, Time, DateTime].freeze
 
     module_function
 
@@ -81,9 +82,7 @@ module TurboChat
 
     def normalize_sent_at(value)
       return nil if value.blank?
-      unless valid_sent_at_type?(value)
-        raise InvalidMessageError, "sent_at is invalid"
-      end
+      raise InvalidMessageError, "sent_at is invalid" unless valid_sent_at_type?(value)
 
       parsed = ActiveModel::Type::DateTime.new.cast(value)
       raise InvalidMessageError, "sent_at is invalid" if parsed.nil?
@@ -93,14 +92,8 @@ module TurboChat
     private_class_method :normalize_sent_at
 
     def valid_sent_at_type?(value)
-      return true if value.is_a?(String)
-      return true if value.is_a?(Numeric)
-      return true if value.is_a?(Date)
-      return true if value.is_a?(Time)
-      return true if value.is_a?(DateTime)
-      return true if defined?(ActiveSupport::TimeWithZone) && value.is_a?(ActiveSupport::TimeWithZone)
-
-      false
+      VALID_SENT_AT_TYPES.any? { |klass| value.is_a?(klass) } ||
+        (defined?(ActiveSupport::TimeWithZone) && value.is_a?(ActiveSupport::TimeWithZone))
     end
     private_class_method :valid_sent_at_type?
 

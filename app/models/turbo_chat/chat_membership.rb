@@ -32,16 +32,11 @@ module TurboChat
     end
 
     def active?
-      return removed_at.nil? unless self.class.invitation_tracking_supported?
-
-      removed_at.nil? && invitation_accepted?
+      removed_at.nil? && (!self.class.invitation_tracking_supported? || invitation_accepted?)
     end
 
     def pending?
-      return false unless removed_at.nil?
-      return false unless self.class.invitation_tracking_supported?
-
-      !invitation_accepted?
+      removed_at.nil? && self.class.invitation_tracking_supported? && !invitation_accepted?
     end
 
     def accept_invitation!
@@ -79,24 +74,15 @@ module TurboChat
     end
 
     def effective_role_name
-      definition = effective_role_definition
-      return effective_role_key.humanize if definition.nil?
-
-      definition[:name].presence || effective_role_key.humanize
+      effective_role_definition&.dig(:name).presence || effective_role_key.humanize
     end
 
     def effective_role_rank
-      definition = effective_role_definition
-      return -1 if definition.nil?
-
-      definition[:rank].to_i
+      effective_role_definition&.dig(:rank).to_i
     end
 
     def effective_role_permissions
-      definition = effective_role_definition
-      return [] if definition.nil?
-
-      Array(definition[:permissions]).map(&:to_sym)
+      Array(effective_role_definition&.dig(:permissions)).map(&:to_sym)
     end
 
     private
