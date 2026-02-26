@@ -425,9 +425,24 @@
     }
 
     // Keep the last message fully visible with a tiny breathing space.
+    var bottomPadding = Math.max(containerBottomPadding(container), signalOverlayOffset(container));
     var lastBottom = lastMessage.offsetTop + lastMessage.offsetHeight;
-    var targetScrollTop = Math.max(0, lastBottom - container.clientHeight + signalOverlayOffset(container) + 2);
+    var targetScrollTop = Math.max(0, lastBottom - container.clientHeight + bottomPadding + 2);
     container.scrollTop = targetScrollTop;
+  }
+
+  function containerBottomPadding(container) {
+    if (!container || typeof window === "undefined") {
+      return 0;
+    }
+
+    var cssPadding = window.getComputedStyle(container).paddingBottom;
+    var parsedPadding = parseFloat(cssPadding);
+    if (isNaN(parsedPadding) || parsedPadding <= 0) {
+      return 0;
+    }
+
+    return parsedPadding;
   }
 
   function signalOverlayOffset(container) {
@@ -465,7 +480,7 @@
     var containerRect = container.getBoundingClientRect();
     var messageRect = messageNode.getBoundingClientRect();
     var topPadding = 12;
-    var bottomPadding = 14 + signalOverlayOffset(container);
+    var bottomPadding = Math.max(14, containerBottomPadding(container), 14 + signalOverlayOffset(container));
     var aboveVisibleArea = messageRect.top < containerRect.top + topPadding;
     var belowVisibleArea = messageRect.bottom > containerRect.bottom - bottomPadding;
     if (!aboveVisibleArea && !belowVisibleArea) {

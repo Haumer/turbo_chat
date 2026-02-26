@@ -40,6 +40,20 @@
     });
   }
 
+  function containerBottomPadding(container) {
+    if (!container || typeof window === "undefined") {
+      return 0;
+    }
+
+    var cssPadding = window.getComputedStyle(container).paddingBottom;
+    var parsedPadding = parseFloat(cssPadding);
+    if (isNaN(parsedPadding) || parsedPadding <= 0) {
+      return 0;
+    }
+
+    return parsedPadding;
+  }
+
   function syncSignalContainerState(container) {
     if (!container) {
       return;
@@ -57,7 +71,8 @@
       var messagesContainer = chatWindow.querySelector(".chat-messages");
       var shouldStickToBottom = false;
       if (messagesContainer) {
-        var distanceFromBottom = messagesContainer.scrollHeight - (messagesContainer.scrollTop + messagesContainer.clientHeight);
+        var reservedBottomPadding = containerBottomPadding(messagesContainer);
+        var distanceFromBottom = messagesContainer.scrollHeight - (messagesContainer.scrollTop + messagesContainer.clientHeight) - reservedBottomPadding;
         shouldStickToBottom = distanceFromBottom <= 24;
       }
 
@@ -154,6 +169,8 @@
     var pendingSignalClear = false;
     var emitTypingEvents = datasetFlagEnabled(element, "chatEmitTypingEvents");
     var emitMessageEvents = datasetFlagEnabled(element, "chatEmitMessageEvents");
+    var unboundedShell = element.closest(".chat-shell--style-unbounded");
+    var composerClearanceRafId = null;
     var mentionsEnabled = datasetFlagEnabled(element, "chatEnableMentions");
     var mentionOptions = mentionsEnabled ? parseMentionOptions(element.dataset.chatMentionOptions) : [];
     var mentionAutocomplete = setupMentionAutocomplete(messageInput, {
@@ -177,15 +194,67 @@
       setMentionOptions: updateMentionOptions
     };
 
+    function syncComposerClearance() {
+      if (!unboundedShell) {
+        return;
+      }
+
+      var viewportHeight = (typeof window !== "undefined" && window.innerHeight) || document.documentElement.clientHeight || 0;
+      var composerRect = element.getBoundingClientRect();
+      if (viewportHeight > 0 && composerRect && composerRect.height > 0) {
+        var coveredHeight = Math.max(0, viewportHeight - composerRect.top);
+        if (coveredHeight > 0) {
+          unboundedShell.style.setProperty("--chat-floating-composer-clearance", Math.ceil(coveredHeight + 8) + "px");
+          return;
+        }
+      }
+
+      var composerShell = element.querySelector(".chat-composer-shell");
+      if (!composerShell) {
+        return;
+      }
+
+      var composerHeight = Math.ceil(composerShell.getBoundingClientRect().height);
+      if (!composerHeight || composerHeight <= 0) {
+        return;
+      }
+
+      var clearance = composerHeight + 28;
+      unboundedShell.style.setProperty("--chat-floating-composer-clearance", clearance + "px");
+    }
+
+    function queueComposerClearanceSync() {
+      if (!unboundedShell || typeof window === "undefined" || typeof window.requestAnimationFrame !== "function") {
+        syncComposerClearance();
+        return;
+      }
+
+      if (composerClearanceRafId) {
+        return;
+      }
+
+      composerClearanceRafId = window.requestAnimationFrame(function () {
+        composerClearanceRafId = null;
+        syncComposerClearance();
+      });
+    }
+
     function autoResizeComposerInput() {
       messageInput.style.height = "auto";
       var contentHeight = messageInput.scrollHeight;
       var nextHeight = Math.min(contentHeight, COMPOSER_MAX_HEIGHT_PX);
       messageInput.style.height = nextHeight + "px";
       messageInput.style.overflowY = contentHeight > COMPOSER_MAX_HEIGHT_PX ? "auto" : "hidden";
+      queueComposerClearanceSync();
     }
 
     autoResizeComposerInput();
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", queueComposerClearanceSync);
+      if (window.visualViewport && typeof window.visualViewport.addEventListener === "function") {
+        window.visualViewport.addEventListener("resize", queueComposerClearanceSync);
+      }
+    }
 
     function emitTypingEvent(eventName) {
       if (!emitTypingEvents) {

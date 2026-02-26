@@ -1,6 +1,7 @@
 (function (namespace) {
   var datasetFlagEnabled = namespace.datasetFlagEnabled;
   var parseJsonObject = namespace.parseJsonObject;
+  var PAGE_SCROLL_LOCK_CLASS = "chat-page-scroll-locked";
 
   function setupInvitationEvents() {
     document.querySelectorAll("[data-chat-index]").forEach(function (element) {
@@ -64,7 +65,16 @@
     });
   }
 
+  function syncPageScrollLock() {
+    var hasUnboundedShell = document.querySelector(".chat-shell--style-unbounded");
+    document.documentElement.classList.toggle(PAGE_SCROLL_LOCK_CLASS, Boolean(hasUnboundedShell));
+    if (document.body) {
+      document.body.classList.toggle(PAGE_SCROLL_LOCK_CLASS, Boolean(hasUnboundedShell));
+    }
+  }
+
   function setupTurboChatUi() {
+    syncPageScrollLock();
     setupInvitationEvents();
     setupChatLifecycleEvents();
 
