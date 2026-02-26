@@ -12,6 +12,7 @@
   var setupMentionAutocomplete = namespace.setupMentionAutocomplete;
   var scrollMessageIntoView = namespace.scrollMessageIntoView;
   var scrollLastMessageIntoView = namespace.scrollLastMessageIntoView;
+  var prefersReducedMotion = namespace.prefersReducedMotion || function () { return false; };
 
   function syncOwnMessageClasses(container) {
     if (!container || !container.dataset) {
@@ -482,26 +483,95 @@
     return false;
   }
 
-  function proxyWheelToMessages(container, event) {
+  function clampScrollTop(container, scrollTop) {
+    if (!container) {
+      return 0;
+    }
+
+    var maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    if (scrollTop < 0) {
+      return 0;
+    }
+
+    if (scrollTop > maxScrollTop) {
+      return maxScrollTop;
+    }
+
+    return scrollTop;
+  }
+
+  function startSmoothWheelScroll(state) {
+    if (!state || state.smoothScrollRafId) {
+      return;
+    }
+
+    function step() {
+      state.smoothScrollRafId = null;
+
+      var container = state.container;
+      if (!container || !container.isConnected) {
+        return;
+      }
+
+      var targetScrollTop = clampScrollTop(container, state.smoothTargetScrollTop);
+      state.smoothTargetScrollTop = targetScrollTop;
+
+      var currentScrollTop = container.scrollTop;
+      var remainingDelta = targetScrollTop - currentScrollTop;
+      if (Math.abs(remainingDelta) <= 0.5) {
+        if (currentScrollTop !== targetScrollTop) {
+          state.syncingFromWheelAnimation = true;
+          container.scrollTop = targetScrollTop;
+          state.syncingFromWheelAnimation = false;
+          queueGlobalScrollbarSync(state);
+        }
+        return;
+      }
+
+      state.syncingFromWheelAnimation = true;
+      container.scrollTop = currentScrollTop + remainingDelta * 0.22;
+      state.syncingFromWheelAnimation = false;
+      queueGlobalScrollbarSync(state);
+      state.smoothScrollRafId = window.requestAnimationFrame(step);
+    }
+
+    state.smoothScrollRafId = window.requestAnimationFrame(step);
+  }
+
+  function proxyWheelToMessages(state, event) {
+    var container = state && state.container;
+    if (!container) {
+      return false;
+    }
+
     var deltaY = normalizeWheelDeltaY(event);
     if (!deltaY) {
       return false;
     }
 
-    var previousScrollTop = container.scrollTop;
-    var nextScrollTop = previousScrollTop + deltaY;
-    var maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
-    if (nextScrollTop < 0) {
-      nextScrollTop = 0;
-    } else if (nextScrollTop > maxScrollTop) {
-      nextScrollTop = maxScrollTop;
-    }
+    var currentTarget = typeof state.smoothTargetScrollTop === "number"
+      ? state.smoothTargetScrollTop
+      : container.scrollTop;
+    var nextScrollTop = clampScrollTop(container, currentTarget + deltaY);
 
-    if (nextScrollTop === previousScrollTop) {
+    if (nextScrollTop === currentTarget) {
       return false;
     }
 
-    container.scrollTop = nextScrollTop;
+    state.smoothTargetScrollTop = nextScrollTop;
+    if (prefersReducedMotion()) {
+      container.scrollTop = nextScrollTop;
+      queueGlobalScrollbarSync(state);
+      return true;
+    }
+
+    if (typeof window === "undefined" || typeof window.requestAnimationFrame !== "function") {
+      container.scrollTop = nextScrollTop;
+      queueGlobalScrollbarSync(state);
+      return true;
+    }
+
+    startSmoothWheelScroll(state);
     return true;
   }
 
@@ -537,7 +607,9 @@
       }
 
       state.syncingFromScrollbar = true;
-      container.scrollTop = state.globalScrollbar.scrollTop;
+      var targetTop = clampScrollTop(container, state.globalScrollbar.scrollTop);
+      state.smoothTargetScrollTop = targetTop;
+      container.scrollTop = targetTop;
       state.syncingFromScrollbar = false;
     });
   }
@@ -570,6 +642,9 @@
     }
 
     var targetScrollTop = Math.min(maxScrollTop, container.scrollTop);
+    if (!state.smoothScrollRafId) {
+      state.smoothTargetScrollTop = targetScrollTop;
+    }
     if (Math.abs(globalScrollbar.scrollTop - targetScrollTop) > 1) {
       state.syncingFromMessages = true;
       globalScrollbar.scrollTop = targetScrollTop;
@@ -614,6 +689,9 @@
         return;
       }
 
+      if (!state.syncingFromWheelAnimation) {
+        state.smoothTargetScrollTop = container.scrollTop;
+      }
       state.syncingFromMessages = true;
       state.globalScrollbar.scrollTop = container.scrollTop;
       state.syncingFromMessages = false;
@@ -660,7 +738,10 @@
         syncingFromMessages: false,
         syncingFromScrollbar: false,
         syncRafId: null,
-        onContainerScroll: null
+        onContainerScroll: null,
+        smoothTargetScrollTop: container.scrollTop,
+        smoothScrollRafId: null,
+        syncingFromWheelAnimation: false
       };
       shell.__chatWheelProxyState = state;
 
@@ -678,8 +759,7 @@
           return;
         }
 
-        if (proxyWheelToMessages(activeContainer, event)) {
-          queueGlobalScrollbarSync(state);
+        if (proxyWheelToMessages(state, event)) {
           event.preventDefault();
         }
       };
