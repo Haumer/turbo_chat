@@ -11,19 +11,7 @@ module TurboChat
     def create
       participant = invite_participant
       membership = @chat.chat_memberships.find_or_initialize_by(participant: participant)
-      pending_invitation_attributes = invitation_pending_attributes
-
-      if membership.persisted?
-        membership.assign_attributes(
-          removed_at: nil,
-          muted: false,
-          timed_out_until: nil
-        )
-        membership.assign_attributes(pending_invitation_attributes)
-      else
-        membership.assign_attributes(role: :member)
-        membership.assign_attributes(pending_invitation_attributes)
-      end
+      membership.assign_attributes(invitation_membership_attributes(membership))
 
       membership.save!
       TurboChat::ChatMessage.create_membership_system_message!(
@@ -66,17 +54,11 @@ module TurboChat
     end
 
     def authorize_invite_member!
-      permission = permission_for(@chat)
-      return if permission.respond_to?(:can_invite_member?) && permission.can_invite_member?
-
-      head :forbidden
+      authorize_permission!(:can_invite_member?)
     end
 
     def authorize_grant_member_permissions!
-      permission = permission_for(@chat)
-      return if permission.respond_to?(:can_grant_member_permissions?) && permission.can_grant_member_permissions?(@chat_membership)
-
-      head :forbidden
+      authorize_permission!(:can_grant_member_permissions?, @chat_membership)
     end
 
     def invite_params
@@ -91,17 +73,18 @@ module TurboChat
       definition = TurboChat.configuration.role_definition(role_key)
       return false if definition.nil?
 
-      actor_membership = @chat.chat_memberships.active.find_by(participant: current_chat_participant)
-      return false if actor_membership.nil?
+      actor_rank = @chat.chat_memberships.active.find_by(participant: current_chat_participant)&.effective_role_rank
+      return false if actor_rank.nil?
 
-      definition[:rank].to_i <= actor_membership.effective_role_rank
+      definition[:rank].to_i <= actor_rank
     rescue StandardError
       false
     end
 
     def invite_participant
-      participant_type = invite_params.fetch(:participant_type).to_s
-      participant_id = invite_params.fetch(:participant_id).to_s
+      invite_request = invite_params
+      participant_type = invite_request.fetch(:participant_type).to_s
+      participant_id = invite_request.fetch(:participant_id).to_s
       raise ArgumentError if participant_type.blank? || participant_id.blank?
 
       participant_class = participant_type.safe_constantize
@@ -121,9 +104,20 @@ module TurboChat
     end
 
     def invitation_pending_attributes
-      return {} unless TurboChat::ChatMembership.invitation_tracking_supported?
+      TurboChat::ChatMembership.invitation_tracking_supported? ? { invitation_accepted: false } : {}
+    end
 
-      { invitation_accepted: false }
+    def invitation_membership_attributes(membership)
+      attributes = membership.persisted? ? { removed_at: nil, muted: false, timed_out_until: nil } : { role: :member }
+      attributes.merge(invitation_pending_attributes)
+    end
+
+    def authorize_permission!(method_name, *args)
+      permission = permission_for(@chat)
+      allowed = permission.respond_to?(method_name) && permission.public_send(method_name, *args)
+      return if allowed
+
+      head :forbidden
     end
   end
 end

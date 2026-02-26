@@ -41,37 +41,28 @@ module TurboChat
                           .group(:participant_type, :participant_id)
                           .maximum(:created_at)
 
-      recent = chat_messages
-               .signal
-               .where("created_at >= ?", cutoff)
-               .ordered
-               .reverse
-
+      recent = chat_messages.signal.where("created_at >= ?", cutoff).ordered.reverse
       seen = {}
       recent.each_with_object([]) do |message, output|
         participant_key = [message.participant_type, message.participant_id]
         last_message_time = latest_message_at[participant_key]
         next if last_message_time && last_message_time >= message.created_at
-
-        key = "#{message.participant_type}-#{message.participant_id}"
-        next if seen[key]
+        next if seen[participant_key]
 
         output << message
-        seen[key] = true
+        seen[participant_key] = true
       end.reverse
     end
 
     def visible_messages(limit: TurboChat.configuration.message_history_limit)
       relation = chat_messages.timeline
       normalized_limit = normalize_message_limit(limit)
-      limited_relation = if normalized_limit.nil?
-                           relation
-                         else
-                           recent_ids = relation.reorder(created_at: :desc, id: :desc).limit(normalized_limit).select(:id)
-                           relation.where(id: recent_ids)
-                         end
+      if normalized_limit
+        recent_ids = relation.reorder(created_at: :desc, id: :desc).limit(normalized_limit).select(:id)
+        relation = relation.where(id: recent_ids)
+      end
 
-      limited_relation.ordered.preload(:participant)
+      relation.ordered.preload(:participant)
     end
 
     def last_message_at
