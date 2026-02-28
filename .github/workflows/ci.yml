@@ -26,4 +26,11 @@ jobs:
           RAILS_ENV: test
         run: |
           bundle exec bin/rails db:prepare
-          bundle exec bin/rails test:all
+          bundle exec bin/rails test
+
+      - name: Run system tests
+        env:
+          RAILS_ENV: test
+          CHAT_GEM_SYSTEM_TEST_CHROME: "1"
+        run: |
+          bundle exec bin/rails test test/system/chat_browser_events_test.rb
