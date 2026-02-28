@@ -8,6 +8,8 @@ module TurboChat
         emit_invitation_events: false,
         emit_chat_lifecycle_events: false,
         show_members: true,
+        show_self_signals: false,
+        disable_input: false,
         composer_add_files_display: false,
         composer_add_files_active: false,
         composer_microphone_display: false,
@@ -77,6 +79,28 @@ module TurboChat
 
       def chat_shell_style_class
         chat_unbounded_style? ? "chat-shell--style-unbounded" : "chat-shell--style-bounded"
+      end
+
+      def chat_message_insert_position
+        raw_position = chat_config_value(:message_insert_position, default: "append_end")
+        normalized = raw_position.to_s.strip.downcase
+
+        case normalized
+        when "append_start", "start", "prepend"
+          "append_start"
+        else
+          "append_end"
+        end
+      end
+
+      def chat_message_append_start?
+        chat_message_insert_position == "append_start"
+      end
+
+      def chat_signal_ttl_seconds
+        value = chat_config_value(:signal_ttl_seconds, default: 60)
+        ttl = value.to_i
+        ttl.positive? ? ttl : 60
       end
 
       private

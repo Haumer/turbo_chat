@@ -419,6 +419,17 @@
       return;
     }
 
+    var insertPosition = String(container.dataset.chatMessageInsertPosition || "").trim().toLowerCase();
+    if (insertPosition === "append_start") {
+      var firstMessage = container.firstElementChild;
+      if (!firstMessage) {
+        return;
+      }
+
+      container.scrollTop = Math.max(0, firstMessage.offsetTop - 2);
+      return;
+    }
+
     var lastMessage = container.lastElementChild;
     if (!lastMessage) {
       return;

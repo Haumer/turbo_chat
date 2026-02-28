@@ -29,6 +29,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     get "/chat/chats/#{chat.id}"
     assert_response :success
     assert_select ".chat-shell.chat-shell--style-bounded[data-chat-style='chat_style_bounded']", 1
+    assert_select ".chat-messages[data-chat-message-insert-position='append_end']", 1
   end
 
   test "chat show supports unbounded style class from configuration" do
@@ -44,6 +45,27 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_select ".chat-shell.chat-shell--style-unbounded[data-chat-style='chat_style_unbounded']", 1
   ensure
     TurboChat.configuration.chat_style = previous_chat_style
+  end
+
+  test "chat show supports append_start message insert position ordering" do
+    previous_insert_position = TurboChat.configuration.message_insert_position
+    TurboChat.configuration.message_insert_position = "append_start"
+
+    user = User.create!(email: "append-start-order@example.com")
+    chat = TurboChat::Chat.create!(title: "Append Start Ordering")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+    TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "oldest", kind: :message, created_at: 3.minutes.ago)
+    TurboChat::ChatMessage.create!(chat: chat, participant: user, body: "newest", kind: :message, created_at: 1.minute.ago)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-messages[data-chat-message-insert-position='append_start']", 1
+    assert_includes response.body, "newest"
+    assert_includes response.body, "oldest"
+    assert_operator response.body.index("newest"), :<, response.body.index("oldest")
+  ensure
+    TurboChat.configuration.message_insert_position = previous_insert_position
   end
 
   test "chat show renders system messages in dedicated system style" do
@@ -177,6 +199,22 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     TurboChat.configuration.composer_add_files_active = previous_add_active
     TurboChat.configuration.composer_microphone_display = previous_microphone_display
     TurboChat.configuration.composer_microphone_active = previous_microphone_active
+  end
+
+  test "composer is hidden when disable_input is enabled" do
+    previous_disable_input = TurboChat.configuration.disable_input
+    TurboChat.configuration.disable_input = true
+
+    user = User.create!(email: "composer-disabled@example.com")
+    chat = TurboChat::Chat.create!(title: "Composer Disabled")
+    TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-composer", 0
+  ensure
+    TurboChat.configuration.disable_input = previous_disable_input
   end
 
   test "chats index falls back when invitation migration is not yet applied" do
@@ -408,6 +446,27 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
     assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen", text: "Reviewing your request", count: 1
     assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen .chat-signal-text-sheen", text: "Reviewing your request", count: 1
+  end
+
+  test "chat show renders standard signal types as sheen text" do
+    current_user = User.create!(email: "standard-signal-self@example.com")
+    other_user = User.create!(email: "standard-signal-other@example.com")
+    chat = TurboChat::Chat.create!(title: "Standard Signal Chat")
+
+    TurboChat::ChatMembership.create!(chat: chat, participant: current_user)
+    TurboChat::ChatMembership.create!(chat: chat, participant: other_user)
+    TurboChat::Signals.start!(
+      chat: chat,
+      participant: other_user,
+      signal_type: :planning
+    )
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen", text: "planning", count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen .chat-signal-text-sheen", text: "planning", count: 1
   end
 
   test "chat show can disable custom signal text sheen styling" do

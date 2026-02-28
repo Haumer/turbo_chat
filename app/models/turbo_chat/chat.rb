@@ -105,7 +105,12 @@ module TurboChat
     end
 
     def self.signal_window_seconds(window = nil)
-      value = window.nil? ? TurboChat.configuration.signal_ttl_seconds : window
+      value = if window.nil?
+                configuration = TurboChat.configuration
+                configuration.respond_to?(:signal_ttl_seconds) ? configuration.signal_ttl_seconds : 60
+              else
+                window
+              end
       seconds = value.to_i
       return seconds if seconds.positive?
 

@@ -82,7 +82,7 @@ module TurboChat
     def respond_to_chat_message_create_failure
       @chat_messages = @chat.visible_messages
       @chat_permission = permission_for(@chat)
-      @can_post_message = @chat_permission.can_post_message?
+      @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?
       @show_members = chat_config_boolean(:show_members, default: true)
       respond_to do |format|
         format.turbo_stream { render "turbo_chat/chats/show", status: :unprocessable_entity }

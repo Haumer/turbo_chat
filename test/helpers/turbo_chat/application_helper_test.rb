@@ -21,11 +21,15 @@ module TurboChat
       @original_emit_chat_lifecycle_events = config.emit_chat_lifecycle_events
       @original_show_members = config.show_members
       @original_composer_placeholder_text = config.composer_placeholder_text
+      @original_disable_input = config.disable_input
       @original_composer_add_files_display = config.composer_add_files_display
       @original_composer_add_files_active = config.composer_add_files_active
       @original_composer_microphone_display = config.composer_microphone_display
       @original_composer_microphone_active = config.composer_microphone_active
+      @original_message_insert_position = config.message_insert_position
       @original_chat_style = config.chat_style
+      @original_show_self_signals = config.show_self_signals
+      @original_signal_ttl_seconds = config.signal_ttl_seconds
       @original_render_message_html = config.render_message_html
       @original_own_message_hex_color = config.own_message_hex_color
       @original_other_message_hex_color = config.other_message_hex_color
@@ -46,11 +50,15 @@ module TurboChat
       config.emit_chat_lifecycle_events = @original_emit_chat_lifecycle_events
       config.show_members = @original_show_members
       config.composer_placeholder_text = @original_composer_placeholder_text
+      config.disable_input = @original_disable_input
       config.composer_add_files_display = @original_composer_add_files_display
       config.composer_add_files_active = @original_composer_add_files_active
       config.composer_microphone_display = @original_composer_microphone_display
       config.composer_microphone_active = @original_composer_microphone_active
+      config.message_insert_position = @original_message_insert_position
       config.chat_style = @original_chat_style
+      config.show_self_signals = @original_show_self_signals
+      config.signal_ttl_seconds = @original_signal_ttl_seconds
       config.render_message_html = @original_render_message_html
       config.own_message_hex_color = @original_own_message_hex_color
       config.other_message_hex_color = @original_other_message_hex_color
@@ -139,11 +147,16 @@ module TurboChat
         assert_equal false, chat_emit_invitation_events?
         assert_equal false, chat_emit_chat_lifecycle_events?
         assert_equal true, chat_show_members?
+        assert_equal false, chat_show_self_signals?
         assert_equal "start chatting", chat_composer_placeholder_text
+        assert_equal 60, chat_signal_ttl_seconds
+        assert_equal false, chat_disable_input?
         assert_equal false, chat_composer_add_files_display?
         assert_equal false, chat_composer_add_files_active?
         assert_equal false, chat_composer_microphone_display?
         assert_equal false, chat_composer_microphone_active?
+        assert_equal "append_end", chat_message_insert_position
+        assert_equal false, chat_message_append_start?
         assert_equal "chat_style_bounded", chat_style_key
         assert_equal false, chat_unbounded_style?
         assert_equal "chat-shell--style-bounded", chat_shell_style_class
@@ -176,6 +189,12 @@ module TurboChat
       assert_equal "start chatting", chat_composer_placeholder_text
     end
 
+    test "chat_disable_input? follows configuration" do
+      TurboChat.configuration.disable_input = true
+
+      assert_equal true, chat_disable_input?
+    end
+
     test "chat_composer_add_files_* methods follow configuration" do
       TurboChat.configuration.composer_add_files_display = true
       TurboChat.configuration.composer_add_files_active = false
@@ -190,6 +209,36 @@ module TurboChat
 
       assert_equal true, chat_composer_microphone_display?
       assert_equal false, chat_composer_microphone_active?
+    end
+
+    test "chat_message_insert_position normalizes configuration values" do
+      TurboChat.configuration.message_insert_position = "append_start"
+      assert_equal "append_start", chat_message_insert_position
+      assert_equal true, chat_message_append_start?
+
+      TurboChat.configuration.message_insert_position = "start"
+      assert_equal "append_start", chat_message_insert_position
+
+      TurboChat.configuration.message_insert_position = "append_end"
+      assert_equal "append_end", chat_message_insert_position
+      assert_equal false, chat_message_append_start?
+
+      TurboChat.configuration.message_insert_position = "bogus"
+      assert_equal "append_end", chat_message_insert_position
+    end
+
+    test "chat_signal_ttl_seconds normalizes configuration values" do
+      TurboChat.configuration.signal_ttl_seconds = 90
+      assert_equal 90, chat_signal_ttl_seconds
+
+      TurboChat.configuration.signal_ttl_seconds = "45"
+      assert_equal 45, chat_signal_ttl_seconds
+
+      TurboChat.configuration.signal_ttl_seconds = 0
+      assert_equal 60, chat_signal_ttl_seconds
+
+      TurboChat.configuration.signal_ttl_seconds = -10
+      assert_equal 60, chat_signal_ttl_seconds
     end
 
     test "chat style helpers normalize configuration to bounded and unbounded classes" do

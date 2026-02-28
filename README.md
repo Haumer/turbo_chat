@@ -127,6 +127,8 @@ TurboChat.configure do |config|
   config.show_role = false
   config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
   config.chat_style = "chat_style_bounded"
+  config.message_insert_position = "append_end" # or "append_start"
+  config.disable_input = false
   config.signal_ttl_seconds = 60
   config.signal_text_sheen = true
 
@@ -181,6 +183,22 @@ Chat UI layout style is configurable:
 ```ruby
 TurboChat.configure do |config|
   config.chat_style = "chat_style_unbounded" # or "chat_style_bounded"
+end
+```
+
+Timeline insert position is configurable:
+
+```ruby
+TurboChat.configure do |config|
+  config.message_insert_position = "append_end" # or "append_start"
+end
+```
+
+Composer input can be disabled globally:
+
+```ruby
+TurboChat.configure do |config|
+  config.disable_input = true
 end
 ```
 

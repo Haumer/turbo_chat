@@ -27,6 +27,7 @@ module TurboChat
       assert_equal true, config.show_members
       assert_equal true, config.system_messages
       assert_equal "start chatting", config.composer_placeholder_text
+      assert_equal false, config.disable_input
       assert_equal false, config.composer_add_files_display
       assert_equal false, config.composer_add_files_active
       assert_equal false, config.composer_microphone_display
@@ -43,6 +44,7 @@ module TurboChat
       assert_equal true, config.signal_text_sheen
       assert_equal false, config.show_self_signals
       assert_equal false, config.replace_signals_on_message_submit
+      assert_equal "append_end", config.message_insert_position
       assert_nil config.message_css_class_resolver
       assert_equal TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS, config.message_source_labels
       assert_equal "chat_style_bounded", config.chat_style

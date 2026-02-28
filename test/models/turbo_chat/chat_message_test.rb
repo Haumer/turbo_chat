@@ -534,6 +534,32 @@ module TurboChat
       assert_equal 1, broadcast_count
     end
 
+    test "append_start_position? normalizes configured insert position values" do
+      user = User.create!(email: "insert-position-check@example.com")
+      chat = TurboChat::Chat.create!(title: "Insert Position Check")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user)
+
+      with_chat_configuration(message_insert_position: "append_start") do
+        message = TurboChat::ChatMessage.new(chat: chat, participant: user, kind: :message, body: "hello")
+        assert_equal true, message.send(:append_start_position?)
+      end
+
+      with_chat_configuration(message_insert_position: "start") do
+        message = TurboChat::ChatMessage.new(chat: chat, participant: user, kind: :message, body: "hello")
+        assert_equal true, message.send(:append_start_position?)
+      end
+
+      with_chat_configuration(message_insert_position: "append_end") do
+        message = TurboChat::ChatMessage.new(chat: chat, participant: user, kind: :message, body: "hello")
+        assert_equal false, message.send(:append_start_position?)
+      end
+
+      with_chat_configuration(message_insert_position: "bogus") do
+        message = TurboChat::ChatMessage.new(chat: chat, participant: user, kind: :message, body: "hello")
+        assert_equal false, message.send(:append_start_position?)
+      end
+    end
+
     test "start_signal ignores signal_text for non-custom signal types" do
       user = User.create!(email: "non-custom-signal-text@example.com")
       chat = TurboChat::Chat.create!(title: "Non Custom Signal Text")
@@ -732,6 +758,7 @@ module TurboChat
         emit_blocked_words_events: config.emit_blocked_words_events,
         system_messages: config.system_messages,
         replace_signals_on_message_submit: config.replace_signals_on_message_submit,
+        message_insert_position: config.message_insert_position,
         timestamp_formatter: config.timestamp_formatter,
         role_formatter: config.role_formatter
       }

@@ -400,6 +400,28 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_equal "forged system event", created_message.body
   end
 
+  test "chat message create is forbidden when disable_input is enabled" do
+    previous_disable_input = TurboChat.configuration.disable_input
+    TurboChat.configuration.disable_input = true
+
+    participant = User.create!(email: "post-disabled@example.com")
+    chat = TurboChat::Chat.create!(title: "Post Disabled")
+    TurboChat::ChatMembership.create!(chat: chat, participant: participant, role: :member)
+
+    with_current_chat_participant(participant) do
+      post "/chat/chats/#{chat.id}/chat_messages", params: {
+        chat_message: {
+          body: "blocked message"
+        }
+      }
+    end
+
+    assert_response :forbidden
+    assert_equal 0, chat.chat_messages.count
+  ensure
+    TurboChat.configuration.disable_input = previous_disable_input
+  end
+
   test "admin can close and reopen chat" do
     admin = User.create!(email: "close-admin@example.com")
     chat = TurboChat::Chat.create!(title: "Close Chat")

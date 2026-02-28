@@ -10,6 +10,10 @@
   ("chat-shell--closed" if @chat.closed?),
   ("chat-shell--can-manage-member-permissions" if @can_manage_member_permissions)
 ].compact.join(" ") %>
+<% message_insert_position = chat_message_insert_position %>
+<% chat_messages = @chat_messages.to_a %>
+<% chat_messages.reverse! if message_insert_position == "append_start" %>
+<% can_render_composer = @can_post_message && !chat_disable_input? %>
 <section class="<%= chat_shell_classes %>"
          data-chat-id="<%= @chat.id %>"
          data-chat-style="<%= chat_style_key %>"
@@ -113,6 +117,7 @@
     <div id="<%= dom_id(@chat, :messages) %>"
          class="chat-messages"
          data-chat-id="<%= @chat.id %>"
+         data-chat-message-insert-position="<%= message_insert_position %>"
          data-chat-self-participant-type="<%= current_participant_type %>"
          data-chat-self-participant-id="<%= current_participant_id %>"
          data-chat-self-mention-tokens="<%= json_escape(self_mention_tokens.to_json) %>"
@@ -122,20 +127,20 @@
          data-chat-emit-mention-events="<%= chat_emit_mention_events? %>"
          data-chat-can-edit-own-messages="<%= @can_edit_own_messages %>"
          <%= %(style="#{mention_container_style}") if mention_container_style.present? %>>
-      <%= render @chat_messages %>
+      <%= render chat_messages %>
     </div>
 
     <div id="<%= dom_id(@chat, :signals) %>"
          class="chat-signals"
-         data-chat-show-self-signals="<%= TurboChat.configuration.show_self_signals %>"
-         data-chat-signal-ttl-seconds="<%= TurboChat.configuration.signal_ttl_seconds %>"
+         data-chat-show-self-signals="<%= chat_show_self_signals? %>"
+         data-chat-signal-ttl-seconds="<%= chat_signal_ttl_seconds %>"
          data-chat-self-participant-type="<%= current_participant_type %>"
          data-chat-self-participant-id="<%= current_participant_id %>">
       <%= render "turbo_chat/chat_messages/signals", chat: @chat %>
     </div>
   </section>
 
-  <% if @can_post_message %>
+  <% if can_render_composer %>
     <%= render "turbo_chat/chat_messages/form",
                chat: @chat,
                chat_message: @chat_message,

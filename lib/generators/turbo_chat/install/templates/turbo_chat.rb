@@ -60,8 +60,12 @@ TurboChat.configure do |config|
   # Maps message source keys to labels shown on non-default source badges.
   config.chat_style = "chat_style_bounded"
   # Chat layout style: `chat_style_bounded` or `chat_style_unbounded`.
+  # config.message_insert_position = "append_end"
+  # Timeline insert behavior: `append_end` (near composer) or `append_start` (top of list).
   config.composer_placeholder_text = "start chatting"
   # Placeholder text for the message composer input.
+  # config.disable_input = true
+  # Disables composer rendering and blocks message submissions.
 
   # Optional composer controls (disabled by default)
   # config.composer_add_files_display = true

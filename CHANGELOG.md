@@ -2,6 +2,16 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.13] - 2026-02-26
+
+### Added
+- Configurable timeline insert behavior via `config.message_insert_position` (`append_end` or `append_start`).
+- Configurable composer disable toggle via `config.disable_input` to hide input and reject message posts.
+
+### Changed
+- Signal indicators now render status text for standard signal types (`typing`, `thinking`, `planning`) so shimmer styling can pass over the status text only (not participant names).
+- `config.signal_text_sheen` is now consistently cast as a boolean during signal rendering.
+
 ## [0.1.12] - 2026-02-26
 
 ### Added

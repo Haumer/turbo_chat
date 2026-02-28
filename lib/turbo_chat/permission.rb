@@ -26,6 +26,7 @@ class TurboChat::Permission
 
   def can_post_message?
     can_view_chat? &&
+      !chat_input_disabled? &&
       role_permission?(:post_message) &&
       !chat_closed? &&
       !actor_membership_muted? &&
@@ -65,4 +66,14 @@ class TurboChat::Permission
   def can_close_chat? = can_view_chat? && role_permission?(:close_chat)
 
   def can_reopen_chat? = can_view_chat? && role_permission?(:reopen_chat)
+
+  private
+
+  def chat_input_disabled?
+    configuration = TurboChat.configuration
+    value = configuration.respond_to?(:disable_input) ? configuration.disable_input : false
+    ActiveModel::Type::Boolean.new.cast(value)
+  rescue StandardError
+    false
+  end
 end

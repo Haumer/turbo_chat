@@ -109,6 +109,21 @@ module TurboChat
       assert permission.can_post_message?
     end
 
+    test "posting is blocked when input is disabled in configuration" do
+      previous_disable_input = TurboChat.configuration.disable_input
+      TurboChat.configuration.disable_input = true
+
+      chat = TurboChat::Chat.create!(title: "Disabled Input Permission")
+      user = User.create!(email: "disabled-input-permission@example.com")
+      TurboChat::ChatMembership.create!(chat: chat, participant: user, role: :member)
+
+      permission = TurboChat::Permission.new(user, chat)
+      assert permission.can_view_chat?
+      assert_not permission.can_post_message?
+    ensure
+      TurboChat.configuration.disable_input = previous_disable_input
+    end
+
     test "removed membership cannot view or post" do
       chat = TurboChat::Chat.create!(title: "Removed Membership")
       user = User.create!(email: "removed-membership@example.com")

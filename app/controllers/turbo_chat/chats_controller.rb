@@ -61,7 +61,7 @@ module TurboChat
       @chat_lifecycle_event = chat_lifecycle_event_payload
       @chat_permission = permission_for(@chat)
       @chat_messages = @chat.visible_messages
-      @can_post_message = @chat_permission.can_post_message?
+      @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?
       @show_members = show_members_enabled?
       @can_invite_member = permission_allows?(@chat_permission, :can_invite_member?)
       @can_manage_member_permissions = permission_allows?(@chat_permission, :can_grant_member_permissions?)

@@ -1,5 +1,11 @@
-<% show_self_signals = TurboChat.configuration.show_self_signals %>
-<% signal_text_sheen_enabled = TurboChat.configuration.signal_text_sheen %>
+<% show_self_signals = if respond_to?(:chat_show_self_signals?, true)
+                         chat_show_self_signals?
+                       else
+                         configuration = TurboChat.configuration
+                         value = configuration.respond_to?(:show_self_signals) ? configuration.show_self_signals : false
+                         ActiveModel::Type::Boolean.new.cast(value)
+                       end %>
+<% signal_text_sheen_enabled = ActiveModel::Type::Boolean.new.cast(TurboChat.configuration.signal_text_sheen) %>
 <% current_participant = respond_to?(:current_chat_participant, true) ? current_chat_participant : nil %>
 <% current_participant_type = current_participant&.class&.base_class&.name %>
 <% current_participant_id = current_participant&.id %>
@@ -17,19 +23,18 @@
        data-chat-signal-at="<%= signal_message.created_at.to_i %>"
        data-chat-signal-participant-type="<%= signal_message.participant_type %>"
        data-chat-signal-participant-id="<%= signal_message.participant_id %>">
+    <% signal_text = if signal_message.signal_type_custom? && signal_message.signal_text.present?
+                       signal_message.signal_text
+                     else
+                       signal_message.signal_type.to_s
+                     end %>
     <strong><%= signal_message.participant_display_name %></strong>
-    <% if signal_message.signal_type_custom? && signal_message.signal_text.present? %>
-      <span class="chat-signal-text<%= " chat-signal-text--sheen" if signal_text_sheen_enabled %>">
-        <% if signal_text_sheen_enabled %>
-          <span class="chat-signal-text-sheen"><%= signal_message.signal_text %></span>
-        <% else %>
-          <%= signal_message.signal_text %>
-        <% end %>
-      </span>
-    <% else %>
-      <span class="chat-dots">
-        <i></i><i></i><i></i>
-      </span>
-    <% end %>
+    <span class="chat-signal-text<%= " chat-signal-text--sheen" if signal_text_sheen_enabled %>">
+      <% if signal_text_sheen_enabled %>
+        <span class="chat-signal-text-sheen"><%= signal_text %></span>
+      <% else %>
+        <%= signal_text %>
+      <% end %>
+    </span>
   </div>
 <% end %>
