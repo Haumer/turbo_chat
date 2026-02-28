@@ -14,6 +14,18 @@
 <% chat_messages = @chat_messages.to_a %>
 <% chat_messages.reverse! if message_insert_position == "append_start" %>
 <% can_render_composer = @can_post_message && !chat_disable_input? %>
+<% show_header_title = chat_show_header_title? %>
+<% show_header_status = chat_show_header_status? %>
+<% show_header_close_action = chat_show_header_close_action? %>
+<% show_header_leave_action = chat_show_header_leave_action? %>
+<% show_header_back_action = chat_show_header_back_action? %>
+<% show_header_actions = show_header_close_action || show_header_leave_action || show_header_back_action %>
+<% show_members_list = chat_show_members_list? %>
+<% show_members_invite_controls = chat_show_members_invite_controls? %>
+<% show_invite_fallback_when_members_hidden = chat_show_invite_fallback_when_members_hidden? %>
+<% show_members_invite_block = show_members_invite_controls && @can_invite_member %>
+<% show_members_panel = @show_members && (show_members_list || show_members_invite_block) %>
+<% show_invite_fallback = !@show_members && show_members_invite_block && show_invite_fallback_when_members_hidden %>
 <section class="<%= chat_shell_classes %>"
          data-chat-id="<%= @chat.id %>"
          data-chat-style="<%= chat_style_key %>"
@@ -36,47 +48,61 @@
   <header class="chat-header">
     <div class="chat-header-copy">
       <p class="chat-header-kicker"><%= @chat.closed? ? "Conversation closed" : "Conversation active" %></p>
-      <div class="chat-header-title-row">
-        <h1><%= @chat.title %></h1>
-        <span class="chat-status <%= @chat.closed? ? "chat-status--closed" : "chat-status--open" %>">
-          <%= @chat.closed? ? "Closed" : "Open" %>
-        </span>
-      </div>
-    </div>
-    <div class="chat-header-actions">
-      <% if @chat.opened? && @can_close_chat %>
-        <%= button_to "Close",
-                      close_chat_path(@chat),
-                      method: :patch,
-                      form_class: "chat-inline-form",
-                      class: "chat-btn chat-btn--danger",
-                      data: { turbo_confirm: "Close this chat?" } %>
-      <% elsif @chat.closed? && @can_reopen_chat %>
-        <%= button_to "Reopen",
-                      reopen_chat_path(@chat),
-                      method: :patch,
-                      form_class: "chat-inline-form",
-                      class: "chat-btn chat-btn--success" %>
+      <% if show_header_title || show_header_status %>
+        <div class="chat-header-title-row">
+          <% if show_header_title %>
+            <h1><%= @chat.title %></h1>
+          <% end %>
+          <% if show_header_status %>
+            <span class="chat-status <%= @chat.closed? ? "chat-status--closed" : "chat-status--open" %>">
+              <%= @chat.closed? ? "Closed" : "Open" %>
+            </span>
+          <% end %>
+        </div>
       <% end %>
-
-      <%= button_to "Leave",
-                    leave_chat_path(@chat),
-                    method: :patch,
-                    form_class: "chat-inline-form",
-                    class: "chat-btn chat-btn--danger",
-                    data: { turbo_confirm: "Leave this chat?" } %>
-      <%= link_to "Back", chats_path, class: "chat-btn chat-btn--ghost" %>
     </div>
+    <% if show_header_actions %>
+      <div class="chat-header-actions">
+        <% if show_header_close_action %>
+          <% if @chat.opened? && @can_close_chat %>
+            <%= button_to "Close",
+                          close_chat_path(@chat),
+                          method: :patch,
+                          form_class: "chat-inline-form",
+                          class: "chat-btn chat-btn--danger",
+                          data: { turbo_confirm: "Close this chat?" } %>
+          <% elsif @chat.closed? && @can_reopen_chat %>
+            <%= button_to "Reopen",
+                          reopen_chat_path(@chat),
+                          method: :patch,
+                          form_class: "chat-inline-form",
+                          class: "chat-btn chat-btn--success" %>
+          <% end %>
+        <% end %>
+
+        <% if show_header_leave_action %>
+          <%= button_to "Leave",
+                        leave_chat_path(@chat),
+                        method: :patch,
+                        form_class: "chat-inline-form",
+                        class: "chat-btn chat-btn--danger",
+                        data: { turbo_confirm: "Leave this chat?" } %>
+        <% end %>
+        <% if show_header_back_action %>
+          <%= link_to "Back", chats_path, class: "chat-btn chat-btn--ghost" %>
+        <% end %>
+      </div>
+    <% end %>
   </header>
 
-  <% if @show_members %>
+  <% if show_members_panel %>
     <section class="chat-members">
       <details class="chat-members-panel">
         <summary class="chat-members-summary">
           <span>Members</span>
         </summary>
         <div class="chat-members-content">
-          <% if @can_invite_member %>
+          <% if show_members_invite_block %>
             <div class="chat-members-invite <%= invite_option_rows.present? ? "chat-members-invite--active" : "chat-members-invite--hint" %>">
               <% if invite_option_rows.present? %>
                 <%= render "turbo_chat/chats/invite_form",
@@ -89,15 +115,17 @@
               <% end %>
             </div>
           <% end %>
-          <div class="chat-members-list-shell">
-            <ul id="<%= dom_id(@chat, :member_entries) %>" class="chat-members-list" data-chat-member-list="true" data-chat-id="<%= @chat.id %>">
-              <%= render "turbo_chat/chats/member_entries", chat: @chat %>
-            </ul>
-          </div>
+          <% if show_members_list %>
+            <div class="chat-members-list-shell">
+              <ul id="<%= dom_id(@chat, :member_entries) %>" class="chat-members-list" data-chat-member-list="true" data-chat-id="<%= @chat.id %>">
+                <%= render "turbo_chat/chats/member_entries", chat: @chat %>
+              </ul>
+            </div>
+          <% end %>
         </div>
       </details>
     </section>
-  <% elsif @can_invite_member %>
+  <% elsif show_invite_fallback %>
     <div class="chat-invite">
       <% if invite_option_rows.present? %>
         <%= render "turbo_chat/chats/invite_form",

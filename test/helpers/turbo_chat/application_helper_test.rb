@@ -20,8 +20,16 @@ module TurboChat
       @original_emit_invitation_events = config.emit_invitation_events
       @original_emit_chat_lifecycle_events = config.emit_chat_lifecycle_events
       @original_show_members = config.show_members
+      @original_show_members_list = config.show_members_list
+      @original_show_members_invite_controls = config.show_members_invite_controls
+      @original_show_invite_fallback_when_members_hidden = config.show_invite_fallback_when_members_hidden
       @original_composer_placeholder_text = config.composer_placeholder_text
       @original_disable_input = config.disable_input
+      @original_show_header_title = config.show_header_title
+      @original_show_header_status = config.show_header_status
+      @original_show_header_close_action = config.show_header_close_action
+      @original_show_header_leave_action = config.show_header_leave_action
+      @original_show_header_back_action = config.show_header_back_action
       @original_composer_add_files_display = config.composer_add_files_display
       @original_composer_add_files_active = config.composer_add_files_active
       @original_composer_microphone_display = config.composer_microphone_display
@@ -49,8 +57,16 @@ module TurboChat
       config.emit_invitation_events = @original_emit_invitation_events
       config.emit_chat_lifecycle_events = @original_emit_chat_lifecycle_events
       config.show_members = @original_show_members
+      config.show_members_list = @original_show_members_list
+      config.show_members_invite_controls = @original_show_members_invite_controls
+      config.show_invite_fallback_when_members_hidden = @original_show_invite_fallback_when_members_hidden
       config.composer_placeholder_text = @original_composer_placeholder_text
       config.disable_input = @original_disable_input
+      config.show_header_title = @original_show_header_title
+      config.show_header_status = @original_show_header_status
+      config.show_header_close_action = @original_show_header_close_action
+      config.show_header_leave_action = @original_show_header_leave_action
+      config.show_header_back_action = @original_show_header_back_action
       config.composer_add_files_display = @original_composer_add_files_display
       config.composer_add_files_active = @original_composer_add_files_active
       config.composer_microphone_display = @original_composer_microphone_display
@@ -147,10 +163,18 @@ module TurboChat
         assert_equal false, chat_emit_invitation_events?
         assert_equal false, chat_emit_chat_lifecycle_events?
         assert_equal true, chat_show_members?
+        assert_equal true, chat_show_members_list?
+        assert_equal true, chat_show_members_invite_controls?
+        assert_equal true, chat_show_invite_fallback_when_members_hidden?
         assert_equal false, chat_show_self_signals?
         assert_equal "start chatting", chat_composer_placeholder_text
         assert_equal 60, chat_signal_ttl_seconds
         assert_equal false, chat_disable_input?
+        assert_equal true, chat_show_header_title?
+        assert_equal true, chat_show_header_status?
+        assert_equal true, chat_show_header_close_action?
+        assert_equal true, chat_show_header_leave_action?
+        assert_equal true, chat_show_header_back_action?
         assert_equal false, chat_composer_add_files_display?
         assert_equal false, chat_composer_add_files_active?
         assert_equal false, chat_composer_microphone_display?
@@ -181,6 +205,16 @@ module TurboChat
       assert_equal false, chat_show_members?
     end
 
+    test "chat_show_members_* helpers follow configuration" do
+      TurboChat.configuration.show_members_list = false
+      TurboChat.configuration.show_members_invite_controls = false
+      TurboChat.configuration.show_invite_fallback_when_members_hidden = false
+
+      assert_equal false, chat_show_members_list?
+      assert_equal false, chat_show_members_invite_controls?
+      assert_equal false, chat_show_invite_fallback_when_members_hidden?
+    end
+
     test "chat_composer_placeholder_text follows configuration and normalizes blanks" do
       TurboChat.configuration.composer_placeholder_text = "Send a message"
       assert_equal "Send a message", chat_composer_placeholder_text
@@ -193,6 +227,20 @@ module TurboChat
       TurboChat.configuration.disable_input = true
 
       assert_equal true, chat_disable_input?
+    end
+
+    test "chat_show_header_* methods follow configuration" do
+      TurboChat.configuration.show_header_title = false
+      TurboChat.configuration.show_header_status = false
+      TurboChat.configuration.show_header_close_action = false
+      TurboChat.configuration.show_header_leave_action = false
+      TurboChat.configuration.show_header_back_action = false
+
+      assert_equal false, chat_show_header_title?
+      assert_equal false, chat_show_header_status?
+      assert_equal false, chat_show_header_close_action?
+      assert_equal false, chat_show_header_leave_action?
+      assert_equal false, chat_show_header_back_action?
     end
 
     test "chat_composer_add_files_* methods follow configuration" do

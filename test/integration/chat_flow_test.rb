@@ -137,6 +137,133 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     TurboChat.configuration.show_members = previous_show_members
   end
 
+  test "chat members list can be hidden while keeping invite controls visible" do
+    previous_show_members_list = TurboChat.configuration.show_members_list
+    TurboChat.configuration.show_members_list = false
+
+    admin = User.create!(email: "members-list-hidden-admin@example.com")
+    invitee = User.create!(email: "members-list-hidden-invitee@example.com")
+    chat = TurboChat::Chat.create!(title: "Members List Hidden Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-members details.chat-members-panel", 1
+    assert_select ".chat-members .chat-members-invite", 1
+    assert_select ".chat-members .chat-members-list-shell", 0
+    assert_includes response.body, invitee.email
+  ensure
+    TurboChat.configuration.show_members_list = previous_show_members_list
+  end
+
+  test "chat members invite controls can be hidden while keeping member list visible" do
+    previous_show_members_invite_controls = TurboChat.configuration.show_members_invite_controls
+    TurboChat.configuration.show_members_invite_controls = false
+
+    admin = User.create!(email: "members-invite-hidden-admin@example.com")
+    chat = TurboChat::Chat.create!(title: "Members Invite Hidden Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-members details.chat-members-panel", 1
+    assert_select ".chat-members .chat-members-list-shell", 1
+    assert_select ".chat-members .chat-members-invite", 0
+    assert_select "form.chat-form--invite[data-chat-invite-form='true']", 0
+  ensure
+    TurboChat.configuration.show_members_invite_controls = previous_show_members_invite_controls
+  end
+
+  test "invite fallback can be disabled when members panel is hidden" do
+    previous_show_members = TurboChat.configuration.show_members
+    previous_show_members_invite_controls = TurboChat.configuration.show_members_invite_controls
+    previous_show_invite_fallback = TurboChat.configuration.show_invite_fallback_when_members_hidden
+
+    TurboChat.configuration.show_members = false
+    TurboChat.configuration.show_members_invite_controls = true
+    TurboChat.configuration.show_invite_fallback_when_members_hidden = false
+
+    admin = User.create!(email: "invite-fallback-hidden-admin@example.com")
+    invitee = User.create!(email: "invite-fallback-hidden-invitee@example.com")
+    chat = TurboChat::Chat.create!(title: "Invite Fallback Hidden Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-members", 0
+    assert_select ".chat-invite", 0
+    assert_not_includes response.body, invitee.email
+  ensure
+    TurboChat.configuration.show_members = previous_show_members
+    TurboChat.configuration.show_members_invite_controls = previous_show_members_invite_controls
+    TurboChat.configuration.show_invite_fallback_when_members_hidden = previous_show_invite_fallback
+  end
+
+  test "invite fallback can render when members panel is hidden and enabled" do
+    previous_show_members = TurboChat.configuration.show_members
+    previous_show_members_invite_controls = TurboChat.configuration.show_members_invite_controls
+    previous_show_invite_fallback = TurboChat.configuration.show_invite_fallback_when_members_hidden
+
+    TurboChat.configuration.show_members = false
+    TurboChat.configuration.show_members_invite_controls = true
+    TurboChat.configuration.show_invite_fallback_when_members_hidden = true
+
+    admin = User.create!(email: "invite-fallback-visible-admin@example.com")
+    invitee = User.create!(email: "invite-fallback-visible-invitee@example.com")
+    chat = TurboChat::Chat.create!(title: "Invite Fallback Visible Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-members", 0
+    assert_select ".chat-invite", 1
+    assert_select "form.chat-form--invite[data-chat-invite-form='true']", 1
+    assert_includes response.body, invitee.email
+  ensure
+    TurboChat.configuration.show_members = previous_show_members
+    TurboChat.configuration.show_members_invite_controls = previous_show_members_invite_controls
+    TurboChat.configuration.show_invite_fallback_when_members_hidden = previous_show_invite_fallback
+  end
+
+  test "chat header title, status, and actions can be hidden via configuration" do
+    previous_show_header_title = TurboChat.configuration.show_header_title
+    previous_show_header_status = TurboChat.configuration.show_header_status
+    previous_show_header_close_action = TurboChat.configuration.show_header_close_action
+    previous_show_header_leave_action = TurboChat.configuration.show_header_leave_action
+    previous_show_header_back_action = TurboChat.configuration.show_header_back_action
+
+    TurboChat.configuration.show_header_title = false
+    TurboChat.configuration.show_header_status = false
+    TurboChat.configuration.show_header_close_action = false
+    TurboChat.configuration.show_header_leave_action = false
+    TurboChat.configuration.show_header_back_action = false
+
+    admin = User.create!(email: "header-hidden-admin@example.com")
+    chat = TurboChat::Chat.create!(title: "Header Hidden Chat")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_select ".chat-header-title-row", 0
+    assert_select ".chat-header .chat-status", 0
+    assert_select ".chat-header h1", text: "Header Hidden Chat", count: 0
+    assert_select "form.chat-inline-form[action='/chat/chats/#{chat.id}/close']", 0
+    assert_select "form.chat-inline-form[action='/chat/chats/#{chat.id}/leave']", 0
+    assert_select "a.chat-btn.chat-btn--ghost[href='/chat/chats']", 0
+    assert_select ".chat-header-actions", 0
+  ensure
+    TurboChat.configuration.show_header_title = previous_show_header_title
+    TurboChat.configuration.show_header_status = previous_show_header_status
+    TurboChat.configuration.show_header_close_action = previous_show_header_close_action
+    TurboChat.configuration.show_header_leave_action = previous_show_header_leave_action
+    TurboChat.configuration.show_header_back_action = previous_show_header_back_action
+  end
+
   test "composer add files and microphone buttons are hidden by default" do
     previous_placeholder = TurboChat.configuration.composer_placeholder_text
     previous_add_display = TurboChat.configuration.composer_add_files_display

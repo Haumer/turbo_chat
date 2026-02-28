@@ -71,9 +71,17 @@ module TurboChat
       assert_equal true, config.show_timestamp
       assert_equal false, config.show_role
       assert_equal true, config.show_members
+      assert_equal true, config.show_members_list
+      assert_equal true, config.show_members_invite_controls
+      assert_equal true, config.show_invite_fallback_when_members_hidden
       assert_equal true, config.system_messages
       assert_equal "start chatting", config.composer_placeholder_text
       assert_equal false, config.disable_input
+      assert_equal true, config.show_header_title
+      assert_equal true, config.show_header_status
+      assert_equal true, config.show_header_close_action
+      assert_equal true, config.show_header_leave_action
+      assert_equal true, config.show_header_back_action
       assert_equal false, config.composer_add_files_display
       assert_equal false, config.composer_add_files_active
       assert_equal false, config.composer_microphone_display

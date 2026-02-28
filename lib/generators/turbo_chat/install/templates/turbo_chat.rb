@@ -18,10 +18,26 @@ TurboChat.configure do |config|
   # Duration used to classify chats as active.
   config.chat.show_members = true
   # Shows member list panel in chat UI.
+  config.chat.show_members_list = true
+  # Shows member entries list inside the members panel.
+  config.chat.show_members_invite_controls = true
+  # Shows invite controls in members panel (and in fallback invite area when enabled).
+  config.chat.show_invite_fallback_when_members_hidden = true
+  # Shows fallback invite area when members panel is hidden.
   config.chat.system_messages = true
   # Shows system timeline messages (joins, invites, moderation).
   # config.chat.disable_input = true
   # Disables composer rendering and blocks message submissions.
+  # config.chat.show_header_title = false
+  # Hides the chat title in the conversation header.
+  # config.chat.show_header_status = false
+  # Hides the Open/Closed status tag in the conversation header.
+  # config.chat.show_header_close_action = false
+  # Hides the Close/Reopen action in the conversation header.
+  # config.chat.show_header_leave_action = false
+  # Hides the Leave action in the conversation header.
+  # config.chat.show_header_back_action = false
+  # Hides the Back action in the conversation header.
 
   # Chat message behavior
   config.chat_message.enable_mentions = true

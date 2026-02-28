@@ -71,8 +71,16 @@ class TurboChat::Configuration
     max_chat_participants: 10,
     active_chat_window: -> { 5.minutes },
     show_members: true,
+    show_members_list: true,
+    show_members_invite_controls: true,
+    show_invite_fallback_when_members_hidden: true,
     system_messages: true,
-    disable_input: false
+    disable_input: false,
+    show_header_title: true,
+    show_header_status: true,
+    show_header_close_action: true,
+    show_header_leave_action: true,
+    show_header_back_action: true
   }.freeze
 
   CHAT_MESSAGE_DEFAULTS = {

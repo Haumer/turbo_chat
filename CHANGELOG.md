@@ -2,6 +2,15 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.15] - 2026-02-28
+
+### Added
+- Configurable chat-header visibility toggles for title, status badge, and close/leave/back actions.
+- Configurable members-area visibility toggles for member list, invite controls, and hidden-members invite fallback.
+
+### Changed
+- Updated `rack` to `3.2.5` and `nokogiri` to `1.19.1` to address advisory findings in release audit.
+
 ## [0.1.14] - 2026-02-28
 
 ### Added

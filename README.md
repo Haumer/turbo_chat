@@ -129,6 +129,15 @@ TurboChat.configure do |config|
   config.style.chat_style = "chat_style_bounded"
   config.chat_message.message_insert_position = "append_end" # or "append_start"
   config.chat.disable_input = false
+  config.chat.show_members = true
+  config.chat.show_members_list = true
+  config.chat.show_members_invite_controls = true
+  config.chat.show_invite_fallback_when_members_hidden = true
+  config.chat.show_header_title = true
+  config.chat.show_header_status = true
+  config.chat.show_header_close_action = true
+  config.chat.show_header_leave_action = true
+  config.chat.show_header_back_action = true
   config.signals.signal_ttl_seconds = 60
   config.style.signal_text_sheen = true
 
@@ -201,6 +210,29 @@ Composer input can be disabled globally:
 ```ruby
 TurboChat.configure do |config|
   config.chat.disable_input = true
+end
+```
+
+Chat header elements can also be disabled globally:
+
+```ruby
+TurboChat.configure do |config|
+  config.chat.show_header_title = false
+  config.chat.show_header_status = false
+  config.chat.show_header_close_action = false
+  config.chat.show_header_leave_action = false
+  config.chat.show_header_back_action = false
+end
+```
+
+Members area visibility can be tuned independently:
+
+```ruby
+TurboChat.configure do |config|
+  config.chat.show_members = true
+  config.chat.show_members_list = true
+  config.chat.show_members_invite_controls = true
+  config.chat.show_invite_fallback_when_members_hidden = true
 end
 ```
 
