@@ -2,6 +2,16 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.1.14] - 2026-02-28
+
+### Added
+- Scoped configuration namespaces for clearer organization: `config.chat`, `config.chat_message`, `config.style`, `config.moderation`, `config.events`, and `config.signals`.
+- Scoped installer initializer output with inline guidance grouped by scope.
+
+### Changed
+- Updated README examples to use scoped configuration.
+- Flat configuration aliases (for example `config.max_message_length`) remain supported for backward compatibility.
+
 ## [0.1.13] - 2026-02-26
 
 ### Added
