@@ -77,7 +77,7 @@ end
 Resolution order:
 
 1. Host `ApplicationController#current_chat_participant` (if defined)
-2. `config.current_participant_resolver` (if configured)
+2. `config.chat.current_participant_resolver` (if configured)
 3. `current_user` (if available)
 4. Raise `NotImplementedError`
 
@@ -85,7 +85,7 @@ Optional resolver for non-`current_user` auth:
 
 ```ruby
 TurboChat.configure do |config|
-  config.current_participant_resolver = ->(controller) { controller.send(:current_member) }
+  config.chat.current_participant_resolver = ->(controller) { controller.send(:current_member) }
 end
 ```
 
@@ -110,33 +110,35 @@ Start with a minimal initializer and only expand when needed:
 
 ```ruby
 TurboChat.configure do |config|
-  config.permission_adapter = TurboChat::Permission
+  config.chat.permission_adapter = TurboChat::Permission
 
-  config.max_chat_participants = 10
-  config.max_message_length = 1000
-  config.message_history_limit = 200
+  config.chat.max_chat_participants = 10
+  config.chat_message.max_message_length = 1000
+  config.chat_message.message_history_limit = 200
 
-  config.enable_mentions = true
-  config.enable_emoji_aliases = true
+  config.chat_message.enable_mentions = true
+  config.chat_message.enable_emoji_aliases = true
 
-  config.blocked_words = []
-  config.blocked_words_action = :reject # or :scramble
+  config.chat_message.blocked_words = []
+  config.chat_message.blocked_words_action = :reject # or :scramble
 
-  config.render_message_html = false
-  config.show_timestamp = true
-  config.show_role = false
-  config.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
-  config.chat_style = "chat_style_bounded"
-  config.message_insert_position = "append_end" # or "append_start"
-  config.disable_input = false
-  config.signal_ttl_seconds = 60
-  config.signal_text_sheen = true
+  config.chat_message.render_message_html = false
+  config.style.show_timestamp = true
+  config.style.show_role = false
+  config.chat_message.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
+  config.style.chat_style = "chat_style_bounded"
+  config.chat_message.message_insert_position = "append_end" # or "append_start"
+  config.chat.disable_input = false
+  config.signals.signal_ttl_seconds = 60
+  config.style.signal_text_sheen = true
 
-  config.emit_moderation_events = false
-  config.emit_blocked_words_events = false
-  config.emit_mention_events = false
+  config.moderation.emit_moderation_events = false
+  config.moderation.emit_blocked_words_events = false
+  config.events.emit_mention_events = false
 end
 ```
+
+Flat aliases (for example `config.max_message_length`) still work for backward compatibility.
 
 ## Message Ingest API
 
@@ -170,7 +172,7 @@ Source labels shown in message badges are configurable:
 
 ```ruby
 TurboChat.configure do |config|
-  config.message_source_labels = {
+  config.chat_message.message_source_labels = {
     "app" => "In App",
     "whatsapp" => "WhatsApp",
     "sms_gateway" => "SMS"
@@ -182,7 +184,7 @@ Chat UI layout style is configurable:
 
 ```ruby
 TurboChat.configure do |config|
-  config.chat_style = "chat_style_unbounded" # or "chat_style_bounded"
+  config.style.chat_style = "chat_style_unbounded" # or "chat_style_bounded"
 end
 ```
 
@@ -190,7 +192,7 @@ Timeline insert position is configurable:
 
 ```ruby
 TurboChat.configure do |config|
-  config.message_insert_position = "append_end" # or "append_start"
+  config.chat_message.message_insert_position = "append_end" # or "append_start"
 end
 ```
 
@@ -198,7 +200,7 @@ Composer input can be disabled globally:
 
 ```ruby
 TurboChat.configure do |config|
-  config.disable_input = true
+  config.chat.disable_input = true
 end
 ```
 
@@ -262,13 +264,13 @@ Enable only what you consume:
 
 ```ruby
 TurboChat.configure do |config|
-  config.emit_typing_events = true
-  config.emit_message_events = true
-  config.emit_mention_events = true
-  config.emit_invitation_events = true
-  config.emit_chat_lifecycle_events = true
-  config.emit_moderation_events = true
-  config.emit_blocked_words_events = true
+  config.events.emit_typing_events = true
+  config.events.emit_message_events = true
+  config.events.emit_mention_events = true
+  config.events.emit_invitation_events = true
+  config.events.emit_chat_lifecycle_events = true
+  config.moderation.emit_moderation_events = true
+  config.moderation.emit_blocked_words_events = true
 end
 ```
 

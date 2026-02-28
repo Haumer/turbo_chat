@@ -7,19 +7,19 @@ class TurboChat::Configuration
       normalized_value = value.to_s.strip
       raise ArgumentError, "Emoji alias value cannot be blank" if normalized_value.blank?
 
-      @emoji_aliases = effective_emoji_aliases.merge(key => normalized_value)
+      self.emoji_aliases = effective_emoji_aliases.merge(key => normalized_value)
     end
 
     def remove_emoji_alias(name)
       key = normalize_emoji_alias_key(name)
       return if key.blank?
 
-      @emoji_aliases = effective_emoji_aliases.except(key)
+      self.emoji_aliases = effective_emoji_aliases.except(key)
     end
 
-    def clear_emoji_aliases! = @emoji_aliases = {}
+    def clear_emoji_aliases! = self.emoji_aliases = {}
 
-    def reset_emoji_aliases! = @emoji_aliases = DEFAULT_EMOJI_ALIASES.dup
+    def reset_emoji_aliases! = self.emoji_aliases = DEFAULT_EMOJI_ALIASES.dup
 
     def effective_emoji_aliases
       source = emoji_aliases.is_a?(Hash) ? emoji_aliases : {}

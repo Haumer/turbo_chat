@@ -2,6 +2,36 @@ require_relative "../../test_helper"
 
 module TurboChat
   class ConfigurationTest < ActiveSupport::TestCase
+    test "supports scoped settings while keeping flat aliases" do
+      config = TurboChat.configuration
+      original_max_participants = config.max_chat_participants
+      original_max_message_length = config.max_message_length
+      original_chat_style = config.chat_style
+      original_emit_moderation_events = config.emit_moderation_events
+
+      assert_instance_of TurboChat::Configuration::Chat, config.chat
+      assert_instance_of TurboChat::Configuration::ChatMessage, config.chat_message
+      assert_instance_of TurboChat::Configuration::Style, config.style
+      assert_instance_of TurboChat::Configuration::Moderation, config.moderation
+
+      config.chat.max_chat_participants = 25
+      assert_equal 25, config.max_chat_participants
+
+      config.max_message_length = 2048
+      assert_equal 2048, config.chat_message.max_message_length
+
+      config.style.chat_style = "chat_style_unbounded"
+      assert_equal "chat_style_unbounded", config.chat_style
+
+      config.emit_moderation_events = true
+      assert_equal true, config.moderation.emit_moderation_events
+    ensure
+      config.max_chat_participants = original_max_participants
+      config.max_message_length = original_max_message_length
+      config.chat_style = original_chat_style
+      config.emit_moderation_events = original_emit_moderation_events
+    end
+
     test "metadata defaults are timestamp on and role off" do
       config = TurboChat.configuration
 
