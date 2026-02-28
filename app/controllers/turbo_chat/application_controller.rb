@@ -27,7 +27,7 @@ module TurboChat
         return [send(:current_user), "#current_user"]
       end
 
-      raise NotImplementedError, "Define #current_chat_participant, configure TurboChat.configuration.current_participant_resolver, or expose #current_user"
+      raise NotImplementedError, "Define #current_chat_participant, configure TurboChat.configuration.chat.current_participant_resolver, or expose #current_user"
     end
 
     def invoke_current_participant_resolver(resolver)

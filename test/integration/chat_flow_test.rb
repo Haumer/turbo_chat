@@ -362,6 +362,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     end
 
     assert_includes error.message, "#current_chat_participant"
+    assert_includes error.message, "TurboChat.configuration.chat.current_participant_resolver"
     assert_includes error.message, "#current_user"
   ensure
     TurboChat.configuration.current_participant_resolver = original_resolver

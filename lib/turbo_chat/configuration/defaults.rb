@@ -1,4 +1,18 @@
 class TurboChat::Configuration
+  def self.build_attribute_scopes(scoped_defaults)
+    scoped_defaults.each_with_object({}) do |(scope_name, defaults), mapping|
+      defaults.each_key do |attribute|
+        if mapping.key?(attribute)
+          existing_scope = mapping.fetch(attribute)
+          raise ArgumentError, "Duplicate configuration attribute `#{attribute}` across scopes: #{existing_scope}, #{scope_name}"
+        end
+
+        mapping[attribute] = scope_name
+      end
+    end.freeze
+  end
+  private_class_method :build_attribute_scopes
+
   DEFAULT_ROLE_DEFINITIONS = {
     "member" => {
       name: "Member",
@@ -127,11 +141,7 @@ class TurboChat::Configuration
     signals: SIGNALS_DEFAULTS
   }.freeze
 
-  ATTRIBUTE_SCOPES = SCOPED_DEFAULTS.each_with_object({}) do |(scope_name, defaults), mapping|
-    defaults.each_key do |attribute|
-      mapping[attribute] = scope_name
-    end
-  end.freeze
+  ATTRIBUTE_SCOPES = build_attribute_scopes(SCOPED_DEFAULTS)
 
   DEFAULTS = ATTRIBUTE_SCOPES.each_with_object({}) do |(attribute, scope_name), defaults|
     defaults[attribute] = SCOPED_DEFAULTS.fetch(scope_name).fetch(attribute)

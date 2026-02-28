@@ -2,6 +2,22 @@ require_relative "../../test_helper"
 
 module TurboChat
   class ConfigurationTest < ActiveSupport::TestCase
+    test "raises when scoped defaults define duplicate attribute names" do
+      error = assert_raises(ArgumentError) do
+        TurboChat::Configuration.send(
+          :build_attribute_scopes,
+          {
+            chat: { duplicate_key: true },
+            chat_message: { duplicate_key: false }
+          }
+        )
+      end
+
+      assert_includes error.message, "duplicate_key"
+      assert_includes error.message, "chat"
+      assert_includes error.message, "chat_message"
+    end
+
     test "supports scoped settings while keeping flat aliases" do
       config = TurboChat.configuration
       original_max_participants = config.max_chat_participants
