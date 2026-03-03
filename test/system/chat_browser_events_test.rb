@@ -205,7 +205,11 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     install_event_capture(%w[turbo-chat:typing-started turbo-chat:typing-ended turbo-chat:message-sent])
 
     textarea = find("textarea[name='chat_message[body]']")
-    textarea.set("hello from system test")
+    execute_script(<<~JS, textarea.native)
+      arguments[0].focus();
+      arguments[0].value = "hello from system test";
+      arguments[0].dispatchEvent(new Event("input", { bubbles: true }));
+    JS
     wait_for_captured_event("turbo-chat:typing-started")
 
     click_button "Send"
