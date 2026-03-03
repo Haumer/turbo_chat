@@ -414,6 +414,15 @@
     }
   }
 
+  function syncScrollFade(container) {
+    var scrolled = container.scrollTop > 10;
+    container.classList.toggle("chat-messages--scrolled", scrolled);
+    var chatWindow = container.closest(".chat-window");
+    if (chatWindow) {
+      chatWindow.classList.toggle("chat-window--scrolled", scrolled);
+    }
+  }
+
   function setupMessageAutoScroll(container) {
     if (!container || container.dataset.chatAutoscrollBound === "true") {
       return;
@@ -424,6 +433,7 @@
       syncOwnMessageClasses(container);
       syncMentionHighlights(container, { emitEvents: false });
       scrollLastMessageIntoView(container);
+      syncScrollFade(container);
     });
 
     var observer = new MutationObserver(function () {
@@ -431,10 +441,15 @@
         syncOwnMessageClasses(container);
         syncMentionHighlights(container, { emitEvents: true });
         scrollLastMessageIntoView(container);
+        syncScrollFade(container);
       });
     });
 
     observer.observe(container, { childList: true });
+
+    container.addEventListener("scroll", function () {
+      syncScrollFade(container);
+    }, { passive: true });
 
     setupUnboundedWheelScrollProxy(container);
   }

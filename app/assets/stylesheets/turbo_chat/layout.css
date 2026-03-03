@@ -87,12 +87,16 @@
   scroll-padding-bottom: calc(var(--chat-floating-composer-clearance) + 12px);
   scrollbar-width: none;
   -ms-overflow-style: none;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0px, rgba(0, 0, 0, 0.55) 28px, #000 72px, #000 100%);
-  mask-image: linear-gradient(180deg, transparent 0px, rgba(0, 0, 0, 0.55) 28px, #000 72px, #000 100%);
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
+  transition: -webkit-mask-image 180ms ease, mask-image 180ms ease;
+}
+
+.chat-shell--style-unbounded .chat-messages--scrolled {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0px, rgba(0, 0, 0, 0.55) 28px, #000 72px, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 0px, rgba(0, 0, 0, 0.55) 28px, #000 72px, #000 100%);
 }
 
 .chat-shell--style-unbounded .chat-messages::-webkit-scrollbar {
@@ -231,6 +235,12 @@
   pointer-events: none;
   background: linear-gradient(180deg, rgba(251, 253, 255, 0.96) 0%, rgba(251, 253, 255, 0) 100%);
   z-index: 1;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.chat-window--scrolled::before {
+  opacity: 1;
 }
 
 @media (max-width: 900px) {

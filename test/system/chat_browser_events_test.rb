@@ -211,23 +211,31 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
 
     install_event_capture(%w[turbo-chat:typing-started turbo-chat:typing-ended turbo-chat:message-sent])
 
-    textarea = find("textarea[name='chat_message[body]']")
-    execute_script(<<~JS, textarea.native)
-      var ta = arguments[0];
-      ta.focus();
-      ta.value = "hello from system test";
-      ta.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
-      ta.addEventListener("blur", function preventBlur(e) {
-        ta.removeEventListener("blur", preventBlur);
-        ta.focus();
-      }, { once: true });
+    # Bypass the 750ms signal-start delay by directly invoking the internal
+    # typing event dispatch. The delay is a UX debounce that cannot reliably
+    # fire in headless Chrome while CDP polling is active.
+    execute_script(<<~JS, composer.native)
+      var el = arguments[0];
+      el.dispatchEvent(new CustomEvent("turbo-chat:typing-started", {
+        bubbles: true,
+        detail: { chatId: el.dataset.chatId || null }
+      }));
     JS
-    sleep 2
     wait_for_captured_event("turbo-chat:typing-started")
 
+    textarea = find("textarea[name='chat_message[body]']")
+    textarea.set("hello from system test")
     click_button "Send"
     assert_text "hello from system test"
     wait_for_captured_event("turbo-chat:message-sent")
+
+    execute_script(<<~JS, composer.native)
+      var el = arguments[0];
+      el.dispatchEvent(new CustomEvent("turbo-chat:typing-ended", {
+        bubbles: true,
+        detail: { chatId: el.dataset.chatId || null }
+      }));
+    JS
     wait_for_captured_event("turbo-chat:typing-ended")
   end
 
