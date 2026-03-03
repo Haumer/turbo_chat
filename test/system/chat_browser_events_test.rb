@@ -23,6 +23,7 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     open_members_panel!
 
     set_invite_query(invitee.email)
+    find("[data-chat-invite-option-index]", text: invitee.email).click
     click_button "Invite"
     assert_current_path "/chat/chats/#{chat.id}", ignore_query: true
 
@@ -203,7 +204,8 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     visit "/chat/chats/#{chat.id}"
     install_event_capture(%w[turbo-chat:typing-started turbo-chat:typing-ended turbo-chat:message-sent])
 
-    find("textarea[name='chat_message[body]']").send_keys("hello from system test")
+    textarea = find("textarea[name='chat_message[body]']")
+    textarea.set("hello from system test")
     wait_for_captured_event("turbo-chat:typing-started")
 
     click_button "Send"
