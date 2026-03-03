@@ -65,11 +65,7 @@ module TurboChat
     end
 
     def chat_input_disabled?
-      configuration = TurboChat.configuration
-      value = configuration.respond_to?(:disable_input) ? configuration.disable_input : false
-      ActiveModel::Type::Boolean.new.cast(value)
-    rescue StandardError
-      false
+      TurboChat::Configuration.config_boolean(:disable_input, default: false)
     end
   end
 end

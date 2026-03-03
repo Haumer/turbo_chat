@@ -572,11 +572,10 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
-    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen", text: "Reviewing your request", count: 1
-    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen .chat-signal-text-sheen", text: "Reviewing your request", count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--pulse", text: "Reviewing your request", count: 1
   end
 
-  test "chat show renders standard signal types as sheen text" do
+  test "chat show renders standard signal types as pulse text" do
     current_user = User.create!(email: "standard-signal-self@example.com")
     other_user = User.create!(email: "standard-signal-other@example.com")
     chat = TurboChat::Chat.create!(title: "Standard Signal Chat")
@@ -593,17 +592,16 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "#signals_chat_#{chat.id} strong", text: other_user.email, count: 1
-    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen", text: "planning", count: 1
-    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--sheen .chat-signal-text-sheen", text: "planning", count: 1
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text.chat-signal-text--pulse", text: "planning", count: 1
   end
 
-  test "chat show can disable custom signal text sheen styling" do
+  test "chat show can disable custom signal text pulse styling" do
     previous_value = TurboChat.configuration.signal_text_sheen
     TurboChat.configuration.signal_text_sheen = false
 
     current_user = User.create!(email: "custom-signal-no-sheen-self@example.com")
     other_user = User.create!(email: "custom-signal-no-sheen-other@example.com")
-    chat = TurboChat::Chat.create!(title: "Custom Signal No Sheen Chat")
+    chat = TurboChat::Chat.create!(title: "Custom Signal No Pulse Chat")
 
     TurboChat::ChatMembership.create!(chat: chat, participant: current_user)
     TurboChat::ChatMembership.create!(chat: chat, participant: other_user)
@@ -618,8 +616,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "#signals_chat_#{chat.id} .chat-signal-text", text: "Reviewing your request", count: 1
-    assert_select "#signals_chat_#{chat.id} .chat-signal-text--sheen", count: 0
-    assert_select "#signals_chat_#{chat.id} .chat-signal-text-sheen", count: 0
+    assert_select "#signals_chat_#{chat.id} .chat-signal-text--pulse", count: 0
   ensure
     TurboChat.configuration.signal_text_sheen = previous_value
   end

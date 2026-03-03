@@ -37,7 +37,8 @@ end.sort_by { |(role_name, role_key, role_rank)| [role_rank, role_name.to_s.down
         data-chat-member-search="<%= invite_search_value %>"
         data-chat-member-role-key="<%= membership.effective_role_key %>"
         data-chat-member-role-name="<%= membership.effective_role_name %>"
-        data-chat-member-role-rank="<%= membership.effective_role_rank %>">
+        data-chat-member-role-rank="<%= membership.effective_role_rank %>"
+        data-chat-member-muted="<%= membership.muted? %>">
       <div class="chat-members-item-main">
         <span class="chat-members-name"><%= participant_name %></span>
         <span class="chat-members-role"><%= membership.effective_role_name %></span>
@@ -69,6 +70,19 @@ end.sort_by { |(role_name, role_key, role_rank)| [role_rank, role_name.to_s.down
                        class: "chat-btn chat-btn--small chat-member-role-submit",
                        data: { chat_member_role_submit: true } %>
         <% end %>
+
+        <div class="chat-member-moderation" data-chat-member-moderation-panel hidden>
+          <%= button_to(membership.muted? ? "Unmute" : "Mute",
+                TurboChat::Engine.routes.url_helpers.mute_chat_chat_membership_path(chat_id: chat.id, id: membership.id),
+                method: :patch,
+                class: "chat-btn chat-btn--small chat-btn--ghost",
+                data: { chat_member_mute_action: true }) %>
+          <%= button_to("Remove",
+                TurboChat::Engine.routes.url_helpers.ban_chat_chat_membership_path(chat_id: chat.id, id: membership.id),
+                method: :patch,
+                class: "chat-btn chat-btn--small chat-btn--danger",
+                data: { turbo_confirm: "Remove this member from this chat?", chat_member_ban_action: true }) %>
+        </div>
       </div>
     </li>
   <% end %>

@@ -11,7 +11,7 @@ module TurboChat
           return nil if participant.nil?
 
           TurboChat.configuration.permission_adapter.new(participant, chat)
-        rescue StandardError
+        rescue NoMethodError, TypeError, ArgumentError
           nil
         end
 
@@ -19,7 +19,7 @@ module TurboChat
           return true unless permission.respond_to?(method_name)
 
           permission.public_send(method_name)
-        rescue StandardError
+        rescue NoMethodError, TypeError
           false
         end
       end

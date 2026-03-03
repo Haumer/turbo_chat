@@ -4,9 +4,11 @@ module TurboChat
 
     before_action :set_chat
     before_action -> { authorize_view_chat!(@chat) }
-    before_action :set_chat_membership, only: :update
+    before_action :set_chat_membership, only: %i[update mute ban]
     before_action :authorize_invite_member!, only: :create
     before_action :authorize_grant_member_permissions!, only: :update
+    before_action :authorize_mute_member!, only: :mute
+    before_action :authorize_ban_member!, only: :ban
 
     def create
       participant = invite_participant
@@ -43,6 +45,25 @@ module TurboChat
       redirect_to chat_path(@chat), alert: error.record.errors.full_messages.to_sentence
     end
 
+    def mute
+      if @chat_membership.muted?
+        TurboChat::Moderation.unmute_member!(actor: current_chat_participant, membership: @chat_membership)
+        redirect_to chat_path(@chat), notice: "Member unmuted"
+      else
+        TurboChat::Moderation.mute_member!(actor: current_chat_participant, membership: @chat_membership)
+        redirect_to chat_path(@chat), notice: "Member muted"
+      end
+    rescue TurboChat::Moderation::AuthorizationError
+      head :forbidden
+    end
+
+    def ban
+      TurboChat::Moderation.ban_member!(actor: current_chat_participant, membership: @chat_membership)
+      redirect_to chat_path(@chat), notice: "Member removed"
+    rescue TurboChat::Moderation::AuthorizationError
+      head :forbidden
+    end
+
     private
 
     def set_chat
@@ -61,6 +82,14 @@ module TurboChat
       authorize_permission!(:can_grant_member_permissions?, @chat_membership)
     end
 
+    def authorize_mute_member!
+      authorize_permission!(:can_mute_member?, @chat_membership)
+    end
+
+    def authorize_ban_member!
+      authorize_permission!(:can_ban_member?, @chat_membership)
+    end
+
     def invite_params
       params.require(:chat_membership).permit(:participant_type, :participant_id)
     end
@@ -77,7 +106,7 @@ module TurboChat
       return false if actor_rank.nil?
 
       definition[:rank].to_i <= actor_rank
-    rescue StandardError
+    rescue NoMethodError, TypeError
       false
     end
 

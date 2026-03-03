@@ -11,7 +11,7 @@ module TurboChat
 
         current_member_ids = @chat.chat_memberships.where(removed_at: nil, participant_type: participant_type).pluck(:participant_id)
         participant_class.where.not(id: current_member_ids).order(id: :asc).limit(100).to_a
-      rescue StandardError
+      rescue NoMethodError, TypeError
         []
       end
 

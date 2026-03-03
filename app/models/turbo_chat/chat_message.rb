@@ -94,12 +94,7 @@ module TurboChat
       end
 
       def system_messages_enabled?
-        configuration = TurboChat.configuration
-        return true unless configuration.respond_to?(:system_messages)
-
-        ActiveModel::Type::Boolean.new.cast(configuration.system_messages)
-      rescue StandardError
-        true
+        TurboChat::Configuration.config_boolean(:system_messages, default: true)
       end
 
       private

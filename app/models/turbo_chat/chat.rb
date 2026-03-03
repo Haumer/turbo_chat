@@ -35,23 +35,28 @@ module TurboChat
 
     def active_signals(window: nil)
       cutoff = Time.current - self.class.signal_window_seconds(window)
+
       latest_message_at = chat_messages
                           .message
                           .where("created_at >= ?", cutoff)
                           .group(:participant_type, :participant_id)
                           .maximum(:created_at)
 
-      recent = chat_messages.signal.where("created_at >= ?", cutoff).ordered.reverse
-      seen = {}
-      recent.each_with_object([]) do |message, output|
-        participant_key = [message.participant_type, message.participant_id]
-        last_message_time = latest_message_at[participant_key]
-        next if last_message_time && last_message_time >= message.created_at
-        next if seen[participant_key]
+      latest_signal_ids = chat_messages.signal
+                          .where("created_at >= ?", cutoff)
+                          .group(:participant_type, :participant_id)
+                          .maximum(:id)
+                          .values
 
-        output << message
-        seen[participant_key] = true
-      end.reverse
+      return [] if latest_signal_ids.empty?
+
+      signals = chat_messages.signal.where(id: latest_signal_ids).ordered
+
+      signals.reject do |signal|
+        participant_key = [signal.participant_type, signal.participant_id]
+        last_msg_time = latest_message_at[participant_key]
+        last_msg_time && last_msg_time >= signal.created_at
+      end
     end
 
     def visible_messages(limit: TurboChat.configuration.message_history_limit)
@@ -63,6 +68,18 @@ module TurboChat
       end
 
       relation.ordered.preload(:participant)
+    end
+
+    def membership_lookup
+      @membership_lookup ||= chat_memberships.active.index_by { |m| [m.participant_type, m.participant_id] }
+    end
+
+    def find_active_membership(participant)
+      if instance_variable_defined?(:@membership_lookup)
+        membership_lookup[[participant.class.base_class.name, participant.id]]
+      else
+        chat_memberships.active.find_by(participant: participant)
+      end
     end
 
     def last_message_at
@@ -105,12 +122,7 @@ module TurboChat
     end
 
     def self.signal_window_seconds(window = nil)
-      value = if window.nil?
-                configuration = TurboChat.configuration
-                configuration.respond_to?(:signal_ttl_seconds) ? configuration.signal_ttl_seconds : 60
-              else
-                window
-              end
+      value = window.nil? ? TurboChat.configuration.signal_ttl_seconds : window
       seconds = value.to_i
       return seconds if seconds.positive?
 

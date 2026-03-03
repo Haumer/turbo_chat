@@ -81,5 +81,13 @@ class TurboChat::Configuration
     def resolve_default_value(default_value)
       default_value.respond_to?(:call) ? default_value.call : (default_value.dup rescue default_value)
     end
+
+    def config_boolean(method_name, default:)
+      config = TurboChat.configuration
+      value = config.respond_to?(method_name) ? config.public_send(method_name) : default
+      ActiveModel::Type::Boolean.new.cast(value)
+    rescue NoMethodError, TypeError
+      default
+    end
   end
 end

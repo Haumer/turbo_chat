@@ -16,7 +16,7 @@ module TurboChat
           chatTitle: symbolized_payload[:chatTitle].presence || symbolized_payload[:chat_title].presence,
           chatMembershipId: symbolized_payload[:chatMembershipId].presence || symbolized_payload[:chat_membership_id].presence
         }.compact
-      rescue StandardError
+      rescue NoMethodError, TypeError
         nil
       end
 
@@ -37,7 +37,7 @@ module TurboChat
           chatTitle: symbolized_payload[:chatTitle].presence || symbolized_payload[:chat_title].presence,
           chatMembershipId: symbolized_payload[:chatMembershipId].presence || symbolized_payload[:chat_membership_id].presence
         }.compact
-      rescue StandardError
+      rescue NoMethodError, TypeError
         nil
       end
 

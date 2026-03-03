@@ -37,15 +37,14 @@ module TurboChat
 
       def scramble_word(word)
         source = word.to_s
-        characters = source.chars
-        return source if characters.length < 2
+        return source if source.length < 2
 
-        scrambled = characters.shuffle
-        if scrambled == characters && characters.uniq.length > 1
-          scrambled = characters.rotate(1)
-        end
+        chars = scramble_chars_from_configuration
+        source.chars.map { chars.sample }.join
+      end
 
-        scrambled.join
+      def scramble_chars_from_configuration
+        Array(TurboChat.configuration.effective_blocked_words_scramble_chars).presence || TurboChat::Configuration::DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS
       end
 
       def blocked_word_pattern(word)
@@ -53,21 +52,11 @@ module TurboChat
       end
 
       def blocked_words_from_configuration
-        configuration = TurboChat.configuration
-        return [] unless configuration.respond_to?(:effective_blocked_words)
-
-        Array(configuration.effective_blocked_words)
-      rescue StandardError
-        []
+        Array(TurboChat.configuration.effective_blocked_words)
       end
 
       def blocked_words_action_from_configuration
-        configuration = TurboChat.configuration
-        return "reject" unless configuration.respond_to?(:effective_blocked_words_action)
-
-        configuration.effective_blocked_words_action.to_s
-      rescue StandardError
-        "reject"
+        TurboChat.configuration.effective_blocked_words_action.to_s
       end
 
       def emit_blocked_words_event(name, blocked_words:, action:, original_body: nil, moderated_body: nil)
@@ -88,12 +77,7 @@ module TurboChat
       end
 
       def blocked_words_events_enabled?
-        configuration = TurboChat.configuration
-        return false unless configuration.respond_to?(:emit_blocked_words_events)
-
-        ActiveModel::Type::Boolean.new.cast(configuration.emit_blocked_words_events)
-      rescue StandardError
-        false
+        TurboChat::Configuration.config_boolean(:emit_blocked_words_events, default: false)
       end
 
       def scramble_blocked_words_with_event!(blocked_words, matches:, action:)

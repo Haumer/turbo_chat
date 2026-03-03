@@ -76,12 +76,8 @@ module TurboChat
       end
 
       def append_start_position?
-        configuration = TurboChat.configuration
-        value = configuration.respond_to?(:message_insert_position) ? configuration.message_insert_position : "append_end"
-        normalized = value.to_s.strip.downcase
-        %w[append_start start prepend].include?(normalized)
-      rescue StandardError
-        false
+        value = TurboChat.configuration.message_insert_position.to_s.strip.downcase
+        %w[append_start start prepend].include?(value)
       end
     end
   end

@@ -24,7 +24,7 @@ class TurboChat::Permission
       return nil unless chat_present?
       return nil if target_participant.nil?
 
-      chat.chat_memberships.active.find_by(participant: target_participant)
+      lookup_membership(target_participant)
     end
 
     def role_permission?(permission) = role_permissions.include?(permission.to_sym)
@@ -36,10 +36,11 @@ class TurboChat::Permission
     def target_role_rank(target_membership) = target_membership&.effective_role_rank || -1
 
     def actor_membership
-      return nil unless chat_present?
-      return nil unless participant_present?
+      return @actor_membership if defined?(@actor_membership)
 
-      chat.chat_memberships.active.find_by(participant: participant)
+      @actor_membership = if chat_present? && participant_present?
+                            lookup_membership(participant)
+                          end
     end
 
     def participant_present? = !participant.nil?
@@ -63,5 +64,9 @@ class TurboChat::Permission
     def message_in_chat?(message) = message.chat_id == chat&.id
 
     def membership_in_chat?(target_membership) = target_membership.chat_id == chat&.id
+
+    def lookup_membership(target)
+      chat.find_active_membership(target)
+    end
   end
 end

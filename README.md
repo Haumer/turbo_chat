@@ -149,6 +149,10 @@ end
 
 Flat aliases (for example `config.max_message_length`) still work for backward compatibility.
 
+### Rate Limiting
+
+TurboChat does not include built-in rate limiting. For production deployments, add request throttling for message creation in your host application using middleware such as [rack-attack](https://github.com/rack/rack-attack).
+
 ## Message Ingest API
 
 Post messages as a specific participant, including external sources like WhatsApp:
@@ -367,6 +371,12 @@ end
 bin/rails turbo_chat:install:migrations
 bin/rails db:migrate
 ```
+
+## Known Limitations
+
+- **Stream subscriptions after member removal.** Turbo Stream subscriptions persist until the page is reloaded. A removed member may continue to see new messages until they navigate away. This is not a security issue because stream names are cryptographically signed, but it can be surprising.
+- **Blocked word filtering.** Word-boundary matching can be bypassed with Unicode homoglyphs, zero-width characters, or leetspeak substitutions. Treat it as a first line of defense, not a guarantee.
+- **Invitable participants cap.** The invite picker returns at most 100 non-member participants. Applications with larger user bases should provide a custom search endpoint.
 
 ## Dependencies
 

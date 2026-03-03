@@ -1,7 +1,10 @@
 //= link turbo_chat/application.css
 //= link turbo_chat/application.js
 //= link turbo_chat/shared.js
+//= link turbo_chat/mentions.js
+//= link turbo_chat/scroll_proxy.js
 //= link turbo_chat/messages.js
 //= link turbo_chat/realtime.js
 //= link turbo_chat/invite_picker.js
+//= link turbo_chat/member_sync.js
 //= link turbo_chat/lifecycle_events.js

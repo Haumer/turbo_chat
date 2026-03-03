@@ -146,11 +146,7 @@ module TurboChat
     def normalize_submittable_message_kind(kind) = kind.to_s == "signal" ? "signal" : "message"
 
     def chat_config_boolean(method_name, default:)
-      configuration = TurboChat.configuration
-      value = configuration.respond_to?(method_name) ? configuration.public_send(method_name) : default
-      ActiveModel::Type::Boolean.new.cast(value)
-    rescue StandardError
-      default
+      TurboChat::Configuration.config_boolean(method_name, default: default)
     end
   end
 end

@@ -3,7 +3,7 @@ module TurboChat
     module_function
 
     def start!(chat:, participant:, signal_type: :typing, signal_text: nil)
-      TurboChat::ChatMessage.replace_signal!(
+      TurboChat::ChatMessage.start_signal!(
         chat: chat,
         participant: participant,
         signal_type: signal_type,

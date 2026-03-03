@@ -10,7 +10,12 @@ TurboChat::Engine.routes.draw do
       patch :reopen
     end
 
-    resources :chat_memberships, only: %i[create update]
+    resources :chat_memberships, only: %i[create update] do
+      member do
+        patch :mute
+        patch :ban
+      end
+    end
     resources :chat_messages, only: %i[index create update]
   end
 end

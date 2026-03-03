@@ -2,6 +2,25 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.2.0] - 2026-03-03
+
+### Added
+- Membership lookup cache (`Chat#membership_lookup`) for efficient per-message role resolution, eliminating N+1 queries when rendering participant roles in message lists.
+- Memoized `actor_membership` in Permission to avoid redundant database queries within a single request.
+- Moderation UI: mute/unmute and remove buttons in the members panel with permission-gated visibility (`can_mute_member?`, `can_ban_member?`).
+- `mute` and `ban` member routes and controller actions backed by `TurboChat::Moderation`.
+- Narrower `chat-shell--narrow` variant for the new-chat page.
+
+### Changed
+- Narrowed broad `rescue StandardError` clauses to specific exception types (`NoMethodError`, `TypeError`) across controllers, helpers, models, and permission modules for better error visibility during development.
+- Removed duplicated `containerBottomPadding` function from `realtime.js`; now imports the shared version from `shared.js`.
+- New-chat page uses compact inline grid form instead of full-width field and button.
+- Members invite dropdown no longer clipped by panel overflow when expanded.
+- Removed redundant "Conversation active/closed" kicker from chat header.
+- Invite submit button disabled until a participant is selected from the dropdown.
+- Gear button hidden (instead of disabled) for own member entry in the members panel.
+- Manage-member gear toggle now visible for moderators with mute/ban permissions, not only admins with grant permissions.
+
 ## [0.1.15] - 2026-02-28
 
 ### Added

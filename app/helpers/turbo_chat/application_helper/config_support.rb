@@ -118,13 +118,12 @@ module TurboChat
         return default unless configuration.respond_to?(method_name)
 
         configuration.public_send(method_name)
-      rescue StandardError
+      rescue NoMethodError, TypeError
         default
       end
 
       def chat_config_boolean(method_name, default:)
-        value = chat_config_value(method_name, default: default)
-        ActiveModel::Type::Boolean.new.cast(value)
+        TurboChat::Configuration.config_boolean(method_name, default: default)
       end
 
       def normalize_config_source_key(value)

@@ -1,13 +1,10 @@
-<section class="chat-shell">
+<section class="chat-shell chat-shell--narrow">
   <header class="chat-header">
     <h1>New Chat</h1>
   </header>
 
-  <%= form_with model: @chat, url: chats_path do |f| %>
-    <div class="chat-field">
-      <%= f.label :title %>
-      <%= f.text_field :title, required: true, autofocus: true %>
-    </div>
-    <%= f.submit "Create", class: "chat-btn" %>
+  <%= form_with model: @chat, url: chats_path, class: "chat-form chat-form--create" do |f| %>
+    <%= f.text_field :title, required: true, autofocus: true, placeholder: "Chat title" %>
+    <%= f.submit "Create", class: "chat-btn chat-btn--small" %>
   <% end %>
 </section>

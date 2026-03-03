@@ -36,7 +36,7 @@ module TurboChat
         return nil unless adapter.respond_to?(:new)
 
         adapter.new(participant, chat)
-      rescue StandardError
+      rescue NoMethodError, TypeError, ArgumentError
         nil
       end
 
@@ -53,7 +53,7 @@ module TurboChat
         else
           permission_gate_allowed?(permission, :can_mention_members?)
         end
-      rescue StandardError
+      rescue NoMethodError, TypeError
         false
       end
 

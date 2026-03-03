@@ -1,0 +1,84 @@
+:root {
+  --chat-text: #12263f;
+  --chat-muted: #5f738a;
+  --chat-border: #c9d5e3;
+  --chat-border-strong: #b9c8d9;
+  --chat-surface: #ffffff;
+  --chat-surface-soft: #f6f9fd;
+  --chat-primary: #1f6edc;
+  --chat-primary-dark: #1452ac;
+  --chat-primary-soft: #e7f1ff;
+  --chat-mention-highlight-color: #b42318;
+  --chat-mention-mark-background: #b4231838;
+  --chat-danger: #b42318;
+  --chat-danger-soft: #fff1f3;
+  --chat-success: #1f7a40;
+  --chat-success-soft: #ecfdf3;
+  --chat-shadow: 0 20px 48px rgba(16, 36, 58, 0.12);
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+html.chat-page-scroll-locked,
+body.chat-page-scroll-locked {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.chat-global-scrollbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 40;
+  background: transparent;
+  overscroll-behavior: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(61, 94, 133, 0.42) transparent;
+}
+
+.chat-global-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.chat-global-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-global-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(61, 94, 133, 0.42);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.chat-global-scrollbar-spacer {
+  width: 1px;
+  min-height: 100%;
+}
+
+.chat-global-scrollbar--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  min-height: 100svh;
+  color: var(--chat-text);
+  background:
+    radial-gradient(960px circle at 0% 0%, #e6f1ff 0%, rgba(230, 241, 255, 0) 52%),
+    radial-gradient(920px circle at 100% 0%, #fff3e8 0%, rgba(255, 243, 232, 0) 48%),
+    linear-gradient(180deg, #f9fbff 0%, #f2f5fa 100%);
+  font-family: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
+}

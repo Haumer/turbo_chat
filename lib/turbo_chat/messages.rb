@@ -125,7 +125,7 @@ module TurboChat
       adapter.new(participant, chat)
     rescue AuthorizationError
       raise
-    rescue StandardError => error
+    rescue NoMethodError, TypeError, ArgumentError => error
       raise AuthorizationError, "Unable to authorize message posting: #{error.message}"
     end
     private_class_method :permission_for

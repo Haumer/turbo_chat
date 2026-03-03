@@ -64,7 +64,10 @@ module TurboChat
       @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?
       @show_members = show_members_enabled?
       @can_invite_member = permission_allows?(@chat_permission, :can_invite_member?)
-      @can_manage_member_permissions = permission_allows?(@chat_permission, :can_grant_member_permissions?)
+      @can_grant_member_permissions = permission_allows?(@chat_permission, :can_grant_member_permissions?)
+      @can_mute_member = permission_allows?(@chat_permission, :can_mute_member?)
+      @can_ban_member = permission_allows?(@chat_permission, :can_ban_member?)
+      @can_manage_member_permissions = @can_grant_member_permissions || @can_mute_member || @can_ban_member
       @can_close_chat = @chat_permission.can_close_chat?
       @can_reopen_chat = @chat_permission.can_reopen_chat?
       @can_edit_own_messages = permission_allows?(@chat_permission, :can_edit_message?, fallback: @can_post_message)
@@ -98,11 +101,7 @@ module TurboChat
     def chat_params = params.require(:chat).permit(:title)
 
     def show_members_enabled?
-      configuration = TurboChat.configuration
-      value = configuration.respond_to?(:show_members) ? configuration.show_members : true
-      ActiveModel::Type::Boolean.new.cast(value)
-    rescue StandardError
-      true
+      TurboChat::Configuration.config_boolean(:show_members, default: true)
     end
 
     def pending_invitation_membership_for(participant, action:)

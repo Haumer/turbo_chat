@@ -27,6 +27,8 @@ module TurboChat
 
       def render_chat_message_body(chat_message)
         body = chat_message.body.to_s
+        # html_safe is safe here: decorate_plain_message_text guarantees the body
+        # is html_escaped before any markup injection (see method comment above).
         return content_tag(:p, decorate_plain_message_text(body).html_safe, class: "chat-body") unless TurboChat.configuration.render_message_html
 
         sanitized_html = sanitize(
@@ -103,6 +105,13 @@ module TurboChat
         "##{red}#{green}#{blue}#{alpha_hex}".downcase
       end
 
+      # Safety: builds an HTML-safe string via a strict pipeline order:
+      #   1. ERB::Util.html_escape escapes ALL user content first
+      #   2. Emoji aliases and mention highlights inject only controlled markup
+      #   3. Newlines are converted to <br> tags
+      # The result is safe to mark as html_safe because no raw user content
+      # reaches the output unescaped. Any change to this pipeline MUST
+      # preserve html_escape as the first step.
       def decorate_plain_message_text(body)
         formatted = ERB::Util.html_escape(body.to_s)
         formatted = apply_emoji_aliases(formatted) if TurboChat.configuration.enable_emoji_aliases

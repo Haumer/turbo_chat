@@ -57,7 +57,7 @@ module TurboChat
         return false if permission.respond_to?(:can_post_message?) && !permission.can_post_message?
 
         own_chat_message?(chat_message, participant: participant)
-      rescue StandardError
+      rescue NoMethodError, TypeError
         false
       end
 
@@ -67,7 +67,7 @@ module TurboChat
         return nil unless respond_to?(:current_chat_participant, true)
 
         current_chat_participant
-      rescue StandardError
+      rescue NoMethodError, TypeError
         nil
       end
 

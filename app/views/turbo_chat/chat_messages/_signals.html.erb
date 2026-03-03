@@ -1,11 +1,13 @@
 <% show_self_signals = if respond_to?(:chat_show_self_signals?, true)
-                         chat_show_self_signals?
-                       else
-                         configuration = TurboChat.configuration
-                         value = configuration.respond_to?(:show_self_signals) ? configuration.show_self_signals : false
-                         ActiveModel::Type::Boolean.new.cast(value)
-                       end %>
-<% signal_text_sheen_enabled = ActiveModel::Type::Boolean.new.cast(TurboChat.configuration.signal_text_sheen) %>
+                       chat_show_self_signals?
+                     else
+                       TurboChat::Configuration.config_boolean(:show_self_signals, default: false)
+                     end %>
+<% signal_text_sheen_enabled = if respond_to?(:chat_signal_text_sheen?, true)
+                                 chat_signal_text_sheen?
+                               else
+                                 TurboChat::Configuration.config_boolean(:signal_text_sheen, default: true)
+                               end %>
 <% current_participant = respond_to?(:current_chat_participant, true) ? current_chat_participant : nil %>
 <% current_participant_type = current_participant&.class&.base_class&.name %>
 <% current_participant_id = current_participant&.id %>
@@ -29,12 +31,8 @@
                        signal_message.signal_type.to_s
                      end %>
     <strong><%= signal_message.participant_display_name %></strong>
-    <span class="chat-signal-text<%= " chat-signal-text--sheen" if signal_text_sheen_enabled %>">
-      <% if signal_text_sheen_enabled %>
-        <span class="chat-signal-text-sheen"><%= signal_text %></span>
-      <% else %>
-        <%= signal_text %>
-      <% end %>
+    <span class="chat-signal-text<%= " chat-signal-text--pulse" if signal_text_sheen_enabled %>">
+      <%= signal_text %>
     </span>
   </div>
 <% end %>

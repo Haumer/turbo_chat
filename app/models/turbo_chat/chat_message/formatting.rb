@@ -46,7 +46,7 @@ module TurboChat
       def participant_membership
         return @participant_membership if instance_variable_defined?(:@participant_membership)
 
-        @participant_membership = chat.chat_memberships.active.find_by(participant: participant)
+        @participant_membership = chat.find_active_membership(participant)
       end
 
       def formatted_time_for(timestamp)

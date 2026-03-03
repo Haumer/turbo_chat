@@ -95,17 +95,21 @@ module TurboChat
       assert permission.can_post_message?
 
       membership.update!(muted: true)
+      permission = TurboChat::Permission.new(user, chat)
       assert_not permission.can_post_message?
 
       membership.update!(muted: false, timed_out_until: 2.minutes.from_now)
+      permission = TurboChat::Permission.new(user, chat)
       assert_not permission.can_post_message?
 
       membership.update!(timed_out_until: nil)
       chat.close!
+      permission = TurboChat::Permission.new(user, chat)
       assert permission.can_view_chat?
       assert_not permission.can_post_message?
 
       chat.reopen!
+      permission = TurboChat::Permission.new(user, chat)
       assert permission.can_post_message?
     end
 
@@ -150,6 +154,7 @@ module TurboChat
       assert_not permission.can_post_message?
 
       membership.accept_invitation!
+      permission = TurboChat::Permission.new(user, chat)
       assert permission.can_view_chat?
       assert permission.can_post_message?
     end

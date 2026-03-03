@@ -403,10 +403,14 @@ module TurboChat
         )
 
         scrambled_word = message.body.match(/\Athis has ([^\s]+) inside\z/)&.captures&.first
+        scramble_chars = TurboChat::Configuration::DEFAULT_BLOCKED_WORDS_SCRAMBLE_CHARS
 
         assert_not_nil scrambled_word
-        assert_not_equal "badword", scrambled_word.downcase
-        assert_equal "badword".chars.sort, scrambled_word.downcase.chars.sort
+        assert_equal "badword".length, scrambled_word.length
+        assert_not_equal "badword", scrambled_word
+        scrambled_word.chars.each do |char|
+          assert_includes scramble_chars, char, "Expected '#{char}' to be one of the configured scramble chars"
+        end
       end
     end
 

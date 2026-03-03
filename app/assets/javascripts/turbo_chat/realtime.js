@@ -15,6 +15,7 @@
   var parseMentionOptions = namespace.parseMentionOptions;
   var setupMentionAutocomplete = namespace.setupMentionAutocomplete;
   var scrollLastMessageIntoView = namespace.scrollLastMessageIntoView;
+  var containerBottomPadding = namespace.containerBottomPadding;
 
   function hideOwnSignals(container) {
     if (!container) {
@@ -39,20 +40,6 @@
         node.remove();
       }
     });
-  }
-
-  function containerBottomPadding(container) {
-    if (!container || typeof window === "undefined") {
-      return 0;
-    }
-
-    var cssPadding = window.getComputedStyle(container).paddingBottom;
-    var parsedPadding = parseFloat(cssPadding);
-    if (isNaN(parsedPadding) || parsedPadding <= 0) {
-      return 0;
-    }
-
-    return parsedPadding;
   }
 
   function visibleSignalNode(container) {
@@ -138,16 +125,9 @@
 
     container.classList.toggle("chat-signals--active", hasVisibleSignals);
 
-    var chatWindow = container.closest(".chat-window");
-    if (chatWindow) {
-      var messagesContainer = chatWindow.querySelector(".chat-messages");
-      var shouldStickToBottom = shouldStickMessagesToBottom(messagesContainer);
-
-      var signalOffset = hasVisibleSignals ? Math.ceil(container.scrollHeight) + 8 : 0;
-      chatWindow.style.setProperty("--chat-signal-offset", signalOffset + "px");
-      chatWindow.classList.toggle("chat-window--signals-active", signalOffset > 0);
-
-      if (messagesContainer && shouldStickToBottom) {
+    if (hasVisibleSignals) {
+      var messagesContainer = container.closest(".chat-messages");
+      if (messagesContainer && shouldStickMessagesToBottom(messagesContainer)) {
         requestAnimationFrame(function () {
           scrollLastMessageIntoView(messagesContainer);
         });

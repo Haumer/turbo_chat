@@ -46,12 +46,7 @@ module TurboChat::Moderation
     end
 
     def moderation_events_enabled?
-      config = TurboChat.configuration
-      return false unless config.respond_to?(:emit_moderation_events)
-
-      ActiveModel::Type::Boolean.new.cast(config.emit_moderation_events)
-    rescue StandardError
-      false
+      TurboChat::Configuration.config_boolean(:emit_moderation_events, default: false)
     end
 
     def moderation_membership_payload(membership)
