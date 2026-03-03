@@ -213,10 +213,16 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
 
     textarea = find("textarea[name='chat_message[body]']")
     execute_script(<<~JS, textarea.native)
-      arguments[0].focus();
-      arguments[0].value = "hello from system test";
-      arguments[0].dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      var ta = arguments[0];
+      ta.focus();
+      ta.value = "hello from system test";
+      ta.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      ta.addEventListener("blur", function preventBlur(e) {
+        ta.removeEventListener("blur", preventBlur);
+        ta.focus();
+      }, { once: true });
     JS
+    sleep 2
     wait_for_captured_event("turbo-chat:typing-started")
 
     click_button "Send"
