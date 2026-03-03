@@ -202,13 +202,20 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     TurboChat::ChatMembership.create!(chat: chat, participant: user, role: :member)
 
     visit "/chat/chats/#{chat.id}"
+
+    composer = find("[data-chat-composer]", visible: :all)
+    assert_equal "true", composer["data-chat-composer-bound"],
+      "Composer must be initialized before typing"
+    assert_equal "true", composer["data-chat-emit-typing-events"],
+      "emit_typing_events data attr must be true"
+
     install_event_capture(%w[turbo-chat:typing-started turbo-chat:typing-ended turbo-chat:message-sent])
 
     textarea = find("textarea[name='chat_message[body]']")
     execute_script(<<~JS, textarea.native)
       arguments[0].focus();
       arguments[0].value = "hello from system test";
-      arguments[0].dispatchEvent(new Event("input", { bubbles: true }));
+      arguments[0].dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
     JS
     wait_for_captured_event("turbo-chat:typing-started")
 
