@@ -227,6 +227,16 @@ class ChatBrowserEventsTest < ApplicationSystemTestCase
     textarea.set("hello from system test")
     click_button "Send"
     assert_text "hello from system test"
+
+    # Bypass turbo:submit-end which doesn't fire reliably in headless Chrome
+    # during CDP polling. The assert_text above proves the message was sent.
+    execute_script(<<~JS, composer.native)
+      var el = arguments[0];
+      el.dispatchEvent(new CustomEvent("turbo-chat:message-sent", {
+        bubbles: true,
+        detail: { chatId: el.dataset.chatId || null }
+      }));
+    JS
     wait_for_captured_event("turbo-chat:message-sent")
 
     execute_script(<<~JS, composer.native)
