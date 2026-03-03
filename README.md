@@ -6,10 +6,12 @@ Status: actively maintained.
 
 ## What You Get
 
-- Turbo Stream chat UI.
-- Role-based permissions.
-- Mentions, invitations, moderation, and typing signals.
-- A Rails-first path to ship chat quickly.
+- Turbo Stream chat UI with two layout styles (bounded card or full-viewport).
+- Role-based permissions with a swappable adapter.
+- Mentions, invitations, inline message editing, and typing signals.
+- Moderation: mute, timeout, ban, and message deletion.
+- System messages for membership lifecycle events.
+- Browser and server-side event hooks.
 
 ## Basic Setup
 
@@ -59,20 +61,11 @@ class User < ApplicationRecord
 end
 ```
 
+This adds `has_many :chat_memberships` and the associations TurboChat needs to resolve participants in chats.
+
 ### 2. Resolve the current participant
 
-You can define `current_chat_participant` in your host `ApplicationController`.
-If you already expose `current_user` and it returns a model using `acts_as_chat_participant`, TurboChat works without adding this method.
-
-Recommended hook:
-
-```ruby
-class ApplicationController < ActionController::Base
-  def current_chat_participant
-    current_user
-  end
-end
-```
+If your app exposes `current_user` and it returns a model using `acts_as_chat_participant`, TurboChat works out of the box.
 
 Resolution order:
 
@@ -81,7 +74,7 @@ Resolution order:
 3. `current_user` (if available)
 4. Raise `NotImplementedError`
 
-Optional resolver for non-`current_user` auth:
+For non-`current_user` auth:
 
 ```ruby
 TurboChat.configure do |config|
@@ -91,71 +84,111 @@ end
 
 ## First Working Example
 
-Create a chat and add an admin membership:
-
 ```ruby
 chat = TurboChat::Chat.create!(title: "Support")
 TurboChat::ChatMembership.create!(chat: chat, participant: current_user, role: :admin)
 ```
 
-Link to it:
-
 ```erb
 <%= link_to "Open chat", turbo_chat.chat_path(chat) %>
 ```
 
-## Essential Configuration
+## Configuration
 
-Start with a minimal initializer and only expand when needed:
+The installer generates a full initializer at `config/initializers/turbo_chat.rb` with every option documented. Start with the defaults and change only what you need.
+
+Config is organized into scoped namespaces:
 
 ```ruby
 TurboChat.configure do |config|
-  config.chat.permission_adapter = TurboChat::Permission
-
+  # Limits
   config.chat.max_chat_participants = 10
   config.chat_message.max_message_length = 1000
-  config.chat_message.message_history_limit = 200
 
+  # Features
   config.chat_message.enable_mentions = true
-  config.chat_message.enable_emoji_aliases = true
-
   config.chat_message.blocked_words = []
-  config.chat_message.blocked_words_action = :reject # or :scramble
+  config.chat_message.blocked_words_action = :reject  # or :scramble
 
-  config.chat_message.render_message_html = false
-  config.style.show_timestamp = true
-  config.style.show_role = false
-  config.chat_message.message_source_labels = TurboChat::Configuration::DEFAULT_MESSAGE_SOURCE_LABELS.dup
-  config.style.chat_style = "chat_style_bounded"
+  # Layout
+  config.style.chat_style = "chat_style_bounded"       # or "chat_style_unbounded"
   config.chat_message.message_insert_position = "append_end" # or "append_start"
-  config.chat.disable_input = false
-  config.chat.show_members = true
-  config.chat.show_members_list = true
-  config.chat.show_members_invite_controls = true
-  config.chat.show_invite_fallback_when_members_hidden = true
-  config.chat.show_header_title = true
-  config.chat.show_header_status = true
-  config.chat.show_header_close_action = true
-  config.chat.show_header_leave_action = true
-  config.chat.show_header_back_action = true
-  config.signals.signal_ttl_seconds = 60
-  config.style.signal_text_sheen = true
 
-  config.moderation.emit_moderation_events = false
-  config.moderation.emit_blocked_words_events = false
-  config.events.emit_mention_events = false
+  # Events (all opt-in, all false by default)
+  config.events.emit_typing_events = true
+  config.events.emit_message_events = true
 end
 ```
 
-Flat aliases (for example `config.max_message_length`) still work for backward compatibility.
+Available scopes: `config.chat`, `config.chat_message`, `config.style`, `config.events`, `config.moderation`, `config.signals`. Flat aliases (e.g. `config.max_message_length`) still work for backward compatibility.
 
 ### Rate Limiting
 
-TurboChat does not include built-in rate limiting. For production deployments, add request throttling for message creation in your host application using middleware such as [rack-attack](https://github.com/rack/rack-attack).
+TurboChat does not include built-in rate limiting. For production, add request throttling using middleware such as [rack-attack](https://github.com/rack/rack-attack).
+
+## Roles and Permissions
+
+### Built-in roles
+
+| Role | Rank | Key capabilities |
+|------|------|-----------------|
+| `member` | 0 | View, post, mention members, edit own messages |
+| `moderator` | 1 | + invite, `@all`/`@ROLE` mentions, mute/timeout/ban, delete messages |
+| `admin` | 2 | + close/reopen chats, change member roles |
+
+Higher-rank roles can act on lower-rank members but not on peers or above.
+
+### Custom roles
+
+```ruby
+TurboChat.configure do |config|
+  config.add_role(
+    :support_agent,
+    name: "Support Agent",
+    rank: 1,
+    permissions: %i[view_chat post_message delete_message]
+  )
+end
+```
+
+### Permission adapter
+
+All access checks go through `config.chat.permission_adapter` (default: `TurboChat::Permission`). To customize, create a class that implements the same public interface:
+
+```ruby
+class CustomPermission < TurboChat::Permission
+  def can_post_message?
+    super && !participant.suspended?
+  end
+end
+
+TurboChat.configure do |config|
+  config.chat.permission_adapter = CustomPermission
+end
+```
+
+The adapter must respond to: `can_view_chat?`, `can_create_chat?`, `can_post_message?`, `can_invite_member?`, `can_grant_member_permissions?`, `can_mute_member?`, `can_timeout_member?`, `can_ban_member?`, `can_delete_message?`, `can_edit_message?`, `can_close_chat?`, `can_reopen_chat?`.
+
+## Invitations
+
+Admins and moderators can invite participants through the members panel. The invited participant sees pending invitations on the chat index with Accept/Decline buttons.
+
+Programmatic invitation:
+
+```ruby
+TurboChat::ChatMembership.create!(
+  chat: chat,
+  participant: invitee,
+  role: :member,
+  invitation_accepted: false
+)
+```
+
+Accept/decline routes are built in: `PATCH /chats/:id/accept` and `PATCH /chats/:id/decline`.
 
 ## Message Ingest API
 
-Post messages as a specific participant, including external sources like WhatsApp:
+Post messages as a specific participant:
 
 ```ruby
 TurboChat::Messages.send_message_as(
@@ -179,98 +212,23 @@ TurboChat::Messages.ingest_external!(
 )
 ```
 
-`external_id` is required for `ingest_external!` so duplicate webhook deliveries can resolve to the same stored message.
+Duplicate webhook deliveries with the same `external_id` resolve to the existing message.
 
 Source labels shown in message badges are configurable:
 
 ```ruby
-TurboChat.configure do |config|
-  config.chat_message.message_source_labels = {
-    "app" => "In App",
-    "whatsapp" => "WhatsApp",
-    "sms_gateway" => "SMS"
-  }
-end
-```
-
-Chat UI layout style is configurable:
-
-```ruby
-TurboChat.configure do |config|
-  config.style.chat_style = "chat_style_unbounded" # or "chat_style_bounded"
-end
-```
-
-Timeline insert position is configurable:
-
-```ruby
-TurboChat.configure do |config|
-  config.chat_message.message_insert_position = "append_end" # or "append_start"
-end
-```
-
-Composer input can be disabled globally:
-
-```ruby
-TurboChat.configure do |config|
-  config.chat.disable_input = true
-end
-```
-
-Chat header elements can also be disabled globally:
-
-```ruby
-TurboChat.configure do |config|
-  config.chat.show_header_title = false
-  config.chat.show_header_status = false
-  config.chat.show_header_close_action = false
-  config.chat.show_header_leave_action = false
-  config.chat.show_header_back_action = false
-end
-```
-
-Members area visibility can be tuned independently:
-
-```ruby
-TurboChat.configure do |config|
-  config.chat.show_members = true
-  config.chat.show_members_list = true
-  config.chat.show_members_invite_controls = true
-  config.chat.show_invite_fallback_when_members_hidden = true
-end
-```
-
-## Roles
-
-Built-in roles:
-
-- `member`
-- `moderator`
-- `admin`
-
-Role behavior:
-
-- `member`: can view/post and mention members.
-- `moderator`: can invite, mention `@all`/roles, mute/timeout/ban, and delete lower-rank messages.
-- `admin`: can do moderator actions plus close/reopen chats.
-
-Custom role example:
-
-```ruby
-TurboChat.configure do |config|
-  config.add_role(
-    :support_agent,
-    name: "Support Agent",
-    rank: 1,
-    permissions: %i[view_chat post_message delete_message]
-  )
-end
+config.chat_message.message_source_labels = {
+  "app" => "In App",
+  "whatsapp" => "WhatsApp",
+  "sms_gateway" => "SMS"
+}
 ```
 
 ## Moderation API
 
 ```ruby
 TurboChat::Moderation.mute_member!(actor: moderator, membership: membership)
+TurboChat::Moderation.unmute_member!(actor: moderator, membership: membership)
 TurboChat::Moderation.timeout_member!(actor: moderator, membership: membership, until_time: 30.minutes.from_now)
 TurboChat::Moderation.ban_member!(actor: moderator, membership: membership)
 TurboChat::Moderation.delete_message!(actor: moderator, message: message)
@@ -278,91 +236,95 @@ TurboChat::Moderation.close_chat!(actor: admin, chat: chat)
 TurboChat::Moderation.reopen_chat!(actor: admin, chat: chat)
 ```
 
-Raises:
+All actions are permission-checked and generate system messages in the chat timeline. Mute, timeout, ban, and role changes are visible to all participants as system messages (disable with `config.chat.system_messages = false`).
 
-- `TurboChat::Moderation::AuthorizationError`
-- `TurboChat::Moderation::InvalidActionError`
+Raises `TurboChat::Moderation::AuthorizationError` or `TurboChat::Moderation::InvalidActionError`.
 
 ## Signals API
 
 ```ruby
-TurboChat::Signals.start!(chat: chat, participant: current_user, signal_type: :typing)
-TurboChat::Signals.start!(chat: chat, participant: current_user, signal_type: :custom, signal_text: "Hello")
-TurboChat::Signals.custom!(chat: chat, participant: current_user, signal_text: "Reviewing your request")
-TurboChat::Signals.clear!(chat: chat, participant: current_user)
+TurboChat::Signals.start!(chat: chat, participant: user, signal_type: :typing)
+TurboChat::Signals.start!(chat: chat, participant: user, signal_type: :thinking)
+TurboChat::Signals.start!(chat: chat, participant: user, signal_type: :planning)
+TurboChat::Signals.custom!(chat: chat, participant: user, signal_text: "Reviewing your request")
+TurboChat::Signals.clear!(chat: chat, participant: user)
 ```
 
-## Event Emissions
+Block form that auto-clears when the work finishes:
+
+```ruby
+TurboChat::Signals.with(chat: chat, participant: user, signal_type: :thinking) do
+  # long-running operation
+end
+```
+
+Signal lifetime is configurable via `config.signals.signal_ttl_seconds` (default: 60).
+
+## Events
 
 All event emissions are opt-in.
 
-Enable only what you consume:
+### Browser events (`CustomEvent` on `document`)
 
 ```ruby
-TurboChat.configure do |config|
-  config.events.emit_typing_events = true
-  config.events.emit_message_events = true
-  config.events.emit_mention_events = true
-  config.events.emit_invitation_events = true
-  config.events.emit_chat_lifecycle_events = true
-  config.moderation.emit_moderation_events = true
-  config.moderation.emit_blocked_words_events = true
-end
+config.events.emit_typing_events = true         # turbo-chat:typing-started, turbo-chat:typing-ended
+config.events.emit_message_events = true         # turbo-chat:message-sent
+config.events.emit_mention_events = true         # turbo-chat:mention
+config.events.emit_invitation_events = true      # turbo-chat:invitation-accepted
+config.events.emit_chat_lifecycle_events = true  # turbo-chat:chat-invited, chat-joined, chat-declined,
+                                                 #   chat-left, chat-closed, chat-reopened
 ```
 
-Browser events (`CustomEvent`):
-
-- `emit_typing_events`: `turbo-chat:typing-started`, `turbo-chat:typing-ended`
-- `emit_message_events`: `turbo-chat:message-sent`
-- `emit_mention_events`: `turbo-chat:mention`
-- `emit_invitation_events`: `turbo-chat:invitation-accepted`
-- `emit_chat_lifecycle_events`: `turbo-chat:chat-invited`, `turbo-chat:chat-joined`, `turbo-chat:chat-declined`, `turbo-chat:chat-left`, `turbo-chat:chat-closed`, `turbo-chat:chat-reopened`
-
-Minimal browser listener:
-
 ```js
-[
-  "turbo-chat:typing-started",
-  "turbo-chat:typing-ended",
-  "turbo-chat:message-sent",
-  "turbo-chat:mention",
-  "turbo-chat:invitation-accepted",
-  "turbo-chat:chat-invited",
-  "turbo-chat:chat-joined",
-  "turbo-chat:chat-declined",
-  "turbo-chat:chat-left",
-  "turbo-chat:chat-closed",
-  "turbo-chat:chat-reopened"
-].forEach(function (eventName) {
-  document.addEventListener(eventName, function (event) {
-    console.log(eventName, event.detail);
-  });
+document.addEventListener("turbo-chat:message-sent", function (event) {
+  console.log(event.detail); // { chatId: "123" }
 });
 ```
 
-Server-side notifications (`ActiveSupport::Notifications`):
-
-- `emit_moderation_events`:
-  `turbo_chat.moderation.member_muted`,
-  `turbo_chat.moderation.member_unmuted`,
-  `turbo_chat.moderation.member_timed_out`,
-  `turbo_chat.moderation.member_timeout_cleared`,
-  `turbo_chat.moderation.member_banned`,
-  `turbo_chat.moderation.message_deleted`,
-  `turbo_chat.moderation.chat_closed`,
-  `turbo_chat.moderation.chat_reopened`
-- `emit_blocked_words_events`:
-  `turbo_chat.blocked_words.detected`,
-  `turbo_chat.blocked_words.rejected`,
-  `turbo_chat.blocked_words.scrambled`
-
-Minimal Rails listener:
+### Server-side events (`ActiveSupport::Notifications`)
 
 ```ruby
-ActiveSupport::Notifications.subscribe(/turbo_chat\.(moderation|blocked_words)\./) do |*args|
+config.moderation.emit_moderation_events = true    # turbo_chat.moderation.member_muted, member_banned, ...
+config.moderation.emit_blocked_words_events = true  # turbo_chat.blocked_words.detected, rejected, scrambled
+```
+
+```ruby
+ActiveSupport::Notifications.subscribe(/turbo_chat\.moderation\./) do |*args|
   event = ActiveSupport::Notifications::Event.new(*args)
   Rails.logger.info("[TurboChat] #{event.name} #{event.payload.inspect}")
 end
+```
+
+## Theming
+
+TurboChat ships a default theme built on CSS custom properties. Override them in your app stylesheet:
+
+```css
+:root {
+  --chat-text: #12263f;
+  --chat-muted: #5f738a;
+  --chat-border: #c9d5e3;
+  --chat-surface: #ffffff;
+  --chat-surface-soft: #f6f9fd;
+  --chat-primary: #1f6edc;
+  --chat-primary-dark: #1452ac;
+  --chat-primary-soft: #e7f1ff;
+  --chat-danger: #b42318;
+  --chat-danger-soft: #fff1f3;
+  --chat-success: #1f7a40;
+  --chat-success-soft: #ecfdf3;
+  --chat-mention-highlight-color: #b42318;
+  --chat-shadow: 0 20px 48px rgba(16, 36, 58, 0.12);
+}
+```
+
+Additional style config:
+
+```ruby
+config.style.own_message_hex_color = "#e7f1ff"
+config.style.other_message_hex_color = "#ffffff"
+config.style.mention_mark_hex_color = "#b42318"
+config.style.composer_placeholder_text = "Type a message..."
 ```
 
 ## Upgrade
@@ -374,9 +336,9 @@ bin/rails db:migrate
 
 ## Known Limitations
 
-- **Stream subscriptions after member removal.** Turbo Stream subscriptions persist until the page is reloaded. A removed member may continue to see new messages until they navigate away. This is not a security issue because stream names are cryptographically signed, but it can be surprising.
-- **Blocked word filtering.** Word-boundary matching can be bypassed with Unicode homoglyphs, zero-width characters, or leetspeak substitutions. Treat it as a first line of defense, not a guarantee.
-- **Invitable participants cap.** The invite picker returns at most 100 non-member participants. Applications with larger user bases should provide a custom search endpoint.
+- **Stream subscriptions after member removal.** Turbo Stream subscriptions persist until page reload. A removed member may see new messages until they navigate away. Stream names are cryptographically signed so this is not a security issue.
+- **Blocked word filtering.** Word-boundary matching can be bypassed with Unicode homoglyphs, zero-width characters, or leetspeak. Treat it as a first line of defense.
+- **Invitable participants cap.** The invite picker returns at most 100 non-member participants. Larger user bases should provide a custom search endpoint.
 
 ## Dependencies
 
