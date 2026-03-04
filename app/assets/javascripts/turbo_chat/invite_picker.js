@@ -138,6 +138,7 @@
       queryInput.setCustomValidity("");
       if (submitBtn) submitBtn.disabled = false;
       hideMenu();
+      hideHint();
     }
 
     function setActiveIndex(index) {
@@ -206,9 +207,13 @@
       if (exactMatch) {
         selectedOption = exactMatch;
         participantIdInput.value = exactMatch.participantId;
-      } else {
-        clearSelection();
+        if (submitBtn) submitBtn.disabled = false;
+        hideMenu();
+        hideHint();
+        return;
       }
+
+      clearSelection();
 
       if (query.length < MIN_QUERY_LENGTH) {
         hideMenu();
