@@ -1,12 +1,12 @@
 <% show_self_signals = if respond_to?(:chat_show_self_signals?, true)
-                       chat_show_self_signals?
+                       chat_show_self_signals?(chat: chat)
                      else
-                       TurboChat::Configuration.config_boolean(:show_self_signals, default: false)
+                       TurboChat::Configuration.config_boolean(:show_self_signals, default: false, chat: chat)
                      end %>
 <% signal_text_sheen_enabled = if respond_to?(:chat_signal_text_sheen?, true)
-                                 chat_signal_text_sheen?
+                                 chat_signal_text_sheen?(chat: chat)
                                else
-                                 TurboChat::Configuration.config_boolean(:signal_text_sheen, default: true)
+                                 TurboChat::Configuration.config_boolean(:signal_text_sheen, default: true, chat: chat)
                                end %>
 <% current_participant = respond_to?(:current_chat_participant, true) ? current_chat_participant : nil %>
 <% current_participant_type = current_participant&.class&.base_class&.name %>

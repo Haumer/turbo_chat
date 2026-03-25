@@ -7,23 +7,23 @@
 <% current_participant = local_assigns[:current_participant] || current_chat_participant %>
 <% current_participant_type = current_participant.class.base_class.name %>
 <% current_participant_id = current_participant.id %>
-<% show_add_files_button = chat_composer_add_files_display? %>
-<% add_files_button_active = chat_composer_add_files_active? %>
-<% show_microphone_button = chat_composer_microphone_display? %>
-<% microphone_button_active = chat_composer_microphone_active? %>
+<% show_add_files_button = chat_composer_add_files_display?(chat: chat) %>
+<% add_files_button_active = chat_composer_add_files_active?(chat: chat) %>
+<% show_microphone_button = chat_composer_microphone_display?(chat: chat) %>
+<% microphone_button_active = chat_composer_microphone_active?(chat: chat) %>
 <% composer_shell_classes = ["chat-composer-shell"] %>
 <% composer_shell_classes << "chat-composer-shell--no-leading-tool" unless show_add_files_button %>
 <div class="chat-composer"
      data-chat-composer
      data-chat-id="<%= chat.id %>"
-     data-chat-emit-typing-events="<%= TurboChat.configuration.emit_typing_events %>"
-     data-chat-emit-message-events="<%= TurboChat.configuration.emit_message_events %>"
+     data-chat-emit-typing-events="<%= chat_emit_typing_events?(chat: chat) %>"
+     data-chat-emit-message-events="<%= chat_emit_message_events?(chat: chat) %>"
      data-chat-enable-mentions="<%= mentions_enabled %>"
      data-chat-can-mention-members="<%= can_mention_members %>"
      data-chat-can-mention-all="<%= can_mention_all %>"
      data-chat-can-mention-roles="<%= can_mention_roles %>"
-     data-chat-mention-filter-exclude-self="<%= chat_mention_filter_exclude_self? %>"
-     data-chat-mention-filter-hide-roles="<%= chat_mention_filter_hide_roles? %>"
+     data-chat-mention-filter-exclude-self="<%= chat_mention_filter_exclude_self?(chat: chat) %>"
+     data-chat-mention-filter-hide-roles="<%= chat_mention_filter_hide_roles?(chat: chat) %>"
      data-chat-self-participant-type="<%= current_participant_type %>"
      data-chat-self-participant-id="<%= current_participant_id %>"
      data-chat-mention-options="<%= json_escape(mention_options.to_json) %>">
@@ -41,7 +41,7 @@
                       rows: 1,
                       required: true,
                       class: "chat-composer-input",
-                      placeholder: chat_composer_placeholder_text,
+                      placeholder: chat_composer_placeholder_text(chat: chat),
                       data: { chat_message_input: true } %>
       <% if show_microphone_button %>
         <button type="button"

@@ -58,6 +58,20 @@ module TurboChat
       end
     end
 
+    test "assistant mode defaults to two active participants" do
+      chat = TurboChat::Chat.create!(title: "Assistant Limit", chat_mode: :assistant)
+      user_one = User.create!(email: "assistant-limit-one@example.com")
+      user_two = User.create!(email: "assistant-limit-two@example.com")
+      user_three = User.create!(email: "assistant-limit-three@example.com")
+
+      TurboChat::ChatMembership.create!(chat: chat, participant: user_one)
+      TurboChat::ChatMembership.create!(chat: chat, participant: user_two)
+
+      overflow = TurboChat::ChatMembership.new(chat: chat, participant: user_three)
+      assert_not overflow.valid?
+      assert_includes overflow.errors[:chat], "has reached the participant limit (2)"
+    end
+
     test "removed memberships do not count but reactivating still checks the limit" do
       with_max_chat_participants(1) do
         chat = TurboChat::Chat.create!(title: "Reactivation Limit")

@@ -133,4 +133,12 @@ TurboChat.configure do |config|
   # Shows your own active typing/signal indicators.
   # config.signals.replace_signals_on_message_submit = true
   # Replaces existing signals when sending a message.
+
+  # Chat mode overrides
+  # Assistant chats default to a simplified 1:1 profile.
+  # Uncomment any of these to customize assistant-mode behavior.
+  # config.mode(:assistant).show_members = true
+  # config.mode(:assistant).enable_mentions = true
+  # config.mode(:assistant).show_header_close_action = true
+  # config.mode(:assistant).max_chat_participants = 2
 end

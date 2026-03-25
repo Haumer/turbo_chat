@@ -2,6 +2,20 @@
 
 All notable changes to `turbo_chat` will be documented in this file.
 
+## [0.3.0] - 2026-03-25
+
+### Added
+- `chat_mode` on chats with `standard` as the default and `assistant` as a built-in alternate mode.
+- Mode-aware configuration overrides via `config.mode(:assistant)` so assistant chats can simplify UI and behavior without affecting standard chats.
+- Built-in assistant-mode defaults for 1:1 assistant conversations, including a two-participant limit and simplified members/invite/mention/moderation defaults.
+- README and installer guidance for chat modes and assistant-mode overrides.
+
+### Changed
+- Chat UI, rendering helpers, validations, moderation events, and message/signal settings now resolve configuration against the current chat when mode-specific overrides are present.
+
+### Fixed
+- Inviting an already-active participant or a participant with a pending invitation no longer reuses the membership in a way that can silently demote it back to a pending state.
+
 ## [0.2.0] - 2026-03-03
 
 ### Added

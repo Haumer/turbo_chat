@@ -13,6 +13,11 @@ module TurboChat
     def create
       participant = invite_participant
       membership = @chat.chat_memberships.find_or_initialize_by(participant: participant)
+      if membership.persisted?
+        return redirect_to(chat_path(@chat), alert: "Participant is already in this chat") if membership.active?
+        return redirect_to(chat_path(@chat), alert: "Invitation already pending") if membership.pending?
+      end
+
       membership.assign_attributes(invitation_membership_attributes(membership))
 
       membership.save!

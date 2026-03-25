@@ -1,5 +1,7 @@
 module TurboChat
   class Chat < ApplicationRecord
+    enum :chat_mode, { standard: 0, assistant: 1 }, prefix: true, default: :standard
+
     has_many :chat_memberships,
              class_name: "TurboChat::ChatMembership",
              dependent: :destroy,
@@ -34,7 +36,7 @@ module TurboChat
     }
 
     def active_signals(window: nil)
-      cutoff = Time.current - self.class.signal_window_seconds(window)
+      cutoff = Time.current - self.class.signal_window_seconds(window, chat: self)
 
       latest_message_at = chat_messages
                           .message
@@ -59,9 +61,14 @@ module TurboChat
       end
     end
 
-    def visible_messages(limit: TurboChat.configuration.message_history_limit)
+    def visible_messages(limit: :configured)
       relation = chat_messages.timeline
-      normalized_limit = normalize_message_limit(limit)
+      configured_limit = if limit == :configured
+                           TurboChat::Configuration.config_value(:message_history_limit, default: 200, chat: self)
+                         else
+                           limit
+                         end
+      normalized_limit = normalize_message_limit(configured_limit)
       if normalized_limit
         recent_ids = relation.reorder(created_at: :desc, id: :desc).limit(normalized_limit).select(:id)
         relation = relation.where(id: recent_ids)
@@ -90,7 +97,7 @@ module TurboChat
       message_time = last_message_at
       return false if message_time.nil?
 
-      message_time >= at - self.class.activity_window_seconds(window)
+      message_time >= at - self.class.activity_window_seconds(window, chat: self)
     end
 
     def inactive?(window: nil, at: Time.current)
@@ -113,16 +120,24 @@ module TurboChat
       update!(closed_at: nil)
     end
 
-    def self.activity_window_seconds(window = nil)
-      value = window.nil? ? TurboChat.configuration.active_chat_window : window
+    def self.activity_window_seconds(window = nil, chat: nil)
+      value = if window.nil?
+                TurboChat::Configuration.config_value(:active_chat_window, default: 5.minutes, chat: chat)
+              else
+                window
+              end
       seconds = value.to_i
       return seconds if seconds.positive?
 
       raise ArgumentError, "active chat window must be a positive duration"
     end
 
-    def self.signal_window_seconds(window = nil)
-      value = window.nil? ? TurboChat.configuration.signal_ttl_seconds : window
+    def self.signal_window_seconds(window = nil, chat: nil)
+      value = if window.nil?
+                TurboChat::Configuration.config_value(:signal_ttl_seconds, default: 60, chat: chat)
+              else
+                window
+              end
       seconds = value.to_i
       return seconds if seconds.positive?
 

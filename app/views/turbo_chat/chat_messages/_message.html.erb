@@ -1,6 +1,6 @@
 <% own_message = own_chat_message?(chat_message) %>
-<% show_timestamp = TurboChat.configuration.show_timestamp %>
-<% show_role = TurboChat.configuration.show_role %>
+<% show_timestamp = chat_show_timestamp?(chat: chat_message.chat) %>
+<% show_role = chat_show_role?(chat: chat_message.chat) %>
 <% role_label = show_role ? chat_message.formatted_participant_role : nil %>
 <% source_badge_label = chat_message_source_badge_label(chat_message) %>
 <% edited_message = chat_message.respond_to?(:edited?) && chat_message.edited? %>

@@ -6,7 +6,7 @@ module TurboChat::Moderation
 
       payload = moderation_message_payload(message)
       message.destroy!
-      emit_moderation_event("turbo_chat.moderation.message_deleted", actor: actor, payload: payload)
+      emit_moderation_event("turbo_chat.moderation.message_deleted", actor: actor, payload: payload, chat: message.chat)
       true
     end
 
@@ -37,7 +37,7 @@ module TurboChat::Moderation
     def update_chat!(actor:, chat:, gate:, error_message:, event_name:, chat_event:)
       authorize_chat_action!(actor: actor, chat: chat, gate: gate, error_message: error_message)
       chat.public_send(chat_event)
-      emit_moderation_event(event_name, actor: actor, payload: moderation_chat_payload(chat))
+      emit_moderation_event(event_name, actor: actor, payload: moderation_chat_payload(chat), chat: chat)
       chat
     end
   end

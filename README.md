@@ -122,6 +122,32 @@ end
 
 Available scopes: `config.chat`, `config.chat_message`, `config.style`, `config.events`, `config.moderation`, `config.signals`. Flat aliases (e.g. `config.max_message_length`) still work for backward compatibility.
 
+### Chat Modes
+
+Chats default to `chat_mode: :standard`.
+
+```ruby
+chat = TurboChat::Chat.create!(title: "Assistant", chat_mode: :assistant)
+```
+
+Built-in assistant-mode defaults make the chat simpler for 1:1 assistant use cases:
+
+- `max_chat_participants = 2`
+- members panel and invite UI hidden
+- mentions disabled
+- system messages disabled
+- chat close action hidden
+- invitation, mention, lifecycle, and moderation events disabled
+
+You can override assistant-mode defaults without changing standard chats:
+
+```ruby
+TurboChat.configure do |config|
+  config.mode(:assistant).show_members = true
+  config.mode(:assistant).enable_mentions = true
+end
+```
+
 ### Rate Limiting
 
 TurboChat does not include built-in rate limiting. For production, add request throttling using middleware such as [rack-attack](https://github.com/rack/rack-attack).

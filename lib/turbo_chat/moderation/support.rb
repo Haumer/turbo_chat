@@ -37,16 +37,17 @@ module TurboChat::Moderation
       )
     end
 
-    def emit_moderation_event(name, actor:, membership: nil, payload: nil, extra: {})
-      return unless moderation_events_enabled?
+    def emit_moderation_event(name, actor:, membership: nil, payload: nil, extra: {}, chat: nil)
+      event_chat = chat || membership&.chat
+      return unless moderation_events_enabled?(event_chat)
       return unless defined?(ActiveSupport::Notifications)
 
       event_payload = payload.presence || moderation_membership_payload(membership)
       ActiveSupport::Notifications.instrument(name, event_payload.merge(actor_payload(actor)).merge(extra))
     end
 
-    def moderation_events_enabled?
-      TurboChat::Configuration.config_boolean(:emit_moderation_events, default: false)
+    def moderation_events_enabled?(chat = nil)
+      TurboChat::Configuration.config_boolean(:emit_moderation_events, default: false, chat: chat)
     end
 
     def moderation_membership_payload(membership)

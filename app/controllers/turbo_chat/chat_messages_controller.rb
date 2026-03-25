@@ -82,8 +82,8 @@ module TurboChat
     def respond_to_chat_message_create_failure
       @chat_messages = @chat.visible_messages
       @chat_permission = permission_for(@chat)
-      @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?
-      @show_members = chat_config_boolean(:show_members, default: true)
+      @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?(@chat)
+      @show_members = chat_config_boolean(:show_members, default: true, chat: @chat)
       respond_to do |format|
         format.turbo_stream { render "turbo_chat/chats/show", status: :unprocessable_entity }
         format.html { render "turbo_chat/chats/show", status: :unprocessable_entity }
@@ -145,8 +145,8 @@ module TurboChat
 
     def normalize_submittable_message_kind(kind) = kind.to_s == "signal" ? "signal" : "message"
 
-    def chat_config_boolean(method_name, default:)
-      TurboChat::Configuration.config_boolean(method_name, default: default)
+    def chat_config_boolean(method_name, default:, chat: nil)
+      TurboChat::Configuration.config_boolean(method_name, default: default, chat: chat)
     end
   end
 end

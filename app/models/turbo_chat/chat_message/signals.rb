@@ -62,7 +62,7 @@ module TurboChat
       end
 
       def replace_participant_signals_on_submit
-        return unless TurboChat.configuration.replace_signals_on_message_submit
+        return unless TurboChat::Configuration.config_boolean(:replace_signals_on_message_submit, default: false, chat: chat)
         return if chat_id.blank? || participant_type.blank? || participant_id.blank?
 
         self.class.where(

@@ -48,7 +48,7 @@
         <li class="chat-list-item chat-list-item--chat">
           <%= link_to chat_path(chat), class: "chat-list-link" do %>
             <span class="chat-list-title"><%= chat.title %></span>
-            <% if @show_members %>
+            <% if chat_show_members?(chat: chat) %>
               <span class="chat-list-meta"><%= pluralize(member_count, "member") %></span>
             <% end %>
           <% end %>

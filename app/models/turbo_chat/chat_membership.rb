@@ -108,7 +108,7 @@ module TurboChat
     def enforce_chat_participant_limit
       return if chat.nil?
 
-      limit = TurboChat.configuration.max_chat_participants
+      limit = TurboChat::Configuration.config_value(:max_chat_participants, default: nil, chat: chat)
       return if limit.nil?
 
       limit = limit.to_i

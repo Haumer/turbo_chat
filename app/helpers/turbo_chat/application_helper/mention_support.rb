@@ -10,8 +10,8 @@ module TurboChat
         allow_member_mentions = mention_permission.nil? ? true : mention_permission_allows?(mention_permission, :can_mention_members?)
         allow_all_mentions = mention_permission.nil? ? true : mention_permission_allows?(mention_permission, :can_mention_all?)
         allow_role_mentions = mention_permission.nil? ? true : mention_permission_allows?(mention_permission, :can_mention_roles?)
-        allow_role_mentions &&= !chat_mention_filter_hide_roles?
-        exclude_self_mentions = chat_mention_filter_exclude_self?
+        allow_role_mentions &&= !chat_mention_filter_hide_roles?(chat: chat)
+        exclude_self_mentions = chat_mention_filter_exclude_self?(chat: chat)
         viewer_participant = mention_viewer_participant(permission: mention_permission)
 
         options = []
@@ -73,7 +73,7 @@ module TurboChat
       end
 
       def chat_mentions_enabled_for?(chat:, permission: nil)
-        return false unless TurboChat.configuration.enable_mentions
+        return false unless chat_enable_mentions?(chat: chat)
 
         mention_permission = permission || mention_permission_for(chat)
         return true if mention_permission.nil?

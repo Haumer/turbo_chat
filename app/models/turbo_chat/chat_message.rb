@@ -81,7 +81,7 @@ module TurboChat
       end
 
       def create_membership_system_message!(chat:, actor:, event:, subject: nil)
-        return nil unless system_messages_enabled?
+        return nil unless system_messages_enabled?(chat)
         return nil if chat.nil? || actor.nil?
 
         normalized_event = event.to_s.to_sym
@@ -93,8 +93,8 @@ module TurboChat
         create!(chat: chat, participant: actor, kind: :system, body: body)
       end
 
-      def system_messages_enabled?
-        TurboChat::Configuration.config_boolean(:system_messages, default: true)
+      def system_messages_enabled?(chat = nil)
+        TurboChat::Configuration.config_boolean(:system_messages, default: true, chat: chat)
       end
 
       private

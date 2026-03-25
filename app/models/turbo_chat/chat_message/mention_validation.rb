@@ -6,7 +6,7 @@ module TurboChat
       private
 
       def mentions_allowed_for_participant
-        return unless TurboChat.configuration.enable_mentions
+        return unless TurboChat::Configuration.config_boolean(:enable_mentions, default: true, chat: chat)
 
         mentions = mention_tokens
         return if mentions.empty?

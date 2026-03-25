@@ -58,14 +58,14 @@ module TurboChat
     end
 
     def authorize_post_message!(chat)
-      return head(:forbidden) if chat_input_disabled?
+      return head(:forbidden) if chat_input_disabled?(chat)
       return if permission_for(chat).can_post_message?
 
       head :forbidden
     end
 
-    def chat_input_disabled?
-      TurboChat::Configuration.config_boolean(:disable_input, default: false)
+    def chat_input_disabled?(chat = nil)
+      TurboChat::Configuration.config_boolean(:disable_input, default: false, chat: chat)
     end
   end
 end

@@ -77,6 +77,56 @@ class ChatManagementTest < ActionDispatch::IntegrationTest
     assert_not TurboChat::ChatMembership.active.exists?(chat: chat, participant: invitee)
   end
 
+  test "admin cannot re-invite active participant to chat" do
+    admin = User.create!(email: "invite-existing-admin@example.com")
+    invitee = User.create!(email: "invite-existing-target@example.com")
+    chat = TurboChat::Chat.create!(title: "Invite Existing Participant")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    invited_membership = TurboChat::ChatMembership.create!(chat: chat, participant: invitee, role: :member)
+
+    with_current_chat_participant(admin) do
+      post "/chat/chats/#{chat.id}/chat_memberships", params: {
+        chat_membership: {
+          participant_type: "User",
+          participant_id: invitee.id
+        }
+      }
+    end
+
+    assert_redirected_to "/chat/chats/#{chat.id}"
+    assert_equal "Participant is already in this chat", flash[:alert]
+    assert invited_membership.reload.active?
+    assert invited_membership.invitation_accepted?
+    assert_equal 0, TurboChat::ChatMessage.where(chat: chat, kind: :system).count
+  end
+
+  test "admin cannot re-invite participant with pending invitation" do
+    admin = User.create!(email: "invite-pending-admin@example.com")
+    invitee = User.create!(email: "invite-pending-target@example.com")
+    chat = TurboChat::Chat.create!(title: "Invite Pending Participant")
+    TurboChat::ChatMembership.create!(chat: chat, participant: admin, role: :admin)
+    invited_membership = TurboChat::ChatMembership.create!(
+      chat: chat,
+      participant: invitee,
+      role: :member,
+      invitation_accepted: false
+    )
+
+    with_current_chat_participant(admin) do
+      post "/chat/chats/#{chat.id}/chat_memberships", params: {
+        chat_membership: {
+          participant_type: "User",
+          participant_id: invitee.id
+        }
+      }
+    end
+
+    assert_redirected_to "/chat/chats/#{chat.id}"
+    assert_equal "Invitation already pending", flash[:alert]
+    assert invited_membership.reload.pending?
+    assert_equal 0, TurboChat::ChatMessage.where(chat: chat, kind: :system).count
+  end
+
   test "admin can update another member role" do
     admin = User.create!(email: "role-admin@example.com")
     member = User.create!(email: "role-member@example.com")

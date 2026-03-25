@@ -31,6 +31,7 @@ module TurboChat::Moderation
         "turbo_chat.moderation.member_timed_out",
         actor: actor,
         membership: membership,
+        chat: membership.chat,
         extra: { timed_out_until: membership.timed_out_until }
       )
       create_membership_system_message(actor: actor, membership: membership, event: :timed_out)
@@ -68,7 +69,7 @@ module TurboChat::Moderation
         action: action,
         attributes: attributes
       )
-      emit_moderation_event(event_name, actor: actor, membership: updated_membership)
+      emit_moderation_event(event_name, actor: actor, membership: updated_membership, chat: updated_membership.chat)
       create_membership_system_message(actor: actor, membership: updated_membership, event: system_event)
       updated_membership
     end

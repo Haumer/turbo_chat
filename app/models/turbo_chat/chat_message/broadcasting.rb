@@ -76,7 +76,7 @@ module TurboChat
       end
 
       def append_start_position?
-        value = TurboChat.configuration.message_insert_position.to_s.strip.downcase
+        value = TurboChat::Configuration.config_value(:message_insert_position, default: "append_end", chat: chat).to_s.strip.downcase
         %w[append_start start prepend].include?(value)
       end
     end

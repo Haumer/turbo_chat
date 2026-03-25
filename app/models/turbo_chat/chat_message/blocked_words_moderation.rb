@@ -77,7 +77,7 @@ module TurboChat
       end
 
       def blocked_words_events_enabled?
-        TurboChat::Configuration.config_boolean(:emit_blocked_words_events, default: false)
+        TurboChat::Configuration.config_boolean(:emit_blocked_words_events, default: false, chat: chat)
       end
 
       def scramble_blocked_words_with_event!(blocked_words, matches:, action:)

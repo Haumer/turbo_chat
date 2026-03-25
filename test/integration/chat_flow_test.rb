@@ -137,6 +137,27 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     TurboChat.configuration.show_members = previous_show_members
   end
 
+  test "chat index shows member counts only for chats whose mode enables members" do
+    user = User.create!(email: "mixed-mode-index@example.com")
+    teammate = User.create!(email: "mixed-mode-index-teammate@example.com")
+
+    standard_chat = TurboChat::Chat.create!(title: "Standard Index Chat")
+    assistant_chat = TurboChat::Chat.create!(title: "Assistant Index Chat", chat_mode: :assistant)
+
+    TurboChat::ChatMembership.create!(chat: standard_chat, participant: user)
+    TurboChat::ChatMembership.create!(chat: standard_chat, participant: teammate)
+    TurboChat::ChatMembership.create!(chat: assistant_chat, participant: user)
+    TurboChat::ChatMembership.create!(chat: assistant_chat, participant: teammate)
+
+    get "/chat/chats"
+    assert_response :success
+
+    assert_includes response.body, "Standard Index Chat"
+    assert_includes response.body, "Assistant Index Chat"
+    assert_select ".chat-list-meta", 1
+    assert_select ".chat-list-meta", text: "2 members", count: 1
+  end
+
   test "chat members list can be hidden while keeping invite controls visible" do
     previous_show_members_list = TurboChat.configuration.show_members_list
     TurboChat.configuration.show_members_list = false
@@ -174,6 +195,23 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_select "form.chat-form--invite[data-chat-invite-form='true']", 0
   ensure
     TurboChat.configuration.show_members_invite_controls = previous_show_members_invite_controls
+  end
+
+  test "assistant mode hides member management and mention UI by default" do
+    user = User.create!(email: "assistant-mode-user@example.com")
+    assistant = User.create!(email: "assistant-mode-bot@example.com")
+    chat = TurboChat::Chat.create!(title: "Assistant Mode Chat", chat_mode: :assistant)
+    TurboChat::ChatMembership.create!(chat: chat, participant: user, role: :admin)
+    TurboChat::ChatMembership.create!(chat: chat, participant: assistant, role: :member)
+
+    get "/chat/chats/#{chat.id}"
+    assert_response :success
+
+    assert_includes response.body, %(data-chat-mode="assistant")
+    assert_select ".chat-members", 0
+    assert_select "form.chat-form--invite[data-chat-invite-form='true']", 0
+    assert_select "form.chat-inline-form[action='/chat/chats/#{chat.id}/close']", 0
+    assert_includes response.body, %(data-chat-enable-mentions="false")
   end
 
   test "invite fallback can be disabled when members panel is hidden" do

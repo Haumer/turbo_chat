@@ -115,6 +115,31 @@ module TurboChat
       assert_includes config.role_definition(:moderator)[:permissions], :invite_member
       assert_includes config.role_definition(:admin)[:permissions], :mention_role
       assert_includes config.role_definition(:admin)[:permissions], :invite_member
+      assert_equal false, config.mode(:assistant).show_members
+      assert_equal false, config.mode(:assistant).enable_mentions
+      assert_equal 2, config.mode(:assistant).max_chat_participants
+    end
+
+    test "assistant mode settings resolve per chat and can be reset" do
+      config = TurboChat.configuration
+      assistant_chat = TurboChat::Chat.new(title: "Assistant", chat_mode: :assistant)
+      standard_chat = TurboChat::Chat.new(title: "Standard")
+
+      assert_equal false, TurboChat::Configuration.config_boolean(:show_members, default: true, chat: assistant_chat)
+      assert_equal true, TurboChat::Configuration.config_boolean(:show_members, default: true, chat: standard_chat)
+
+      config.mode(:assistant).show_members = true
+      config.mode(:assistant).enable_mentions = true
+
+      assert_equal true, TurboChat::Configuration.config_boolean(:show_members, default: true, chat: assistant_chat)
+      assert_equal true, TurboChat::Configuration.config_boolean(:enable_mentions, default: true, chat: assistant_chat)
+
+      config.reset_mode!(:assistant)
+
+      assert_equal false, TurboChat::Configuration.config_boolean(:show_members, default: true, chat: assistant_chat)
+      assert_equal false, TurboChat::Configuration.config_boolean(:enable_mentions, default: true, chat: assistant_chat)
+    ensure
+      config.reset_modes!
     end
 
     test "can register custom role with name permissions and rank" do

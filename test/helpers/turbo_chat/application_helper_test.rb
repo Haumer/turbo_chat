@@ -80,6 +80,7 @@ module TurboChat
       config.other_message_hex_color = @original_other_message_hex_color
       config.role_message_hex_colors = @original_role_message_hex_colors
       config.message_source_labels = @original_message_source_labels
+      config.reset_modes!
     end
 
     test "supports custom own and other message hex colors" do
@@ -213,6 +214,30 @@ module TurboChat
       assert_equal false, chat_show_members_list?
       assert_equal false, chat_show_members_invite_controls?
       assert_equal false, chat_show_invite_fallback_when_members_hidden?
+    end
+
+    test "assistant mode helpers apply built-in simplified defaults" do
+      chat = TurboChat::Chat.new(chat_mode: :assistant)
+
+      assert_equal false, chat_show_members?(chat: chat)
+      assert_equal false, chat_show_members_list?(chat: chat)
+      assert_equal false, chat_show_members_invite_controls?(chat: chat)
+      assert_equal false, chat_show_invite_fallback_when_members_hidden?(chat: chat)
+      assert_equal false, chat_show_header_close_action?(chat: chat)
+      assert_equal false, chat_enable_mentions?(chat: chat)
+      assert_equal :assistant, chat_mode_key(chat)
+      assert_equal true, chat_assistant_mode?(chat)
+    end
+
+    test "assistant mode helpers allow explicit mode overrides" do
+      chat = TurboChat::Chat.new(chat_mode: :assistant)
+      TurboChat.configuration.mode(:assistant).show_members = true
+      TurboChat.configuration.mode(:assistant).enable_mentions = true
+
+      assert_equal true, chat_show_members?(chat: chat)
+      assert_equal true, chat_enable_mentions?(chat: chat)
+    ensure
+      TurboChat.configuration.reset_modes!
     end
 
     test "chat_composer_placeholder_text follows configuration and normalizes blanks" do

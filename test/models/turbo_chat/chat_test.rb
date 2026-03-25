@@ -2,6 +2,13 @@ require_relative "../../test_helper"
 
 module TurboChat
   class ChatTest < ActiveSupport::TestCase
+    test "chat mode defaults to standard" do
+      chat = TurboChat::Chat.create!(title: "Mode Default")
+
+      assert chat.chat_mode_standard?
+      assert_equal "standard", chat.chat_mode
+    end
+
     test "active? uses the default window and ignores signals" do
       user = User.create!(email: "active-window@example.com")
 

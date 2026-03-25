@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_02_000015) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_25_000016) do
   create_table "turbo_chat_chat_memberships", force: :cascade do |t|
     t.integer "chat_id", null: false
     t.string "participant_type", null: false
@@ -53,6 +53,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_02_000015) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "closed_at"
+    t.integer "chat_mode", default: 0, null: false
+    t.index ["chat_mode"], name: "index_turbo_chat_chats_on_chat_mode"
     t.index ["closed_at"], name: "index_turbo_chat_chats_on_closed_at"
   end
 

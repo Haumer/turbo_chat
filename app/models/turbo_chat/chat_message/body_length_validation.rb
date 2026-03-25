@@ -6,7 +6,7 @@ module TurboChat
       private
 
       def body_within_max_length
-        configured_limit = TurboChat.configuration.max_message_length
+        configured_limit = TurboChat::Configuration.config_value(:max_message_length, default: 1000, chat: chat)
         return if configured_limit.nil?
 
         limit = configured_limit.to_i

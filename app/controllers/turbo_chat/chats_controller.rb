@@ -9,8 +9,7 @@ module TurboChat
     def index
       participant = current_chat_participant
       @chats = TurboChat::Chat.for_participant(participant).order(created_at: :desc, id: :desc)
-      @show_members = show_members_enabled?
-      @chat_member_counts = if @show_members
+      @chat_member_counts = if @chats.exists?
                               chat_ids = @chats.except(:order).select(:id)
                               TurboChat::ChatMembership.active.where(chat_id: chat_ids).group(:chat_id).count
                             else
@@ -61,8 +60,8 @@ module TurboChat
       @chat_lifecycle_event = chat_lifecycle_event_payload
       @chat_permission = permission_for(@chat)
       @chat_messages = @chat.visible_messages
-      @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?
-      @show_members = show_members_enabled?
+      @can_post_message = @chat_permission.can_post_message? && !chat_input_disabled?(@chat)
+      @show_members = show_members_enabled?(@chat)
       @can_invite_member = permission_allows?(@chat_permission, :can_invite_member?)
       @can_grant_member_permissions = permission_allows?(@chat_permission, :can_grant_member_permissions?)
       @can_mute_member = permission_allows?(@chat_permission, :can_mute_member?)
@@ -98,10 +97,10 @@ module TurboChat
       @chat = TurboChat::Chat.find(params[:id])
     end
 
-    def chat_params = params.require(:chat).permit(:title)
+    def chat_params = params.require(:chat).permit(:title, :chat_mode)
 
-    def show_members_enabled?
-      TurboChat::Configuration.config_boolean(:show_members, default: true)
+    def show_members_enabled?(chat = nil)
+      TurboChat::Configuration.config_boolean(:show_members, default: true, chat: chat)
     end
 
     def pending_invitation_membership_for(participant, action:)

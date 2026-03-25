@@ -155,6 +155,27 @@ class TurboChat::Configuration
     defaults[attribute] = SCOPED_DEFAULTS.fetch(scope_name).fetch(attribute)
   end.freeze
 
+  ASSISTANT_MODE_DEFAULTS = {
+    max_chat_participants: 2,
+    show_members: false,
+    show_members_list: false,
+    show_members_invite_controls: false,
+    show_invite_fallback_when_members_hidden: false,
+    system_messages: false,
+    show_header_close_action: false,
+    enable_mentions: false,
+    emit_mention_events: false,
+    emit_invitation_events: false,
+    emit_chat_lifecycle_events: false,
+    emit_moderation_events: false
+  }.freeze
+
+  MODE_DEFAULTS = {
+    standard: {}.freeze,
+    assistant: ASSISTANT_MODE_DEFAULTS
+  }.freeze
+
+  MODE_NAMES = MODE_DEFAULTS.keys.freeze
   SCOPE_NAMES = SCOPED_DEFAULTS.keys.freeze
   ATTRIBUTES = ATTRIBUTE_SCOPES.keys.freeze
 end

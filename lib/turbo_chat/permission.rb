@@ -70,6 +70,6 @@ class TurboChat::Permission
   private
 
   def chat_input_disabled?
-    TurboChat::Configuration.config_boolean(:disable_input, default: false)
+    TurboChat::Configuration.config_boolean(:disable_input, default: false, chat: chat)
   end
 end

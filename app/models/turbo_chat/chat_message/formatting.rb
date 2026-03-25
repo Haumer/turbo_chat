@@ -34,7 +34,7 @@ module TurboChat
 
         role = membership.effective_role_key
 
-        formatter = TurboChat.configuration.role_formatter
+        formatter = TurboChat::Configuration.config_value(:role_formatter, default: nil, chat: chat)
         formatted = apply_formatter(formatter, role, self)
         return formatted if formatted.present?
 
@@ -50,7 +50,7 @@ module TurboChat
       end
 
       def formatted_time_for(timestamp)
-        formatter = TurboChat.configuration.timestamp_formatter
+        formatter = TurboChat::Configuration.config_value(:timestamp_formatter, default: nil, chat: chat)
         formatted = apply_formatter(formatter, timestamp, self)
         return formatted if formatted.present?
 

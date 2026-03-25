@@ -16,9 +16,9 @@ module TurboChat
         "--chat-bubble-bg: #{hex_color}; --chat-bubble-border: #{hex_color};"
       end
 
-      def chat_mentions_container_inline_style
-        hex_color = normalize_hex_color(chat_config_value(:mention_mark_hex_color)) ||
-                    normalize_hex_color(chat_config_value(:mention_highlight_hex_color))
+      def chat_mentions_container_inline_style(chat: nil)
+        hex_color = normalize_hex_color(chat_config_value(:mention_mark_hex_color, chat: chat)) ||
+                    normalize_hex_color(chat_config_value(:mention_highlight_hex_color, chat: chat))
         return nil if hex_color.blank?
 
         mention_mark_background = hex_color_with_alpha(hex_color, alpha: 0.22)
@@ -26,21 +26,25 @@ module TurboChat
       end
 
       def render_chat_message_body(chat_message)
+        chat = chat_message.respond_to?(:chat) ? chat_message.chat : nil
         body = chat_message.body.to_s
         # html_safe is safe here: decorate_plain_message_text guarantees the body
         # is html_escaped before any markup injection (see method comment above).
-        return content_tag(:p, decorate_plain_message_text(body).html_safe, class: "chat-body") unless TurboChat.configuration.render_message_html
+        unless chat_render_message_html?(chat: chat)
+          return content_tag(:p, decorate_plain_message_text(body, chat: chat).html_safe, class: "chat-body")
+        end
 
         sanitized_html = sanitize(
           body,
-          tags: Array(TurboChat.configuration.message_html_tags),
-          attributes: Array(TurboChat.configuration.message_html_attributes)
+          tags: Array(chat_config_value(:message_html_tags, default: [], chat: chat)),
+          attributes: Array(chat_config_value(:message_html_attributes, default: [], chat: chat))
         )
         content_tag(:div, sanitized_html, class: "chat-body")
       end
 
       def chat_message_mention_tokens(chat_message)
-        return [] unless TurboChat.configuration.enable_mentions && chat_message.present?
+        chat = chat_message.respond_to?(:chat) ? chat_message.chat : nil
+        return [] unless chat_enable_mentions?(chat: chat) && chat_message.present?
 
         chat_message.body.to_s.scan(MENTION_PATTERN).uniq
       end
@@ -48,7 +52,8 @@ module TurboChat
       private
 
       def resolve_custom_message_css_classes(chat_message:, own_message:)
-        resolver = TurboChat.configuration.message_css_class_resolver
+        message_chat = chat_message.respond_to?(:chat) ? chat_message.chat : nil
+        resolver = chat_config_value(:message_css_class_resolver, default: nil, chat: message_chat)
         return [] unless resolver.respond_to?(:call)
 
         classes = call_message_css_class_resolver(resolver, chat_message: chat_message, own_message: own_message)
@@ -58,15 +63,21 @@ module TurboChat
       end
 
       def resolve_message_hex_color(chat_message:, own_message:)
+        message_chat = chat_message.respond_to?(:chat) ? chat_message.chat : nil
         role_color = resolve_role_message_hex_color(chat_message: chat_message, own_message: own_message)
         return role_color if role_color.present?
 
-        base_color = own_message ? TurboChat.configuration.own_message_hex_color : TurboChat.configuration.other_message_hex_color
+        base_color = if own_message
+                       chat_config_value(:own_message_hex_color, default: nil, chat: message_chat)
+                     else
+                       chat_config_value(:other_message_hex_color, default: nil, chat: message_chat)
+                     end
         normalize_hex_color(base_color)
       end
 
       def resolve_role_message_hex_color(chat_message:, own_message:)
-        role_colors = TurboChat.configuration.role_message_hex_colors
+        message_chat = chat_message.respond_to?(:chat) ? chat_message.chat : nil
+        role_colors = chat_config_value(:role_message_hex_colors, default: {}, chat: message_chat)
         return nil unless role_colors.is_a?(Hash)
 
         role_key = chat_message_role_key(chat_message)
@@ -112,10 +123,10 @@ module TurboChat
       # The result is safe to mark as html_safe because no raw user content
       # reaches the output unescaped. Any change to this pipeline MUST
       # preserve html_escape as the first step.
-      def decorate_plain_message_text(body)
+      def decorate_plain_message_text(body, chat: nil)
         formatted = ERB::Util.html_escape(body.to_s)
-        formatted = apply_emoji_aliases(formatted) if TurboChat.configuration.enable_emoji_aliases
-        formatted = apply_mention_highlights(formatted) if TurboChat.configuration.enable_mentions
+        formatted = apply_emoji_aliases(formatted) if chat_config_boolean(:enable_emoji_aliases, default: true, chat: chat)
+        formatted = apply_mention_highlights(formatted) if chat_enable_mentions?(chat: chat)
         formatted.gsub(/\r\n?|\n/, "<br>")
       end
 
